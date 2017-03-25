@@ -9,20 +9,22 @@ function readOrCreateAbstraction (variable1, definition2, cb) {
    .filter('def2', '=', definition2);
   datastore.ds.runQuery(query)
    .then((results) => {
-  	return cb(datastore.fromDatastore(results[0]));
+   	var abstractions = results[0];
+   	console.log(abstractions[Object.keys(abstractions)[0]]);
+   	if (abstractions.length) return cb(abstractions[Object.keys(abstractions)[0]]);
+
+		// if not found
+	  var data = {
+	  	type: 'abs',
+	  	var1: variable1,
+	  	def2: definition2
+	  };
+		datastore.create('Diary', data, function(err, entity){
+	    return cb(entity);
+		});
   }).catch((reason) => {
     console.log("Diary query error: " + reason);
   });
-
-  var data = {
-  	type: 'abs',
-  	var1: variable1,
-  	def2: definition2
-  };
-	// if not found
-	datastore.create('Diary', data, function(err, entity){
-    return cb(entity);
-	});
 }
 
 function readOrCreateApplication (definition1, definition2, cb) {
@@ -32,20 +34,24 @@ function readOrCreateApplication (definition1, definition2, cb) {
    .filter('def2', '=', definition2);
   datastore.ds.runQuery(query)
    .then((results) => {
-  	return cb(datastore.fromDatastore(results[0]));
+   	var applications = results[0];
+   	console.log(applications[Object.keys(applications)[0]]);
+  	if (applications.length) return cb(applications[Object.keys(applications)[0]]);
+
+		// if not found
+	  var data = {
+	  	type: 'app',
+	  	def1: definition1,
+	  	def2: definition2
+	  };
+		datastore.create('Diary', data, function(err, entity){
+	    return cb(entity);
+		});
   }).catch((reason) => {
     console.log("Diary query error: " + reason);
   });
 
-  var data = {
-  	type: 'app',
-  	def1: definition1,
-  	def2: definition2
-  };
-	// if not found
-	datastore.create('Diary', data, function(err, entity){
-    return cb(entity);
-	});
+
 }
 
 
