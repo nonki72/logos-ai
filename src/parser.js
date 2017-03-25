@@ -25,8 +25,13 @@ class Parser {
       const id = this.lexer.token(Token.LCID);
       this.lexer.match(Token.DOT);
       this.term([id].concat(ctx), function(term) {
-        return cb(new AST.Abstraction(id, term));
-
+        DataLib.readOrCreateIdentifier(id,  (identifier) => {
+          DataLib.readOrCreateAbstraction(identifier.id, term.id, (abstraction) => {
+            var abstractionAst = new AST.Abstraction(id, term);
+            abstractionAst.id = abstraction.id;
+            return cb(abstractionAst);  
+          });
+        });
       });
     }  else {
       this.application(ctx, function(app) {
@@ -44,10 +49,13 @@ class Parser {
       var atomizer = function() {
         self.atom(ctx, function(rhs) {
           if (!rhs) {
-              return cb(lhs);
+            return cb(lhs);
           } else {
-            lhs = new AST.Application(lhs, rhs);
-            atomizer();
+            DataLib.readOrCreateApplication(lhs.id, rhs.id, (application) => {
+              lhs = new AST.Application(lhs, rhs);
+              lhs.id = application.id;
+              atomizer();
+            });
           }
         });
       };
@@ -63,18 +71,16 @@ class Parser {
     var self=this;
     if (self.lexer.skip(Token.LPAREN)) {
       self.term(ctx,function(term){
-        console.log(term);
         self.lexer.match(Token.RPAREN);
         return cb( term);
       });
     } else if (self.lexer.next(Token.LCID)) {
       const id = self.lexer.token(Token.LCID);
-        console.log(id);
-//      DataLib.readOrCreateIdentifier(id, function (identifier) {  
-//            console.log(identifier);
-        return cb(new AST.Identifier(ctx.indexOf(id)));
-
- //     });
+      DataLib.readOrCreateIdentifier(id, (identifier) => {
+        var identifierAst = new AST.Identifier(ctx.indexOf(id));
+        identifierAst.id = identifier.id;
+        return cb(identifierAst);
+      });
     } else {
       return cb(undefined);
     }
