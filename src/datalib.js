@@ -10,6 +10,8 @@ function readOrCreateAbstraction (variable1, definition2, cb) {
   datastore.ds.runQuery(query)
    .then((results) => {
   	return cb(datastore.fromDatastore(results[0]));
+  }).catch((reason) => {
+    console.log("Diary query error: " + reason);
   });
 
   var data = {
@@ -31,6 +33,8 @@ function readOrCreateApplication (definition1, definition2, cb) {
   datastore.ds.runQuery(query)
    .then((results) => {
   	return cb(datastore.fromDatastore(results[0]));
+  }).catch((reason) => {
+    console.log("Diary query error: " + reason);
   });
 
   var data = {
@@ -51,6 +55,9 @@ function readOrCreateIdentifier ( name, cb ) {
   	name: name
   };
 	datastore.create('Diary', data, function(err, entity){
+		if (err) {
+			console.log("diary err "+err);
+		}
     return cb( entity);
 	});
 }

@@ -14,17 +14,11 @@
 'use strict';
 
 var Datastore = require('@google-cloud/datastore');
-var config = require('../config');
 
 // [START config]
 var ds = Datastore({
-  projectId: config.get('GCLOUD_PROJECT')
+  projectId: "logos-162301"
 });
-
-// [START config]
-//var ds = Datastore({
-//  projectId: "logos-162301"
-//});
 // [END config]
 
 // Translates from Datastore's entity format to
