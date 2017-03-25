@@ -1,0 +1,29 @@
+{
+  "name": "logos",
+  "version": "0.0.1",
+  "description": "Associative Interactive Recursive Structures",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js test.txt",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jcote/logos.git"
+  },
+  "keywords": [
+    "lambda-calculus",
+    "lambda",
+    "ai"
+  ],
+  "author": "Jordan Cote <tadeuzagallo@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/jcote/logos/issues"
+  },
+  "homepage": "https://github.com/jcote/logos",
+  "dependencies": {
+    "@google-cloud/datastore": "^0.7.1",
+    "nconf": "^0.8.4"
+  }
+}

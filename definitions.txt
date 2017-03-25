@@ -1,0 +1,38 @@
+define            free-standing definitions
+{
+	fun ( t, l )    t : term
+	                l : term | exp | fun
+	                an abstraction which replaces occurances of term with id at t with the expression at l
+
+	term ( )
+	               define a new term identified by the number of terms preceeding it (or its location)
+
+	exp ( l1, l2 )  l : term | exp | fun
+	                application of expression at l1 to expression at l2
+}
+
+action              modify the virtual expression
+{
+	sub_β ( l1, l2 )  l1 : sub ( fun, * ) | cat ( fun, * )
+	                  l2 : sub | cat | exp | ter | fun
+	                  substitute the expression at l1 with the one at l2
+	                  produced by using beta reduction
+
+	sub_α ( l1, l2 )  l1 : sub | cat
+		                l2 : sub | cat | exp | ter | fun
+	                  substitute the expression at l1 with the one at l2
+	                  produced by using alpha reduction
+
+	sub_η ( l1, l2 )  l1 : sub | cat
+		                l2 : sub | cat | exp | ter | fun
+	                  substitute the expression at l1 with the one at l2
+	                  produced by using eta reduction (or by using the E.C. database)
+
+	cat ( l )       l : exp | term | fun
+	                concatenate the input at l to the current working expression 
+	                (virtual expression beginning at root ε modified by subs and cats)
+}
+
+each sub(l,*) or sub(*,l) contributes to the Equivalence Class of the expression at l
+
+cats automatically create exp if not exist
