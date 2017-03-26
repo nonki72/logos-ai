@@ -25,12 +25,10 @@ class Parser {
       const id = this.lexer.token(Token.LCID);
       this.lexer.match(Token.DOT);
       this.term([id].concat(ctx), function(term) {
-        DataLib.readOrCreateIdentifier(id,  (identifier) => {
-          DataLib.readOrCreateAbstraction(identifier.id, term.id, (abstraction) => {
-            var abstractionAst = new AST.Abstraction(id, term);
-            abstractionAst.id = abstraction.id;
-            return cb(abstractionAst);  
-          });
+        DataLib.readOrCreateAbstraction(id, term.id, (abstraction) => {
+          var abstractionAst = new AST.Abstraction(id, term);
+          abstractionAst.id = abstraction.id;
+          return cb(abstractionAst);  
         });
       });
     }  else {
@@ -76,7 +74,7 @@ class Parser {
       });
     } else if (self.lexer.next(Token.LCID)) {
       const id = self.lexer.token(Token.LCID);
-      DataLib.readOrCreateIdentifier(id, (identifier) => {
+      DataLib.readOrCreateIdentifier(id, ctx.indexOf(id), (identifier) => {
         var identifierAst = new AST.Identifier(ctx.indexOf(id));
         identifierAst.id = identifier.id;
         return cb(identifierAst);

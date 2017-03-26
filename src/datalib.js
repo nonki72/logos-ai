@@ -2,21 +2,26 @@
 
 const datastore = require('./datastore');
 
-function readOrCreateAbstraction (variable1, definition2, cb) {
-	const query = datastore.ds.createQuery('Diary')
+function readOrCreateAbstraction (name, definition2, cb) {
+	const query = datastore.ds.createQuery('Diary') // TODO: save the lookups for EC. Remove cat's
 	 .filter('type', '=', 'abs')
-   .filter('var1', '=', variable1)
-   .filter('def2', '=', definition2);
+//   .filter('name', '=', name)
+   .filter('def2', '=', definition2)
+   .limit(1);
   datastore.ds.runQuery(query)
    .then((results) => {
    	var abstractions = results[0];
-   	console.log(abstractions[Object.keys(abstractions)[0]]);
-   	if (abstractions.length) return cb(abstractions[Object.keys(abstractions)[0]]);
+  	if (abstractions.length) {
+	   	var abstraction = abstractions[Object.keys(abstractions)[0]];
+	   	abstraction.id = abstraction[datastore.ds.KEY]['id'];
+	   	console.log(abstraction);
+  		return cb(abstraction);
+  	}
 
 		// if not found
 	  var data = {
 	  	type: 'abs',
-	  	var1: variable1,
+	  	name: name,
 	  	def2: definition2
 	  };
 		datastore.create('Diary', data, function(err, entity){
@@ -31,12 +36,17 @@ function readOrCreateApplication (definition1, definition2, cb) {
 	const query = datastore.ds.createQuery('Diary')
 	 .filter('type', '=', 'app')
    .filter('def1', '=', definition1)
-   .filter('def2', '=', definition2);
+   .filter('def2', '=', definition2)
+   .limit(1);
   datastore.ds.runQuery(query)
    .then((results) => {
    	var applications = results[0];
-   	console.log(applications[Object.keys(applications)[0]]);
-  	if (applications.length) return cb(applications[Object.keys(applications)[0]]);
+  	if (applications.length) {
+	   	var application = applications[Object.keys(applications)[0]];
+	   	application.id = application[datastore.ds.KEY]['id'];
+	   	console.log(application);
+  		return cb(application);
+  	}
 
 		// if not found
 	  var data = {
@@ -55,16 +65,35 @@ function readOrCreateApplication (definition1, definition2, cb) {
 }
 
 
-function readOrCreateIdentifier ( name, cb ) {
-  var data = {
-  	type: 'id',
-  	name: name
-  };
-	datastore.create('Diary', data, function(err, entity){
-		if (err) {
-			console.log("diary err "+err);
-		}
-    return cb( entity);
+function readOrCreateIdentifier ( name, index, cb ) {
+	const query = datastore.ds.createQuery('Diary')
+	 .filter('type', '=', 'id')
+   .filter('name', '=', name)
+   .filter('indx', '=', index)
+   .limit(1);
+  datastore.ds.runQuery(query)
+   .then((results) => {
+   	var identifiers = results[0];
+  	if (identifiers.length) {
+	   	var identifier = identifiers[Object.keys(identifiers)[0]];
+	   	identifier.id = identifier[datastore.ds.KEY]['id'];
+	   	console.log(identifier);
+  		return cb(identifier);
+  	}
+
+		// if not found
+
+	  var data = {
+	  	type: 'id',
+	  	name: name,
+	  	indx: index
+	  };
+		datastore.create('Diary', data, function(err, entity){
+			if (err) {
+				console.log("diary err "+err);
+			}
+	    return cb( entity);
+		});
 	});
 }
 
