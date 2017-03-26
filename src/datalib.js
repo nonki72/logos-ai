@@ -65,10 +65,9 @@ function readOrCreateApplication (definition1, definition2, cb) {
 }
 
 
-function readOrCreateIdentifier ( name, index, cb ) {
+function readOrCreateIdentifier ( index, cb ) {
 	const query = datastore.ds.createQuery('Diary')
 	 .filter('type', '=', 'id')
-   .filter('name', '=', name)
    .filter('indx', '=', index)
    .limit(1);
   datastore.ds.runQuery(query)
@@ -85,7 +84,6 @@ function readOrCreateIdentifier ( name, index, cb ) {
 
 	  var data = {
 	  	type: 'id',
-	  	name: name,
 	  	indx: index
 	  };
 		datastore.create('Diary', data, function(err, entity){

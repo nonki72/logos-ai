@@ -74,7 +74,7 @@ class Parser {
       });
     } else if (self.lexer.next(Token.LCID)) {
       const id = self.lexer.token(Token.LCID);
-      DataLib.readOrCreateIdentifier(id, ctx.indexOf(id), (identifier) => {
+      DataLib.readOrCreateIdentifier(ctx.indexOf(id), (identifier) => {
         var identifierAst = new AST.Identifier(ctx.indexOf(id));
         identifierAst.id = identifier.id;
         return cb(identifierAst);
