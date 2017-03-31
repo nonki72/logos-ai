@@ -13,10 +13,18 @@ const eval = (ast, cb) => {
          * abstraction's parameter in the evaluation body and then evaluate the
          * abstraction's body
          */
-        DataLib.createSubstitution("beta", ast.lhs.id, ast.rhs.id, (substitution) => {
-          ast = substitute(ast.rhs, ast.lhs.body);
-          eval(ast, cb);
-        });
+        var sub = function() {
+          substitute(ast.rhs, ast.lhs.body, function(ast) {
+            eval(ast, cb);
+          });
+        }
+        if (ast.lhs.id && ast.rhs.id) {
+          DataLib.createSubstitution("beta", ast.lhs.id, ast.rhs.id, (substitution) => {
+            sub.call(null);
+          });          
+        } else {
+          sub.call(null);
+        }
       } else if (isValue(ast.lhs)) {
         /**
          * We should only evaluate rhs once lhs has been reduced to a value
@@ -86,13 +94,17 @@ const traverse = fn =>
       return config.Identifier(node);
   }
 
-const shift = (by, node) => {
+const shift = (by, node, cb) => {
   const aux = traverse(from => ({
     Application(app) {
-      return new AST.Application(
-        aux(app.lhs, from),
-        aux(app.rhs, from)
-      );
+      DataLib.readOrCreateApplication(app.lhs.id, app.rhs.id, (application) => {
+        var applicationAst = new AST.Application(
+          aux(app.lhs, from),
+          aux(app.rhs, from)
+        );
+        applicationAst.id = application.id;
+        return cb(applicationAst);
+      });
     },
     Abstraction(abs) {
       return new AST.Abstraction(
@@ -106,16 +118,20 @@ const shift = (by, node) => {
       );
     }
   }));
-  return aux(node, 0);
+  return cb(aux(node, 0)); // refactor?
 };
 
-const subst = (value, node) => {
+const subst = (value, node, cb) => {
   const aux = traverse(depth => ({
     Application(app) {
-      return new AST.Application(
-        aux(app.lhs, depth),
-        aux(app.rhs, depth)
-      );
+      DataLib.readOrCreateApplication(app.lhs.id, app.rhs.id, (application) => {
+        var applicationAst = new AST.Application(
+          aux(app.lhs, depth),
+          aux(app.rhs, depth)
+        );
+        applicationAst.id = application.id;
+        return cb(applicationAst);
+      });
     },
     Abstraction(abs) {
       return new AST.Abstraction(
@@ -125,16 +141,26 @@ const subst = (value, node) => {
     },
     Identifier(id) {
       if (depth === id.value)
-        return shift(depth, value);
+        return shift(depth, value, function(result) {
+          cb(result);
+        });
       else
-        return id;
+        return cb(id);
     }
   }));
-  return aux(node, 0);
+  return cb(aux(node, 0)); // refactor?
 };
 
-const substitute = (value, node) => {
-  return shift(-1, subst(shift(1, value), node));
+const substitute = (value, node, cb) => {
+  shift(1, value, function(node1){
+    subst(node1, node, function(node2){
+      shift(-1, node2, function(node3){
+        return cb (node3);
+      });
+    })    
+  })
+
+
 };
 
 exports.eval = eval;

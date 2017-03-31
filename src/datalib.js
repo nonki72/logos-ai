@@ -136,13 +136,13 @@ function createSubstitution (subType, location1, location2, cb) {
   if (subType == 'beta') {
     // check that action1 lhs is abstraction
   }
-  
+
   // actually create the substitution
   var createSub = function(err,entity) {
 	  var data = {
 	  	type: 'sub',
 	  	styp: subType,
-	  	def1: entity.def1, // take over the anchor point of old cat/sub
+	  	def1: location1,
 	  	def2: location2,
 	    rand: Math.random()
 	  };
