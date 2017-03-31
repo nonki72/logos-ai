@@ -38,9 +38,13 @@ var ds = Datastore({
 //     property: value
 //   }
 function fromDatastore (obj) {
-  if (!('data' in obj)) {
+  if (!obj.hasOwnProperty('data')) {
     obj.data = {};
   }
+  Object.getOwnPropertyNames(obj).forEach(function(name) {
+    if (name == 'data') return;
+    obj.data[name] = obj[name];
+  });
   obj.data.id = obj[Datastore.KEY]['id'];
   return obj.data;
 }
