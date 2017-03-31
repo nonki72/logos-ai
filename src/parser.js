@@ -20,7 +20,6 @@ class Parser {
   // term ::= LAMBDA LCID DOT term
   //        | application
   term(ctx,cb) {
-    var self=this;
     if (this.lexer.skip(Token.LAMBDA)) {
       const id = this.lexer.token(Token.LCID);
       this.lexer.match(Token.DOT);
@@ -74,11 +73,22 @@ class Parser {
       });
     } else if (self.lexer.next(Token.LCID)) {
       const id = self.lexer.token(Token.LCID);
-      DataLib.readOrCreateIdentifier(ctx.indexOf(id), (identifier) => {
-        var identifierAst = new AST.Identifier(ctx.indexOf(id));
-        identifierAst.id = identifier.id;
-        return cb(identifierAst);
-      });
+      const index = ctx.indexOf(id);
+      if (index >= 0) {
+        // bound variable
+        DataLib.readOrCreateIdentifier(index, (identifier) => {
+          var identifierAst = new AST.Identifier(index);
+          identifierAst.id = identifier.id;
+          return cb(identifierAst);
+        });
+      } else {
+        // free variable
+        DataLib.readFreeIdentifier(id, (identifier) => {
+          var identifierAst = new AST.Identifier(identifier.name, identifier.ast, identifier.fn, identifier.argCount, identifier.argTypes);
+          identifierAst.id = identifier.id;
+          return cb(identifierAst);
+        });
+      }
     } else {
       return cb(undefined);
     }

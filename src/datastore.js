@@ -38,7 +38,10 @@ var ds = Datastore({
 //     property: value
 //   }
 function fromDatastore (obj) {
-  obj.data.id = obj.key.id;
+  if (!('data' in obj)) {
+    obj.data = {};
+  }
+  obj.data.id = obj[Datastore.KEY]['id'];
   return obj.data;
 }
 

@@ -2,9 +2,9 @@ const AST = require('./ast');
 const DataLib = require('./datalib');
 
 const isValue = node => node instanceof AST.Abstraction;
+const isName = node => node instanceof AST.Identifier;
 
-const eval = ast => {
-  while (true) {
+const eval = (ast, cb) => {
     if (ast instanceof AST.Application) {
       if (isValue(ast.lhs) && isValue(ast.rhs)) {
         /**
@@ -13,27 +13,66 @@ const eval = ast => {
          * abstraction's parameter in the evaluation body and then evaluate the
          * abstraction's body
          */
-        //DataLib.createSubstitution(ast.lhs.id, ast.rhs.id);
-        ast = substitute(ast.rhs, ast.lhs.body);
+        DataLib.createSubstitution("beta", ast.lhs.id, ast.rhs.id, (substitution) => {
+          ast = substitute(ast.rhs, ast.lhs.body);
+          eval(ast, cb);
+        });
       } else if (isValue(ast.lhs)) {
         /**
          * We should only evaluate rhs once lhs has been reduced to a value
          */
-        ast.rhs = eval(ast.rhs);
+        ast.rhs = eval(ast.rhs, cb);
+      } else if (isName(ast.lhs) && ast.lhs.body) {
+          // a named function that requires n args
+          // curry in one more arg
+        if (ast.lhs.args.length < ast.lhs.argCount) {
+          // expected arg type is either a JS type or "ast"
+          var expectedArgType = ast.lhs.argTypes[ast.lhs.args.length];
+          if (ast.rhs.fn && typeof ast.rhs.fn == expectedArgType) {
+            ast.lhs.args = ast.lhs.args.concat(ast.rhs.fn);
+            ast = ast.lhs;
+          } else if (expectedArgType == "ast") {
+            // if rhs is an identifier with embedded ast expression, use that
+            if (isName(ast.rhs) && ast.rhs.ast) {
+              ast.lhs.args = ast.lhs.args.concat(ast.rhs.ast);
+            } else {
+              ast.lhs.args = ast.lhs.args.concat(ast.rhs);
+            }
+            ast = ast.lhs;
+          } else {
+            // rhs is not expected arg type
+            // evaluate rhs and eventually continue evaluation here
+            ast.rhs = eval(ast.rhs, cb);
+          }
+        }
+
+        if (ast.lhs.args.length == ast.lhs.argCount) {
+          // if all args present, run the named function
+          // and substitute the expression
+          var out = ast.lhs.fn.apply(null, ast.lhs.args);
+          ast.lhs = out;
+        }
+        /* Keep looping until all args are consumed and the function is run
+         * or not enough args are found and the lhs remains an identifier 
+         * expecting more args while rhs is evaluated
+         */
+         eval(ast, cb);
       } else {
         /**
          * Keep reducing lhs until it becomes a value
          */
-        ast.lhs = eval(ast.lhs);
+        ast.lhs = eval(ast.lhs, (result) => {
+          ast.lhs = result;
+          eval(ast, cb);
+        });
       }
     } else if (isValue(ast)) {
       /**
        * * `ast` is a value, and therefore an abstraction. That means we're done
         * reducing it, and this is the result of the current evaluation.
         */
-      return ast;
+      return cb(ast);
     }
-  }
 };
 
 const traverse = fn =>

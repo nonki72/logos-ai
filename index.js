@@ -26,7 +26,9 @@ parser.parse(function (ast) {
 	  });
 	  console.log(output);
 	} else {
-	  console.log(Interpreter.eval(ast).toString());
+	  Interpreter.eval(ast, (result) => {
+	  	console.log(result.toString());
+	  });
 	}
 
 });
