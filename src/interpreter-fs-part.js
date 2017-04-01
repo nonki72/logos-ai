@@ -13,30 +13,30 @@ const traverse = fn =>
 const shift = (by, node, cb) => {
   const aux = traverse(from => ({
     Application(app) {
+      var applicationAst = new AST.Application(
+        aux(app.lhs, from),
+        aux(app.rhs, from)
+      );
       DataLib.readOrCreateApplication(app.lhs.id, app.rhs.id, (application) => {
-        var applicationAst = new AST.Application(
-          aux(app.lhs, from),
-          aux(app.rhs, from)
-        );
         applicationAst.id = application.id;
         return cb(applicationAst);
       });
     },
     Abstraction(abs) {
+      var abstractionAst = new AST.Abstraction(
+        abs.param,
+        aux(abs.body, from + 1)
+      );
       DataLib.readOrCreateAbstraction(abs.id, null, (abstraction) => {
-        var abstractionAst = new AST.Abstraction(
-          abs.param,
-          aux(abs.body, from + 1)
-        );
         abstractionAst.id = abstraction.id;
         return cb(abstractionAst);
       });
     },
     Identifier(id) {
+      var identifierAst = new AST.Identifier(
+        id.value + (id.value >= from ? by : 0)
+      );
       DataLib.createFreeIdentifier(id.value, null, null, null, null, (identifier) => {
-        var identifierAst = new AST.Identifier(
-          id.value + (id.value >= from ? by : 0)
-        );
         identifierAst.id = identifier.id;
         return cb(identifierAst);
       });
@@ -48,21 +48,21 @@ const shift = (by, node, cb) => {
 const subst = (value, node, cb) => {
   const aux = traverse(depth => ({
     Application(app) {
+      var applicationAst = new AST.Application(
+        aux(app.lhs, depth),
+        aux(app.rhs, depth)
+      );
       DataLib.readOrCreateApplication(app.lhs.id, app.rhs.id, (application) => {
-        var applicationAst = new AST.Application(
-          aux(app.lhs, depth),
-          aux(app.rhs, depth)
-        );
         applicationAst.id = application.id;
         return cb(applicationAst);
       });
     },
     Abstraction(abs) {
+      var abstractionAst = new AST.Abstraction(
+        abs.param,
+        aux(abs.body, depth + 1)
+      );
       DataLib.readOrCreateAbstraction(abs.id, null, (abstraction) => {
-        var abstractionAst = new AST.Abstraction(
-          abs.param,
-          aux(abs.body, depth + 1)
-        );
         abstractionAst.id = abstraction.id;
         return cb(abstractionAst);
       });

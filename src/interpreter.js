@@ -95,60 +95,88 @@ const traverse = fn =>
   }
 
 const shift = (by, node, cb) => {
-  const aux = traverse(from => ({
+  const aux = traverse((from, cb2) => ({
     Application(app) {
-      DataLib.readOrCreateApplication(app.lhs.id, app.rhs.id, (application) => {
-        var applicationAst = new AST.Application(
-          aux(app.lhs, from),
-          aux(app.rhs, from)
-        );
-        applicationAst.id = application.id;
-        return cb(applicationAst);
+      aux(app.lhs, from, function(node1){
+        aux(app.rhs, from, function(node2) {
+          var applicationAst = new AST.Application(
+            node1,
+            node2
+          );
+          DataLib.readOrCreateApplication(app.lhs.id, app.rhs.id, (application) => {
+            applicationAst.id = application.id;
+            return cb2(applicationAst);
+          });
+        });
       });
     },
     Abstraction(abs) {
-      return new AST.Abstraction(
-        abs.param,
-        aux(abs.body, from + 1)
-      );
+      aux(abs.body, from + 1, function(node1) {
+        var abstractionAst = new AST.Abstraction(
+          abs.param,
+          node1
+        );
+        DataLib.readOrCreateAbstraction(abs.id, null, (abstraction) => {
+          abstractionAst.id = abstraction.id;
+          return cb2(abstractionAst);
+        });
+      });
     },
     Identifier(id) {
-      return new AST.Identifier(
+      var identifierAst = new AST.Identifier(
         id.value + (id.value >= from ? by : 0)
       );
+      DataLib.readOrCreateIdentifier(id.value, (identifier) => {
+        identifierAst.id = identifier.id;
+        return cb2(identifierAst);
+      });
     }
   }));
-  return cb(aux(node, 0)); // refactor?
+  aux(node, 0, function(node1) {
+    return cb(node1);    
+  });
 };
 
 const subst = (value, node, cb) => {
-  const aux = traverse(depth => ({
+  const aux = traverse((depth,cb2) => ({
     Application(app) {
-      DataLib.readOrCreateApplication(app.lhs.id, app.rhs.id, (application) => {
-        var applicationAst = new AST.Application(
-          aux(app.lhs, depth),
-          aux(app.rhs, depth)
-        );
-        applicationAst.id = application.id;
-        return cb(applicationAst);
+      aux(app.lhs, depth, function(node1){
+        aux(app.rhs, depth, function(node2) {
+          var applicationAst = new AST.Application(
+            node1,
+            node2
+          );
+          DataLib.readOrCreateApplication(app.lhs.id, app.rhs.id, (application) => {
+            applicationAst.id = application.id;
+            return cb2(applicationAst);
+          });
+        });
       });
     },
     Abstraction(abs) {
-      return new AST.Abstraction(
-        abs.param,
-        aux(abs.body, depth + 1)
-      );
+      aux(abs.body, depth + 1, function(node1) {
+        var abstractionAst = new AST.Abstraction(
+          abs.param,
+          node1
+        );
+        DataLib.readOrCreateAbstraction(abs.id, null, (abstraction) => {
+          abstractionAst.id = abstraction.id;
+          return cb2(abstractionAst);
+        });
+      });
     },
     Identifier(id) {
       if (depth === id.value)
         return shift(depth, value, function(result) {
-          cb(result);
+          cb2(result);
         });
       else
-        return cb(id);
+        return cb2(id);
     }
   }));
-  return cb(aux(node, 0)); // refactor?
+  aux(node, 0, function(node1) {
+    return cb(node1);    
+  });
 };
 
 const substitute = (value, node, cb) => {

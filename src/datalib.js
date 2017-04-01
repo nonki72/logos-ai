@@ -28,7 +28,7 @@ function readOrCreateAbstraction (name, definition2, cb) {
 	    return cb(entity);
 		});
   }).catch((reason) => {
-    console.log("Diary query error: " + reason);
+    console.log("Diary abstraction query error: " + reason);
   });
 }
 
@@ -58,7 +58,7 @@ function readOrCreateApplication (definition1, definition2, cb) {
 	    return cb(entity);
 		});
   }).catch((reason) => {
-    console.log("Diary query error: " + reason);
+    console.log("Diary application query error: " + reason);
   });
 
 
@@ -91,7 +91,9 @@ function readOrCreateIdentifier ( index, cb ) {
 			}
 	    return cb( entity);
 		});
-	});
+	}).catch((reason) => {
+    console.log("Diary identifier query error: " + reason);
+  });
 }
 
 function readFreeIdentifier ( name, cb ) {
