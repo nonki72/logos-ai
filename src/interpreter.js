@@ -13,18 +13,11 @@ const eval = (ast, cb) => {
          * abstraction's parameter in the evaluation body and then evaluate the
          * abstraction's body
          */
-        var sub = function() {
-          substitute(ast.rhs, ast.lhs.body, function(ast) {
-            eval(ast, cb);
+        substitute(ast.rhs, ast.lhs.body, function(ast2) {
+          eval(ast2, cb);
+          DataLib.createSubstitution("beta", ast.id, ast2.id, (substitution) => {
           });
-        }
-        if (ast.lhs.id && ast.rhs.id) {
-          DataLib.createSubstitution("beta", ast.lhs.id, ast.rhs.id, (substitution) => {
-            sub.call(null);
-          });          
-        } else {
-          sub.call(null);
-        }
+        });
       } else if (isValue(ast.lhs)) {
         /**
          * We should only evaluate rhs once lhs has been reduced to a value
@@ -116,7 +109,7 @@ const shift = (by, node, cb) => {
           abs.param,
           node1
         );
-        DataLib.readOrCreateAbstraction(abs.id, null, (abstraction) => {
+        DataLib.readOrCreateAbstraction(abs.param, abs.body.id, (abstraction) => {
           abstractionAst.id = abstraction.id;
           return cb2(abstractionAst);
         });
@@ -159,7 +152,7 @@ const subst = (value, node, cb) => {
           abs.param,
           node1
         );
-        DataLib.readOrCreateAbstraction(abs.id, null, (abstraction) => {
+        DataLib.readOrCreateAbstraction(abs.param, abs.body.id, (abstraction) => {
           abstractionAst.id = abstraction.id;
           return cb2(abstractionAst);
         });
