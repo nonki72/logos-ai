@@ -4,7 +4,26 @@ const DataLib = require('./datalib');
 const isValue = node => node instanceof AST.Abstraction;
 const isName = node => node instanceof AST.Identifier;
 
-const eval = (ast, cb) => {
+// higher level evaluator that combines together all of the 
+// expression fragments in the database into a single set of
+// possible evaluation points by use of associative value to 
+// make selections. also writes associative values
+const combine = () => {
+  // TODO: get input
+  // TODO: run associative value selection math
+  // TODO: get entry in diary
+  // TODO: apply input to entry
+  evaluate(ast, (astOut) => {
+
+  });
+  // TODO: write associative value
+}
+
+// evaluates the (extended) lambda calculus expression given
+// and returns the reduced (extended) lambda calculus expression
+// executing any complete applications of functional (JS) identifiers
+// TODO: make turbo substitutions using EC
+const evaluate = (ast, cb) => {
     if (ast instanceof AST.Application) {
       if (isValue(ast.lhs) && isValue(ast.rhs)) {
         /**
@@ -14,7 +33,7 @@ const eval = (ast, cb) => {
          * abstraction's body
          */
         substitute(ast.rhs, ast.lhs.body, function(ast2) {
-          eval(ast2, cb);
+          evaluate(ast2, cb);
           DataLib.createSubstitution("beta", ast.id, ast2.id, (substitution) => {
           });
         });
@@ -22,49 +41,43 @@ const eval = (ast, cb) => {
         /**
          * We should only evaluate rhs once lhs has been reduced to a value
          */
-        ast.rhs = eval(ast.rhs, cb);
-      } else if (isName(ast.lhs) && ast.lhs.body) {
-          // a named function that requires n args
-          // curry in one more arg
-        if (ast.lhs.args.length < ast.lhs.argCount) {
-          // expected arg type is either a JS type or "ast"
-          var expectedArgType = ast.lhs.argTypes[ast.lhs.args.length];
-          if (ast.rhs.fn && typeof ast.rhs.fn == expectedArgType) {
-            ast.lhs.args = ast.lhs.args.concat(ast.rhs.fn);
-            ast = ast.lhs;
-          } else if (expectedArgType == "ast") {
-            // if rhs is an identifier with embedded ast expression, use that
-            if (isName(ast.rhs) && ast.rhs.ast) {
-              ast.lhs.args = ast.lhs.args.concat(ast.rhs.ast);
-            } else {
-              ast.lhs.args = ast.lhs.args.concat(ast.rhs);
-            }
-            ast = ast.lhs;
-          } else {
-            // rhs is not expected arg type
-            // evaluate rhs and eventually continue evaluation here
-            ast.rhs = eval(ast.rhs, cb);
-          }
-        }
-
-        if (ast.lhs.args.length == ast.lhs.argCount) {
-          // if all args present, run the named function
-          // and substitute the expression
-          var out = ast.lhs.fn.apply(null, ast.lhs.args);
-          ast.lhs = out;
-        }
-        /* Keep looping until all args are consumed and the function is run
-         * or not enough args are found and the lhs remains an identifier 
-         * expecting more args while rhs is evaluated
+        ast.rhs = evaluate(ast.rhs, cb);
+      } else if (isName(ast.lhs) && ast.lhs.fn) {
+        /**
+         * lhs is a named function that requires 0 or more args
          */
-         eval(ast, cb);
+        if (ast.lhs.args.length < ast.lhs.argCount) {
+          // curry in one more arg
+          tryExtractArg(ast, (astOut, argExtractionSuccessful) => {
+            if (astOut.args.length == astOut.argCount) {
+              // if all args present, run the named function
+              // and substitute the expression
+              if (typeof astOut.fn == 'string') {
+                astOut.fn = eval(astOut.fn);  // <= CODE EXECUTION
+              }
+              var output = astOut.fn.apply(null, astOut.args);  // <= CODE EXECUTION
+              return cb(output);
+              // TODO: write substitution to Diary
+            }
+            evaluate(astOut, cb);
+          });
+        } else {
+          // has enough args, execute
+          if (typeof ast.lhs.fn == 'string') {
+            ast.lhs.fn = eval(ast.lhs.fn);  // <= CODE EXECUTION
+          }
+          var output = ast.lhs.fn.apply(null, ast.lhs.args);  // <= CODE EXECUTION
+          ast.lhs = output;
+          return cb(ast);
+          // TODO: write substitution to Diary
+        }
       } else {
         /**
          * Keep reducing lhs until it becomes a value
          */
-        ast.lhs = eval(ast.lhs, (result) => {
+        ast.lhs = evaluate(ast.lhs, (result) => {
           ast.lhs = result;
-          eval(ast, cb);
+          evaluate(ast, cb);
         });
       }
     } else if (isValue(ast)) {
@@ -75,6 +88,34 @@ const eval = (ast, cb) => {
       return cb(ast);
     }
 };
+
+const tryExtractArg = (ast, cb) => {
+  // expected arg type is either a JS type or "ast"
+  var expectedArgType = ast.lhs.argTypes[ast.lhs.args.length];
+  // fn attribute of identifier is js code
+  if (ast.rhs.fn && typeof ast.rhs.fn == expectedArgType) {
+    ast.lhs.args = ast.lhs.args.concat(ast.rhs.fn);
+    return cb(ast.lhs);
+  } else if (expectedArgType == "ast") {
+    // if rhs is an identifier with embedded ast expression, use that
+    if (isName(ast.rhs) && ast.rhs.ast) {
+      ast.lhs.args = ast.lhs.args.concat(ast.rhs.ast);
+    } else {
+      // rhs is itself an ast expression
+      ast.lhs.args = ast.lhs.args.concat(ast.rhs);
+    }
+    return cb(ast.lhs);
+  } else {
+    // rhs is not expected arg type
+    // evaluate rhs (once) and try again
+    evaluate(ast.rhs, (astRight) => {
+      ast.rhs = astRight;
+      tryExtractArg(ast, (astOut) => {
+        return cb(astOut);
+      });
+    });
+  }
+}
 
 const traverse = fn =>
   function(node, ...args) {
@@ -180,8 +221,6 @@ const substitute = (value, node, cb) => {
       });
     })    
   })
-
-
 };
 
-exports.eval = eval;
+exports.evaluate = evaluate;
