@@ -2,6 +2,55 @@
 
 const datastore = require('./datastore');
 
+// takes a lambda fragment and min value
+// reads most reduced equivalent fragment from its EC (Equivalence Class)
+function readByEquivalenceClass (id) {
+  datastore.read('EC', id, function(err, entity) {
+		const query = datastore.ds.createQuery('EC')
+	   .filter('ecid', '=', entity.ecid)
+	   .order('size')
+	   .limit(1)
+	  datastore.ds.runQuery(query)
+	   .then((results) => {
+	   	var entities = results[0];
+	  	if (entities.length) {
+		   	var entity = entities[Object.keys(entities)[0]];
+		   	entity.id = entity[datastore.ds.KEY]['id'];
+		   	console.log(entity);
+	  		return cb(entity);
+	  	}
+
+			// if none found
+			return cb(entity);
+	  }).catch((reason) => {
+	    console.log("EC query error: " + reason);
+	  });
+  });
+}
+
+// takes an input fragment and randomly reads a fragment
+// suitable for using as a lhs to apply to the input
+function readByAssociativeValue (input) {
+	const query = datastore.ds.createQuery('Diary')
+//   .filter('assv', '>=', associativeMinimum)
+   .filter('argCount', '=', 1)
+  datastore.ds.runQuery(query)
+   .then((results) => {
+   	var entities = results[0];
+  	if (entities.length) {
+	   	var entity = entities[Object.keys(entities)[0]];
+	   	entity.id = entity[datastore.ds.KEY]['id'];
+	   	console.log(entity);
+  		return cb(entity);
+  	}
+
+		// if not found
+		return cb(null);
+  }).catch((reason) => {
+    console.log("Diary application query error: " + reason);
+  });
+}
+
 function readOrCreateAbstraction (name, definition2, cb) {
 	const query = datastore.ds.createQuery('Diary') // TODO: save the lookups for EC. Remove cat's
 	 .filter('type', '=', 'abs')
@@ -168,5 +217,7 @@ module.exports = {
 	readOrCreateIdentifier: readOrCreateIdentifier,
 	readFreeIdentifier: readFreeIdentifier,
 	createFreeIdentifier: createFreeIdentifier,
-	createSubstitution: createSubstitution
+	createSubstitution: createSubstitution,
+	readByAssociativeValue: readByAssociativeValue,
+	readByEquivalenceClass: readByEquivalenceClass
 };
