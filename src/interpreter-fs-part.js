@@ -23,22 +23,24 @@ const shift = (by, node, cb) => {
       });
     },
     Abstraction(abs) {
-      var abstractionAst = new AST.Abstraction(
-        abs.param,
-        aux(abs.body, from + 1)
-      );
-      DataLib.readOrCreateAbstraction(abs.id, null, (abstraction) => {
-        abstractionAst.id = abstraction.id;
-        return cb(abstractionAst);
+      aux(abs.body, from + 1, function(node1) {
+        var abstractionAst = new AST.Abstraction(
+          abs.param,
+          node1
+        );
+        DataLib.readOrCreateAbstraction(abs.id, null, (abstraction) => {
+          abstractionAst.id = abstraction.id;
+          return cb2(abstractionAst);
+        });
       });
     },
     Identifier(id) {
       var identifierAst = new AST.Identifier(
         id.value + (id.value >= from ? by : 0)
       );
-      DataLib.createFreeIdentifier(id.value, null, null, null, null, (identifier) => {
+      DataLib.readOrCreateIdentifier(id.value, (identifier) => {
         identifierAst.id = identifier.id;
-        return cb(identifierAst);
+        return identifierAst;
       });
     }
   }));
