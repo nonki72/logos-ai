@@ -10,9 +10,8 @@ function readByEquivalenceClass (id) {
 	   .filter('ecid', '=', entity.ecid)
 	   .order('size')
 	   .limit(1)
-	  datastore.ds.runQuery(query)
-	   .then((results) => {
-	   	var entities = results[0];
+  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
+	   	var entities = entities;
 	  	if (entities.length) {
 		   	var entity = entities[Object.keys(entities)[0]];
 		   	entity.id = entity[datastore.ds.KEY]['id'];
@@ -22,8 +21,6 @@ function readByEquivalenceClass (id) {
 
 			// if none found
 			return cb(entity);
-	  }).catch((reason) => {
-	    console.log("EC query error: " + reason);
 	  });
   });
 }
@@ -34,9 +31,8 @@ function readByAssociativeValue (input) {
 	const query = datastore.ds.createQuery('Diary')
 //   .filter('assv', '>=', associativeMinimum)
    .filter('argCount', '=', 1)
-  datastore.ds.runQuery(query)
-   .then((results) => {
-   	var entities = results[0];
+  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
+   	var entities = entities;
   	if (entities.length) {
 	   	var entity = entities[Object.keys(entities)[0]];
 	   	entity.id = entity[datastore.ds.KEY]['id'];
@@ -46,8 +42,6 @@ function readByAssociativeValue (input) {
 
 		// if not found
 		return cb(null);
-  }).catch((reason) => {
-    console.log("Diary application query error: " + reason);
   });
 }
 
@@ -57,9 +51,8 @@ function readOrCreateAbstraction (name, definition2, cb) {
 //   .filter('name', '=', name)
    .filter('def2', '=', definition2)
    .limit(1);
-  datastore.ds.runQuery(query)
-   .then((results) => {
-   	var abstractions = results[0];
+  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
+   	var abstractions = entities;
   	if (abstractions.length) {
 	   	var abstraction = abstractions[Object.keys(abstractions)[0]];
 	   	abstraction.id = abstraction[datastore.ds.KEY]['id'];
@@ -76,8 +69,6 @@ function readOrCreateAbstraction (name, definition2, cb) {
 		datastore.create('Diary', data, function(err, entity){
 	    return cb(entity);
 		});
-  }).catch((reason) => {
-    console.log("Diary abstraction query error: " + reason);
   });
 }
 
@@ -87,9 +78,8 @@ function readOrCreateApplication (definition1, definition2, cb) {
    .filter('def1', '=', definition1)
    .filter('def2', '=', definition2)
    .limit(1);
-  datastore.ds.runQuery(query)
-   .then((results) => {
-   	var applications = results[0];
+  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
+   	var applications = entities;
   	if (applications.length) {
 	   	var application = applications[Object.keys(applications)[0]];
 	   	application.id = application[datastore.ds.KEY]['id'];
@@ -103,14 +93,10 @@ function readOrCreateApplication (definition1, definition2, cb) {
 	  	def1: definition1,
 	  	def2: definition2
 	  };
-		datastore.create('Diary', data, function(err, entity){
+		datastore.create('Diary', data, function(err, entity) {
 	    return cb(entity);
 		});
-  }).catch((reason) => {
-    console.log("Diary application query error: " + reason);
   });
-
-
 }
 
 
@@ -119,9 +105,8 @@ function readOrCreateIdentifier ( index, cb ) {
 	 .filter('type', '=', 'id')
    .filter('indx', '=', index)
    .limit(1);
-  datastore.ds.runQuery(query)
-   .then((results) => {
-   	var identifiers = results[0];
+  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
+   	var identifiers = entities;
   	if (identifiers.length) {
 	   	var identifier = identifiers[Object.keys(identifiers)[0]];
 	   	identifier.id = identifier[datastore.ds.KEY]['id'];
@@ -140,9 +125,7 @@ function readOrCreateIdentifier ( index, cb ) {
 			}
 	    return cb( entity);
 		});
-	}).catch((reason) => {
-    console.log("Diary identifier query error: " + reason);
-  });
+	});
 }
 
 function readFreeIdentifier ( name, cb ) {
@@ -150,9 +133,8 @@ function readFreeIdentifier ( name, cb ) {
 	 .filter('type', '=', 'free')
    .filter('name', '=', name)
    .limit(1);
-  datastore.ds.runQuery(query)
-   .then((results) => {
-   	var identifiers = results[0];
+  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
+   	var identifiers = entities;
   	if (identifiers.length) {
 	   	var identifier = identifiers[Object.keys(identifiers)[0]];
 	   	identifier.id = identifier[datastore.ds.KEY]['id'];
@@ -166,12 +148,13 @@ function readFreeIdentifier ( name, cb ) {
 	});
 }
 
-function createFreeIdentifier (name, ast, fn, argn, argTypes, cb) {
+function createFreeIdentifier (name, ast, fn, fntype, argn, argTypes, cb) {
   var data = {
   	type: 'free',
   	name: name,
     ast: ast, // location (id)
     fn: fn,
+    fntype: fntype,
     argn: argn,
     argt: argTypes
   };

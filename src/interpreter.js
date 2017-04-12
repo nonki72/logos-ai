@@ -48,7 +48,7 @@ const evaluate = (ast, cb) => {
          */
         if (ast.lhs.args.length < ast.lhs.argCount) {
           // curry in one more arg
-          tryExtractArg(ast, (astOut, argExtractionSuccessful) => {
+          tryExtractArg(ast, (astOut) => {
             if (astOut.args.length == astOut.argCount) {
               // if all args present, run the named function
               // and substitute the expression

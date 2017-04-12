@@ -32,10 +32,11 @@ class Identifier {
   /**
    * name is the string matched for this identifier.
    */
-  constructor(value, ast, fn, argCount, argTypes) {
+  constructor(value, ast, fn, fntype, argCount, argTypes) {
     this.value = value;
     this.ast = ast;
     this.fn = fn;
+    this.fntype = fntype;
     this.argCount = argCount;
     this.argTypes = argTypes;
     this.args = [];
