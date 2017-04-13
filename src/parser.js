@@ -85,7 +85,7 @@ class Parser {
         // free variable
         DataLib.readFreeIdentifier(id, (identifier) => {
           var identifierAst = new AST.Identifier(
-            identifier.name, identifier.ast, identifier.fn, typeof identifier.fn, identifier.argCount, identifier.argTypes);
+            identifier.name, identifier.astid, identifier.fn, typeof identifier.fn, identifier.argCount, identifier.argTypes);
           identifierAst.id = identifier.id;
           return cb(identifierAst);
         });

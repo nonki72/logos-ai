@@ -148,11 +148,11 @@ function readFreeIdentifier ( name, cb ) {
 	});
 }
 
-function createFreeIdentifier (name, ast, fn, fntype, argn, argTypes, cb) {
+function createFreeIdentifier (name, astid, fn, fntype, argn, argTypes, cb) {
   var data = {
   	type: 'free',
   	name: name,
-    ast: ast, // location (id)
+    astid: astid, // location (id)
     fn: fn,
     fntype: fntype,
     argn: argn,
