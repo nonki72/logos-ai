@@ -43,7 +43,11 @@ class Identifier {
   }
 
   toString(ctx) {
-    return ctx[this.value];
+    if (typeof ctx === 'undefined') {
+      return this.value;
+    } else {
+      return ctx[this.value];
+    }
   }
 }
 

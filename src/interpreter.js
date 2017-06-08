@@ -223,13 +223,22 @@ const shift = (by, node, cb) => {
       });
     },
     Identifier(id) {
-      var identifierAst = new AST.Identifier(
-        id.value + (id.value >= from ? by : 0)
-      );
-      DataLib.readOrCreateIdentifier(id.value, (identifier) => {
-        identifierAst.id = identifier.id;
-        return cb2(identifierAst);
-      });
+      if (typeof id.value === 'number') {
+        var identifierAst = new AST.Identifier(
+          id.value + (id.value >= from ? by : 0)
+        );
+        DataLib.readOrCreateIdentifier(id.value, (identifier) => {
+          identifierAst.id = identifier.id;
+          return cb2(identifierAst);
+        });
+      } else {
+        DataLib.readOrCreateFreeIdentifier(id.value, (identifier) => {
+          var identifierAst = new AST.Identifier(
+            identifier.name, identifier.astid, identifier.fn, typeof identifier.fn, identifier.argCount, identifier.argTypes);
+          identifierAst.id = identifier.id;
+          return cb2(identifierAst);
+        });
+      }
     }
   }));
   aux(node, 0, function(node1) {

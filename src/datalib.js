@@ -164,14 +164,14 @@ function readOrCreateIdentifier ( index, cb ) {
 	});
 }
 
-function readFreeIdentifier ( name, cb ) {
+function readOrCreateFreeIdentifier ( name, cb ) {
 	const query = datastore.ds.createQuery('Diary')
 	 .filter('type', '=', 'free')
    .filter('name', '=', name)
    .limit(1);
   datastore.ds.runQuery(query, (err, entities, nextQuery) => {
    	var identifiers = entities;
-  	if (identifiers.length) {
+  	if (typeof identifiers != 'undefined' && identifiers.length) {
 	   	var identifier = identifiers[Object.keys(identifiers)[0]];
 	   	identifier.id = identifier[datastore.ds.KEY]['id'];
 	   	console.log(identifier);
@@ -179,8 +179,18 @@ function readFreeIdentifier ( name, cb ) {
   	}
 
 		// if not found
-		console.log("Diary error: could not find free identifier '"+name+"'");
-		return cb(undefined);
+	  var data = {
+	  	type: 'free',
+	  	name: name,
+	  	argn: 0,
+	    assv: Math.random()
+	  };
+		datastore.create('Diary', data, function(err, entity){
+			if (err) {
+				console.log("diary err "+err);
+			}
+	    return cb( entity);
+		});
 	});
 }
 
@@ -243,7 +253,7 @@ module.exports = {
 	readOrCreateAbstraction: readOrCreateAbstraction,
 	readOrCreateApplication: readOrCreateApplication,
 	readOrCreateIdentifier: readOrCreateIdentifier,
-	readFreeIdentifier: readFreeIdentifier,
+	readOrCreateFreeIdentifier: readOrCreateFreeIdentifier,
 	createFreeIdentifier: createFreeIdentifier,
 	createSubstitution: createSubstitution,
 	readByAssociativeValue: readByAssociativeValue,
