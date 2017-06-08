@@ -52,7 +52,7 @@ const apply = (abstraction, input, lastAst) => {
 // higher level evaluator that combines together all of the 
 // expression fragments in the database into a single set of
 // possible evaluation points by use of associative value to 
-// make selections. also writes associative values
+// make selections. also writes associative values upon selection
 const combine = (lastAst) => {
   // TODO: get input
   DataLib.readByAssociativeValue((input) => {
@@ -75,7 +75,11 @@ const combine = (lastAst) => {
 // TODO: make turbo substitutions using EC
 const evaluate = (ast, cb) => {
     if (ast instanceof AST.Application) {
+      /**
+       * `ast` is an application
+       */
       if (isValue(ast.lhs) && isValue(ast.rhs)) {
+        console.log("### I 1 ###");
         /**
          * if both sides of the application are values we can proceed and
          * substitute the rhs value for the variables that reference the
@@ -83,45 +87,27 @@ const evaluate = (ast, cb) => {
          * abstraction's body
          */
         substitute(ast.rhs, ast.lhs.body, function(ast2) {
-          evaluate(ast2, cb);
           DataLib.createSubstitution("beta", ast.id, ast2.id, (substitution) => {
+            evaluate(ast2, cb);
           });
         });
       } else if (isValue(ast.lhs)) {
+        console.log("### I 2 ###");
         /**
          * We should only evaluate rhs once lhs has been reduced to a value
          */
         ast.rhs = evaluate(ast.rhs, cb);
-      } else if (isName(ast.lhs) && ast.lhs.fn) {
+      } else if (isName(ast.lhs) && ast.lhs.fn && ast.lhs.args.length < ast.lhs.argCount) {
+        console.log("### I 3 ###");
         /**
          * lhs is a named function that requires 0 or more args
          */
-        if (ast.lhs.args.length < ast.lhs.argCount) {
-          // curry in one more arg
-          tryExtractArg(ast, (astOut) => {
-            if (astOut.args.length == astOut.argCount) {
-              // if all args present, run the named function
-              // and substitute the expression
-              if (typeof astOut.fn == 'string') {
-                astOut.fn = eval(astOut.fn);  // <= CODE EXECUTION
-              }
-              var output = astOut.fn.apply(null, astOut.args);  // <= CODE EXECUTION
-              return cb(output);
-              // TODO: write substitution to Diary
-            }
-            evaluate(astOut, cb);
-          });
-        } else {
-          // has enough args, execute
-          if (typeof ast.lhs.fn == 'string') {
-            ast.lhs.fn = eval(ast.lhs.fn);  // <= CODE EXECUTION
-          }
-          var output = ast.lhs.fn.apply(null, ast.lhs.args);  // <= CODE EXECUTION
-          ast.lhs = output;
-          return cb(ast);
-          // TODO: write substitution to Diary
-        }
+        // curry in one more arg
+        tryExtractArg(ast, (astOut) => {
+          evaluate(astOut, cb);
+        });
       } else {
+        console.log("### I 4 ###");
         /**
          * Keep reducing lhs until it becomes a value
          */
@@ -131,22 +117,51 @@ const evaluate = (ast, cb) => {
         });
       }
     } else if (isValue(ast)) {
+      console.log("### II ###");
       /**
        * * `ast` is a value, and therefore an abstraction. That means we're done
         * reducing it, and this is the result of the current evaluation.
         */
       return cb(ast);
+    } else if (isName(ast)) {
+      /**
+       * `ast` is a named identifier / variable, and maybe a named function
+       */
+      if (ast.fn && ast.args.length == ast.argCount) {
+        console.log("### III 1 ###");
+        /**
+         * lhs is a named function that has 0 or more args
+         */
+        // has enough args, execute
+        if (typeof ast.fn == 'string') {
+          ast.fn = eval(ast.fn);  // <= CODE EXECUTION
+        }
+        var output = ast.fn.apply(null, ast.args);  // <= CODE EXECUTION
+        // substitute the named function with its output
+        return cb(output);
+        // TODO: write substitution to Diary
+      } else {
+        console.log("### III 2 ###");
+        // `ast` is an named identifier / variable and not a named funciton
+        return cb(ast);        
+      }
     }
 };
 
+/**
+ * when given an ast with lhs a named function which requires at least one more arg,
+ * searches rhs for matching expected arg type.
+ */
 const tryExtractArg = (ast, cb) => {
   // expected arg type is either a JS type or "ast"
   var expectedArgType = ast.lhs.argTypes[ast.lhs.args.length];
   // fn attribute of identifier is js code
   if (ast.rhs.fn && typeof ast.rhs.fn == expectedArgType) {
+    console.log("### A ###");
     ast.lhs.args = ast.lhs.args.concat(ast.rhs.fn);
     return cb(ast.lhs);
   } else if (expectedArgType == "ast") {
+    console.log("### B ###");
     // if rhs is an identifier with embedded ast expression, use that
     if (isName(ast.rhs) && ast.rhs.astid) {
       ast.lhs.args = ast.lhs.args.concat(ast.rhs.astid);
@@ -156,6 +171,7 @@ const tryExtractArg = (ast, cb) => {
     }
     return cb(ast.lhs);
   } else {
+    console.log("### C ###");
     // rhs is not expected arg type
     // evaluate rhs (once) and try again
     evaluate(ast.rhs, (astRight) => {
