@@ -4,19 +4,69 @@ const DataLib = require('./datalib');
 const isValue = node => node instanceof AST.Abstraction;
 const isName = node => node instanceof AST.Identifier;
 
+const typecheck = (abstraction, input) => {
+  // type checking of the abs and input
+  if (abstraction.type == 'free') {
+    // we have a free variable with arbitrary code in .fn
+    // or an ast in .astid (don't need to typecheck)
+    if (abstraction.fn) {
+      if (abstraction.argCount == 0) return false;
+      if (abstraction.args) {
+        // abstraction already has args. check if does not match 'next' arg
+        var inputType = (input.type == 'free') ? typeof input.fn : input.type;
+        if (abstraction.argTypes[abstraction.args.length] != inputType) return false;
+      } else if (abstraction.argTypes[0] != typeof input) return false;
+    }
+  }
+  return true;
+}
+
+const getAstIfNeeded = (entity, cb) => {
+  if (entity.type == 'free' && entity.astid) {
+    DataLib.readById(entity.astid, (entity2) => {
+      return cb(entity2)
+    });
+  } else {
+    return cb(abstraction);
+  }
+}
+
+const apply = (abstraction, input, lastAst) => {
+  if (!typecheck(abstraction, input)) {
+    // can't apply these two
+    return combine(lastAst);
+  }
+  // create an application of the two entities
+  getAstIfNeeded(abstraction, (abstractionAst) => {
+    getAstIfNeeded(input, (inputAst) => {
+      DataLib.readOrCreateApplication(abstractionAst.id, inputAst.id, (application) => {
+        var applicationAst = new AST.Application(abstractionAst, inputAst);
+        return evaluate(applicationAst, (astOut) => {
+          return combine(astOut);
+          // TODO: write associative value
+        });
+      });
+    });
+  });
+}
 // higher level evaluator that combines together all of the 
 // expression fragments in the database into a single set of
 // possible evaluation points by use of associative value to 
 // make selections. also writes associative values
-const combine = () => {
+const combine = (lastAst) => {
   // TODO: get input
-  // TODO: run associative value selection math
-  // TODO: get entry in diary
-  // TODO: apply input to entry
-  evaluate(ast, (astOut) => {
-
+  DataLib.readByAssociativeValue((input) => {
+    // TODO: run associative value selection math
+    // see if lastAst is usable as an abstraction to apply to the input
+    if (lastAst.type == 'abs' || (lastAst.type == 'free' && lastAst.argCount && lastAst.argCount > (lastAst.args.length))) {
+      return apply(lastAst, input, lastAst);
+    }
+    // TODO: get entry in diary
+    // get a pseudo-random abstraction
+    DataLib.readAbstractionByAssociativeValue((abstraction) => {
+      return apply(abstraction, input, lastAst);
+    });
   });
-  // TODO: write associative value
 }
 
 // evaluates the (extended) lambda calculus expression given
@@ -98,8 +148,8 @@ const tryExtractArg = (ast, cb) => {
     return cb(ast.lhs);
   } else if (expectedArgType == "ast") {
     // if rhs is an identifier with embedded ast expression, use that
-    if (isName(ast.rhs) && ast.rhs.ast) {
-      ast.lhs.args = ast.lhs.args.concat(ast.rhs.ast);
+    if (isName(ast.rhs) && ast.rhs.astid) {
+      ast.lhs.args = ast.lhs.args.concat(ast.rhs.astid);
     } else {
       // rhs is itself an ast expression
       ast.lhs.args = ast.lhs.args.concat(ast.rhs);
