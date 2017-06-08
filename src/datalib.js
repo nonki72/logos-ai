@@ -25,12 +25,43 @@ function readByEquivalenceClass (id) {
   });
 }
 
-// takes an input fragment and randomly reads a fragment
-// suitable for using as a lhs to apply to the input
-function readByAssociativeValue (input) {
+
+// randomly reads a fragment
+function readByAssociativeValue (cb) {
 	const query = datastore.ds.createQuery('Diary')
-//   .filter('assv', '>=', associativeMinimum)
-   .filter('argCount', '=', 1)
+	 .order('assv')
+   .filter('assv', '>=', Math.random())
+  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
+   	var entities = entities;
+  	if (entities.length) {
+	   	var entity = entities[Object.keys(entities)[0]];
+	   	// if (entity.type == 'sub') {
+	   	// 	// if substitution, use the replacement
+			  // datastore.read('Diary', entity.def2, function(err,entity2) {
+			  //  	entity2.id = entity2[datastore.ds.KEY]['id'];
+			  //  	console.log(entity2);
+			  // 	return cb(entity2);
+			  // });
+	   	// } else {
+	   		// normal case, return entity
+	   	entity.id = entity[datastore.ds.KEY]['id'];
+	   	console.log(entity);
+  		return cb(entity);
+	  	// }
+  	}
+
+		// if not found
+		return cb(null);
+  });
+}
+
+// randomly reads a fragment
+// suitable for using as a lhs to apply to input
+function readAbstractionByAssociativeValue (cb) {
+	const query = datastore.ds.createQuery('Diary')
+	 .order('assv')
+	 .filter('type', 'in', ['abs','free'])
+   .filter('assv', '>=', Math.random())
   datastore.ds.runQuery(query, (err, entities, nextQuery) => {
    	var entities = entities;
   	if (entities.length) {
@@ -64,7 +95,9 @@ function readOrCreateAbstraction (name, definition2, cb) {
 	  var data = {
 	  	type: 'abs',
 	  	name: name,
-	  	def2: definition2
+	  	def2: definition2,
+	  	invalid: false,
+	    assv: Math.random()
 	  };
 		datastore.create('Diary', data, function(err, entity){
 	    return cb(entity);
@@ -91,7 +124,9 @@ function readOrCreateApplication (definition1, definition2, cb) {
 	  var data = {
 	  	type: 'app',
 	  	def1: definition1,
-	  	def2: definition2
+	  	def2: definition2,
+	  	invalid: false,
+	    assv: Math.random()
 	  };
 		datastore.create('Diary', data, function(err, entity) {
 	    return cb(entity);
@@ -117,7 +152,8 @@ function readOrCreateIdentifier ( index, cb ) {
 		// if not found
 	  var data = {
 	  	type: 'id',
-	  	indx: index
+	  	indx: index,
+	    assv: Math.random()
 	  };
 		datastore.create('Diary', data, function(err, entity){
 			if (err) {
@@ -156,7 +192,8 @@ function createFreeIdentifier (name, astid, fn, fntype, argn, argTypes, cb) {
     fn: fn,
     fntype: fntype,
     argn: argn,
-    argt: argTypes
+    argt: argTypes,
+	  assv: Math.random()
   };
 	datastore.create('Diary', data, function(err, entity){
 		if (err) {
@@ -177,8 +214,7 @@ function createSubstitution (subType, location1, location2, cb) {
 	  	type: 'sub',
 	  	styp: subType,
 	  	def1: location1,
-	  	def2: location2,
-	    rand: Math.random()
+	  	def2: location2
 	  };
 		datastore.create('Diary', data, function(err, newEntity){
   	  return cb( newEntity);
@@ -193,6 +229,15 @@ function createSubstitution (subType, location1, location2, cb) {
 
 }
 
+function readById (id, cb) {
+	datastore.read('Diary', id, function(err, entity) {
+		if (err) {
+			console.log("readById error: " + err);
+			return cb(null);
+		}
+		return cb(entity);
+	});
+}
 
 module.exports = {
 	readOrCreateAbstraction: readOrCreateAbstraction,
@@ -202,5 +247,6 @@ module.exports = {
 	createFreeIdentifier: createFreeIdentifier,
 	createSubstitution: createSubstitution,
 	readByAssociativeValue: readByAssociativeValue,
-	readByEquivalenceClass: readByEquivalenceClass
+	readAbstractionByAssociativeValue: readAbstractionByAssociativeValue,
+	readById: readById
 };
