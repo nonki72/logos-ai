@@ -4,8 +4,9 @@ const DataLib = require('./datalib');
 const isValue = node => node instanceof AST.Abstraction;
 const isName = node => node instanceof AST.Identifier;
 
+// determines whether the abstraction (function to call) is accepting one more
+// parameter, and the input given matches the expected type 
 const typecheck = (abstraction, input) => {
-  // type checking of the abs and input
   if (abstraction.type == 'free') {
     // we have a free variable with arbitrary code in .fn
     // or an ast in .astid (don't need to typecheck)
@@ -21,20 +22,22 @@ const typecheck = (abstraction, input) => {
   return true;
 }
 
+// if astid is referenced in the given free identifier,
+// retrieve it from the database
 const getAstIfNeeded = (entity, cb) => {
   if (entity.type == 'free' && entity.astid) {
     DataLib.readById(entity.astid, (entity2) => {
       return cb(entity2)
     });
   } else {
-    return cb(abstraction);
+    return cb(entity);
   }
 }
 
-const apply = (abstraction, input, lastAst) => {
+const apply = (abstraction, input, lastAst, callback) => {
   if (!typecheck(abstraction, input)) {
-    // can't apply these two
-    return combine(lastAst);
+    // can't apply these two. return unchanged AST
+    return callback(lastAst);
   }
   // create an application of the two entities
   getAstIfNeeded(abstraction, (abstractionAst) => {
@@ -42,13 +45,15 @@ const apply = (abstraction, input, lastAst) => {
       DataLib.readOrCreateApplication(abstractionAst.id, inputAst.id, (application) => {
         var applicationAst = new AST.Application(abstractionAst, inputAst);
         return evaluate(applicationAst, (astOut) => {
-          return combine(astOut);
+          // was able to apply. return changed AST
+          return callback(astOut);
           // TODO: write associative value
         });
       });
     });
   });
 }
+
 // higher level evaluator that combines together all of the 
 // expression fragments in the database into a single set of
 // possible evaluation points by use of associative value to 
@@ -58,14 +63,20 @@ const combine = (lastAst) => {
   DataLib.readByAssociativeValue((input) => {
     // TODO: run associative value selection math
     // see if lastAst is usable as an abstraction to apply to the input
-    if (lastAst.type == 'abs' || (lastAst.type == 'free' && lastAst.argCount && lastAst.argCount > (lastAst.args.length))) {
-      return apply(lastAst, input, lastAst);
+    if (lastAst && (lastAst.type == 'abs' || (lastAst.type == 'free' && typeof lastAst.argCount === 'number' && lastAst.argCount > (lastAst.args.length)))) {
+      console.log("*** C1 ***");
+      return apply(lastAst, input, lastAst, (astOut) => {
+        setTimeout(combine(astOut), 1);
+      });
+    } else {
+      // get a pseudo-random abstraction from diary
+      DataLib.readAbstractionByAssociativeValue((abstraction) => {
+        console.log("*** C2 *** - " + abstraction.type + " : " + input.type);
+        return apply(abstraction, input, lastAst, (astOut) => {
+          setTimeout(combine(astOut), 1);
+        });
+      });
     }
-    // TODO: get entry in diary
-    // get a pseudo-random abstraction
-    DataLib.readAbstractionByAssociativeValue((abstraction) => {
-      return apply(abstraction, input, lastAst);
-    });
   });
 }
 
@@ -299,3 +310,4 @@ const substitute = (value, node, cb) => {
 };
 
 exports.evaluate = evaluate;
+exports.combine = combine;
