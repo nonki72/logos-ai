@@ -11,8 +11,7 @@ function readByEquivalenceClass (id) {
 	   .order('size')
 	   .limit(1)
   datastore.ds.runQuery(query, (err, entities, nextQuery) => {
-	   	var entities = entities;
-	  	if (entities.length) {
+	  	if (entities && entities.length) {
 		   	var entity = entities[Object.keys(entities)[0]];
 		   	entity.id = entity[datastore.ds.KEY]['id'];
 		   	console.log(entity);
@@ -29,11 +28,11 @@ function readByEquivalenceClass (id) {
 // randomly reads a fragment
 function readByAssociativeValue (cb) {
 	const query = datastore.ds.createQuery('Diary')
-	 .order('assv')
    .filter('assv', '>=', Math.random())
+	 .order('assv', { descending: true })
+	 .limit(1);
   datastore.ds.runQuery(query, (err, entities, nextQuery) => {
-   	var entities = entities;
-  	if (entities.length) {
+  	if (entities && entities.length) {
 	   	var entity = entities[Object.keys(entities)[0]];
 	   	// if (entity.type == 'sub') {
 	   	// 	// if substitution, use the replacement
@@ -59,12 +58,12 @@ function readByAssociativeValue (cb) {
 // suitable for using as a lhs to apply to input
 function readAbstractionByAssociativeValue (cb) {
 	const query = datastore.ds.createQuery('Diary')
-	 .order('assv')
-	 .filter('type', 'in', ['abs','free'])
+	 .filter('type', '=', 'abs')
    .filter('assv', '>=', Math.random())
+	 .order('assv', { descending: true })
+   .limit(1);
   datastore.ds.runQuery(query, (err, entities, nextQuery) => {
-   	var entities = entities;
-  	if (entities.length) {
+  	if (entities && entities.length) {
 	   	var entity = entities[Object.keys(entities)[0]];
 	   	entity.id = entity[datastore.ds.KEY]['id'];
 	   	console.log(entity);
@@ -84,7 +83,7 @@ function readOrCreateAbstraction (name, definition2, cb) {
    .limit(1);
   datastore.ds.runQuery(query, (err, entities, nextQuery) => {
    	var abstractions = entities;
-  	if (abstractions.length) {
+  	if (abstractions && abstractions.length) {
 	   	var abstraction = abstractions[Object.keys(abstractions)[0]];
 	   	abstraction.id = abstraction[datastore.ds.KEY]['id'];
 	   	console.log(abstraction);
@@ -113,7 +112,7 @@ function readOrCreateApplication (definition1, definition2, cb) {
    .limit(1);
   datastore.ds.runQuery(query, (err, entities, nextQuery) => {
    	var applications = entities;
-  	if (applications.length) {
+  	if (applications && applications.length) {
 	   	var application = applications[Object.keys(applications)[0]];
 	   	application.id = application[datastore.ds.KEY]['id'];
 	   	console.log(application);
@@ -142,7 +141,7 @@ function readOrCreateIdentifier ( index, cb ) {
    .limit(1);
   datastore.ds.runQuery(query, (err, entities, nextQuery) => {
    	var identifiers = entities;
-  	if (identifiers.length) {
+  	if (identifiers && identifiers.length) {
 	   	var identifier = identifiers[Object.keys(identifiers)[0]];
 	   	identifier.id = identifier[datastore.ds.KEY]['id'];
 	   	console.log(identifier);
@@ -171,7 +170,7 @@ function readOrCreateFreeIdentifier ( name, cb ) {
    .limit(1);
   datastore.ds.runQuery(query, (err, entities, nextQuery) => {
    	var identifiers = entities;
-  	if (typeof identifiers != 'undefined' && identifiers.length) {
+  	if (identifiers && identifiers.length) {
 	   	var identifier = identifiers[Object.keys(identifiers)[0]];
 	   	identifier.id = identifier[datastore.ds.KEY]['id'];
 	   	console.log(identifier);

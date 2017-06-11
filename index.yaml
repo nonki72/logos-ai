@@ -1,0 +1,8 @@
+indexes:
+
+- kind: Diary
+  ancestor: no
+  properties:
+  - name: type
+  - name: assv
+    direction: desc
