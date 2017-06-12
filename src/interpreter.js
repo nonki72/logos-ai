@@ -1,8 +1,12 @@
 const AST = require('./ast');
 const DataLib = require('./datalib');
 
+const AssociativeValueIncreaseFactor = 1;
+const AssociativeValueDecreaseFactor = 0.5;
+
 const isValue = node => node instanceof AST.Abstraction;
 const isName = node => node instanceof AST.Identifier;
+const isApp = node => node instanceof AST.Application;
 
 // determines whether the abstraction (function to call) is accepting one more
 // parameter, and the input given matches the expected type 
@@ -35,21 +39,57 @@ const getAstIfNeeded = (entity, cb) => {
 }
 
 const apply = (abstraction, input, lastAst, callback) => {
+  console.log('### A1 ###');
   if (!typecheck(abstraction, input)) {
     // can't apply these two. return unchanged AST
-    return callback(lastAst);
+    return callback(lastAst, false);
   }
   // create an application of the two entities
-  getAstIfNeeded(abstraction, (abstractionAst) => {
-    getAstIfNeeded(input, (inputAst) => {
-      DataLib.readOrCreateApplication(abstractionAst.id, inputAst.id, (application) => {
-        var applicationAst = new AST.Application(abstractionAst, inputAst);
+  getAstIfNeeded(abstraction, (abstractionPreAst) => {
+    getAstIfNeeded(input, (inputPreAst) => {
+      console.log('### A2 ###');
+      DataLib.readOrCreateApplication(abstractionPreAst.id, inputPreAst.id, (application) => {
+        var applicationAst = new AST.Application(abstractionPreAst, inputPreAst);
         return evaluate(applicationAst, (astOut) => {
+          console.log('### A3 ###');
           // was able to apply. return changed AST
-          return callback(astOut);
+          return callback(astOut, true);
           // TODO: write associative value
         });
       });
+    });
+  });
+}
+
+const getXfromValue = (v) => {
+  return (v * Math.E) / (1 - v);
+}
+
+const getValueFromX = (x) => {
+  return x / (x + Math.E);
+}
+
+const getAdjustedAssociativeValue = (assv, success) => {
+  var x = getXfromValue(assv);
+  if (success) {
+    x += AssociativeValueIncreaseFactor;
+    return getValueFromX(x);
+  } else {
+    x -= AssociativeValueDecreaseFactor;
+    return getValueFromX(x);
+  }
+}
+
+const applyAndAdjustAssociativeValue = (data, input, lastAst, callback) => {
+  console.log('*** AA1 ***');
+  apply(data, input, lastAst, (astOut, success) => {
+    console.log('*** AA2 ***');
+    let oldAssv = data.assv;
+    data.assv = getAdjustedAssociativeValue(data.assv, success);
+    DataLib.update(data, function(written) {
+      if (written) console.log('updated associative value ' + oldAssv + '->' + data.assv);
+      if (!written) console.log('failed to update assv: ' + data.id);
+      callback(astOut);
     });
   });
 }
@@ -58,26 +98,55 @@ const apply = (abstraction, input, lastAst, callback) => {
 // expression fragments in the database into a single set of
 // possible evaluation points by use of associative value to 
 // make selections. also writes associative values upon selection
+// (substitution for a lambda combinator)
 const combine = (lastAst) => {
   // TODO: get input
   DataLib.readByAssociativeValue((input) => {
     // TODO: run associative value selection math
     // see if lastAst is usable as an abstraction to apply to the input
     if (lastAst && (lastAst.type == 'abs' || (lastAst.type == 'free' && typeof lastAst.argCount === 'number' && lastAst.argCount > (lastAst.args.length)))) {
-      console.log("*** C1 ***");
-      return apply(lastAst, input, lastAst, (astOut) => {
-        setTimeout(combine(astOut), 1);
+      console.log("*** C1 *** -> " + input.type);
+      applyAndAdjustAssociativeValue(lastAst, input, lastAst, (astOut) => {
+        setTimeout(combine, 1, astOut);
       });
     } else {
       // get a pseudo-random abstraction from diary
       DataLib.readAbstractionByAssociativeValue((abstraction) => {
-        console.log("*** C2 *** - " + abstraction.type + " : " + input.type);
-        return apply(abstraction, input, lastAst, (astOut) => {
-          setTimeout(combine(astOut), 1);
+        console.log("*** C2 *** -> " + abstraction.type + " : " + input.type);
+        applyAndAdjustAssociativeValue(abstraction, input, lastAst, (astOut) => {
+          setTimeout(combine, 1, astOut);
         });
       });
     }
   });
+}
+
+const getAst = (data, cb) => {
+  if (data.type == 'abs') {
+    DataLib.readById(data.def2, (dataBody) => {
+      cb(new AST.Abstraction(data.name, dataBody));
+    });
+  } else if (data.type == 'app') {
+    DataLib.readById(data.def1, (dataLhs) => {
+      DataLib.readById(data.def2, (dataRhs) => {
+        cb(new AST.Application(dataLhs, dataRhs));
+      });
+    });
+  } else if (data.type == 'id') {
+    cb(new AST.Identifier(data.indx));
+  } else if (data.type == 'free') {
+    if (entity.astid) {
+      DataLib.readById(entity.astid, (entity2) => {
+        getAst(entity2, cb); // TODO: catch possible infinite recursion
+      });
+    } else {
+      var identifierAst = new AST.Identifier(
+        entity.name, entity.astid, entity.fn, typeof entity.fn, entity.argCount, entity.argTypes);
+      cb(identifierAst);
+    }
+  } else {
+    console.log('*** GETAST UNKNOWN TYPE: ' + data.type);
+  }
 }
 
 // evaluates the (extended) lambda calculus expression given
@@ -85,7 +154,12 @@ const combine = (lastAst) => {
 // executing any complete applications of functional (JS) identifiers
 // TODO: make turbo substitutions using EC
 const evaluate = (ast, cb) => {
-    if (ast instanceof AST.Application) {
+    if ('type' in ast) {
+      return getAst(ast, (realAst) => {
+        evaluate(realAst, cb);
+      })
+    }
+    if (isApp(ast)) {
       /**
        * `ast` is an application
        */
@@ -156,6 +230,8 @@ const evaluate = (ast, cb) => {
         // `ast` is an named identifier / variable and not a named funciton
         return cb(ast);        
       }
+    } else {
+      console.log('### UNKNOWN TYPE ### ' + typeof ast + ' ' + ast.type);
     }
 };
 

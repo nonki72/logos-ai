@@ -28,6 +28,7 @@ function readByEquivalenceClass (id) {
 // randomly reads a fragment
 function readByAssociativeValue (cb) {
 	const query = datastore.ds.createQuery('Diary')
+	 .filter('invalid', '=', false)
    .filter('assv', '>=', Math.random())
 	 .order('assv', { descending: true })
 	 .limit(1);
@@ -59,6 +60,7 @@ function readByAssociativeValue (cb) {
 function readAbstractionByAssociativeValue (cb) {
 	const query = datastore.ds.createQuery('Diary')
 	 .filter('type', '=', 'abs')
+	 .filter('invalid', '=', false)
    .filter('assv', '>=', Math.random())
 	 .order('assv', { descending: true })
    .limit(1);
@@ -69,7 +71,7 @@ function readAbstractionByAssociativeValue (cb) {
 	   	console.log(entity);
   		return cb(entity);
   	}
-
+  	
 		// if not found
 		return cb(null);
   });
@@ -238,6 +240,16 @@ function createSubstitution (subType, location1, location2, cb) {
 
 }
 
+function update (data, cb) {
+	datastore.update('Diary', data.id, data, function(err) {
+		if (err) {
+			console.log("update (lib) error: " + err);
+			return cb(false);
+		}
+		return cb(true);
+	});
+}
+
 function readById (id, cb) {
 	datastore.read('Diary', id, function(err, entity) {
 		if (err) {
@@ -257,5 +269,6 @@ module.exports = {
 	createSubstitution: createSubstitution,
 	readByAssociativeValue: readByAssociativeValue,
 	readAbstractionByAssociativeValue: readAbstractionByAssociativeValue,
+	update: update,
 	readById: readById
 };
