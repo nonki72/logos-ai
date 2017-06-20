@@ -2,6 +2,10 @@
 
 const datastore = require('./datastore');
 
+
+
+// ########### READ FUNCTIONS ############
+
 // takes a lambda fragment and min value
 // reads most reduced equivalent fragment from its EC (Equivalence Class)
 function readByEquivalenceClass (id) {
@@ -24,16 +28,141 @@ function readByEquivalenceClass (id) {
   });
 }
 
+// reads an applicator fragment using cascading methods
+function readApplicatorByAssociativeValue(sourceId, cb) {
+	readAssociationByAssociativeValue(sourceId, (association) => {
+		if (association) {
+			console.log("$$$ A1 $$$");
+			return readById(association.dstid, (entity) => {
+				entity.association = association;
+				return cb(entity);
+			});
+		}
 
-// randomly reads a fragment
-function readByAssociativeValue (cb) {
-	const query = datastore.ds.createQuery('Diary')
-	 .filter('invalid', '=', false)
-   .filter('assv', '>=', Math.random())
+		readAssociationByHighestAssociativeValue(sourceId, (association2) => {
+			if (association2) {
+				console.log("$$$ A2 $$$");
+				return readById(association2.dstid, (entity) => {
+					entity.association = association2;
+					return cb(entity);
+				});
+			}
+
+      // no assv to report
+			console.log("$$$ A3 $$$");
+			return readApplicatorByRandomValue(cb);
+		});
+	});
+}
+
+
+// reads a fragment with highest available associative value
+function readAssociationByHighestAssociativeValue (sourceId, cb) {
+	const query = datastore.ds.createQuery('Association')
+	 .filter('srcid', '=', sourceId)
 	 .order('assv', { descending: true })
 	 .limit(1);
   datastore.ds.runQuery(query, (err, entities, nextQuery) => {
   	if (entities && entities.length) {
+   		// normal case, return entity
+	   	var entity = entities[Object.keys(entities)[0]];
+	   	entity.id = entity[datastore.ds.KEY]['id'];
+	   	console.log(entity.srcid, ' => ', entity.dstid);
+  		return cb(entity);
+  	}
+
+		// if not found
+		return cb(null);
+  });
+}
+
+
+// reads a fragment with random associative value
+function readAssociationByAssociativeValue (sourceId, cb) {
+	const query = datastore.ds.createQuery('Association')
+	 .filter('srcid', '=', sourceId)
+   .filter('assv', '>=', Math.random() * Number.MAX_VALUE)
+	 .order('assv', { descending: true })
+	 .limit(1);
+  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
+  	if (entities && entities.length) {
+   		// normal case, return entity
+	   	var entity = entities[Object.keys(entities)[0]];
+	   	entity.id = entity[datastore.ds.KEY]['id'];
+	   	console.log(entity.srcid, ' => ', entity.dstid);
+  		return cb(entity);
+  	}
+
+		// if not found
+		return cb(null);
+  });
+}
+
+// randomly reads an abs or free id fragment
+// may be suitable for using as a lhs to apply to input
+function readApplicatorByRandomValue (cb) {
+	if (Math.random() > 0.5) {
+		return readAbstractionByRandomValue(cb);
+	} else {
+		return readFreeIdentifierByRandomValue(cb);
+	}
+}
+
+// randomly reads an abs fragment
+// may be suitable for using as a lhs to apply to input
+function readAbstractionByRandomValue (cb) {
+	const query = datastore.ds.createQuery('Diary')
+	 .filter('type', '=', 'abs')
+	 .filter('invalid', '=', false)
+   .filter('rand', '>=', Math.random())
+	 .order('rand', { descending: true })
+   .limit(1);
+  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
+  	if (entities && entities.length) {
+	   	var entity = entities[Object.keys(entities)[0]];
+	   	entity.id = entity[datastore.ds.KEY]['id'];
+	   	console.log(entity);
+  		return cb(entity);
+  	}
+  	
+		// if not found
+		return cb(null);
+  });
+}
+
+// randomly reads a free fragment
+// may be suitable for using as a lhs to apply to input
+function readFreeIdentifierByRandomValue (cb) {
+	const query = datastore.ds.createQuery('Diary')
+	 .filter('type', '=', 'free')
+	 .filter('invalid', '=', false)
+   .filter('rand', '>=', Math.random())
+	 .order('rand', { descending: true })
+   .limit(1);
+  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
+  	if (entities && entities.length) {
+	   	var entity = entities[Object.keys(entities)[0]];
+	   	entity.id = entity[datastore.ds.KEY]['id'];
+	   	console.log(entity);
+  		return cb(entity);
+  	}
+  	
+		// if not found
+		return cb(null);
+  });
+}
+
+
+// randomly reads a fragment
+function readByRandomValue (cb) {
+	const query = datastore.ds.createQuery('Diary')
+	 .filter('invalid', '=', false)
+   .filter('rand', '>=', Math.random())
+	 .order('rand', { descending: true })
+	 .limit(1);
+  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
+  	if (entities && entities.length) {
+   		// normal case, return entity
 	   	var entity = entities[Object.keys(entities)[0]];
 	   	// if (entity.type == 'sub') {
 	   	// 	// if substitution, use the replacement
@@ -48,21 +177,17 @@ function readByAssociativeValue (cb) {
 	   	console.log(entity);
   		return cb(entity);
 	  	// }
-  	}
+	  }
 
 		// if not found
 		return cb(null);
   });
 }
 
-// randomly reads a fragment
-// suitable for using as a lhs to apply to input
-function readAbstractionByAssociativeValue (cb) {
-	const query = datastore.ds.createQuery('Diary')
-	 .filter('type', '=', 'abs')
-	 .filter('invalid', '=', false)
-   .filter('assv', '>=', Math.random())
-	 .order('assv', { descending: true })
+function readAssociationByIds(sourceId, destId, cb) {
+	const query = datastore.ds.createQuery('Association')
+	 .filter('srcid', '=', sourceId)
+   .filter('dstid', '=', destId)
    .limit(1);
   datastore.ds.runQuery(query, (err, entities, nextQuery) => {
   	if (entities && entities.length) {
@@ -76,6 +201,36 @@ function readAbstractionByAssociativeValue (cb) {
 		return cb(null);
   });
 }
+
+function readById (id, cb) {
+	datastore.read('Diary', id, function(err, entity) {
+		if (err) {
+			console.log("readById error: " + err);
+			return cb(null);
+		}
+		return cb(entity);
+	});
+}
+
+//                     ######### WRITE FUNCTIONS ############
+
+function createAssociation (sourceId, destId, associativeValue, cb) {
+  var data = {
+  	srcid: sourceId,
+  	dstid: destId,
+	  assv: associativeValue
+  };
+	datastore.create('Association', data, function(err, entity){
+		if (err) {
+			console.log("association err ", err);
+  		return cb(null);
+		}
+    return cb(entity);
+	});
+
+  return cb(null);
+}
+
 
 function readOrCreateAbstraction (name, definition2, cb) {
 	const query = datastore.ds.createQuery('Diary') // TODO: save the lookups for EC. Remove cat's
@@ -250,25 +405,34 @@ function update (data, cb) {
 	});
 }
 
-function readById (id, cb) {
-	datastore.read('Diary', id, function(err, entity) {
+function updateAssociation (data, cb) {
+	datastore.update('Association', data.id, data, function(err) {
 		if (err) {
-			console.log("readById error: " + err);
-			return cb(null);
+			console.log("update (lib) error: " + err);
+			return cb(false);
 		}
-		return cb(entity);
+		return cb(true);
 	});
 }
 
 module.exports = {
+	readByEquivalenceClass: readByEquivalenceClass,
+	readApplicatorByAssociativeValue: readApplicatorByAssociativeValue,
+	readAssociationByHighestAssociativeValue: readAssociationByHighestAssociativeValue,
+	readAssociationByAssociativeValue: readAssociationByAssociativeValue,
+	readApplicatorByRandomValue: readApplicatorByRandomValue,
+	readAbstractionByRandomValue: readAbstractionByRandomValue,
+  readFreeIdentifierByRandomValue: readFreeIdentifierByRandomValue,
+	readByRandomValue: readByRandomValue,
+	readAssociationByIds: readAssociationByIds,
+	readById: readById,
+	createAssociation:createAssociation,
 	readOrCreateAbstraction: readOrCreateAbstraction,
 	readOrCreateApplication: readOrCreateApplication,
 	readOrCreateIdentifier: readOrCreateIdentifier,
 	readOrCreateFreeIdentifier: readOrCreateFreeIdentifier,
 	createFreeIdentifier: createFreeIdentifier,
 	createSubstitution: createSubstitution,
-	readByAssociativeValue: readByAssociativeValue,
-	readAbstractionByAssociativeValue: readAbstractionByAssociativeValue,
 	update: update,
-	readById: readById
+	updateAssociation: updateAssociation
 };

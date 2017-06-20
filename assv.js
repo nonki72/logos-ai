@@ -19,7 +19,8 @@ const getAdjustedAssociativeValue = (assv, success) => {
     return getValueFromX(x);
   }
 }
-
+console.log(getXfromValue(0.5));
+console.log(getValueFromX(0.5));
 console.log(getValueFromX(getXfromValue(0.5)));
-console.log(getAdjustedAssociativeValue(0.5, true));
-console.log(getAdjustedAssociativeValue(0.5, false));
+console.log(getAdjustedAssociativeValue(0.1, true));
+console.log(getAdjustedAssociativeValue(0.8, true));

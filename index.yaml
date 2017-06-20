@@ -5,12 +5,25 @@ indexes:
   properties:
   - name: type
   - name: invalid
-  - name: assv
+  - name: rand
     direction: desc
 
 - kind: Diary
   ancestor: no
   properties:
   - name: invalid
+  - name: rand
+    direction: desc
+
+- kind: Association
+  ancestor: no
+  properties:
+  - name: srcid
+  - name: dstid
+
+- kind: Association
+  ancestor: no
+  properties:
+  - name: srcid
   - name: assv
     direction: desc

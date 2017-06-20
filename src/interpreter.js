@@ -73,23 +73,53 @@ const getAdjustedAssociativeValue = (assv, success) => {
   var x = getXfromValue(assv);
   if (success) {
     x += AssociativeValueIncreaseFactor;
-    return getValueFromX(x);
   } else {
     x -= AssociativeValueDecreaseFactor;
-    return getValueFromX(x);
+    if (x < 0) x = 0; // minimum for x (no max)
   }
+  return getValueFromX(x);
 }
 
+const adjustAssociativeValue = (association, success, cb) =>  {
+  var oldAssv = association.assv;
+  var newAssv = getAdjustedAssociativeValue(oldAssv, success);
+  association.assv = newAssv;
+  DataLib.updateAssociation(association, function(written) {
+    if (written) {
+      console.log('updated associative value ' + oldAssv + '=>' + newAssv);
+      return cb(true);
+    } else {
+      console.log('failed to update assv: ' + association.srcid + " -> " + association.dstid);
+      return cb(false);
+    }  
+  });   
+}
+
+// TODO: assv from lastAst -> input
 const applyAndAdjustAssociativeValue = (data, input, lastAst, callback) => {
   console.log('*** AA1 ***');
   apply(data, input, lastAst, (astOut, success) => {
     console.log('*** AA2 ***');
-    let oldAssv = data.assv;
-    data.assv = getAdjustedAssociativeValue(data.assv, success);
-    DataLib.update(data, function(written) {
-      if (written) console.log('updated associative value ' + oldAssv + '->' + data.assv);
-      if (!written) console.log('failed to update assv: ' + data.id);
-      callback(astOut);
+    if ('association' in data && data.association && data.association.srcid == input.id && data.association.dstid == data.id) {
+      // with association, was pulled using association table
+      return adjustAssociativeValue(data.association, success, (written) => {
+        callback(astOut);
+      });
+    }
+
+    // no association, was pulled straight from Diary, created anew, or has old association
+    DataLib.readAssociationByIds(input.id, data.id, (association) => {
+      if (association) {
+        return adjustAssociativeValue(data.association, success, (written) => {
+          callback(astOut);
+        });
+      }
+
+      DataLib.createAssociation(input.id, data.id, getValueFromX(Math.random()), (association) => {
+        if (association) console.log('created associative value ' + association.assv);
+        else             console.log('failed to create assv: ' + input.id + " -> " + data.id); // already exists is ok (TODO: should actually update in this case)
+        return callback(astOut);
+      });
     });
   });
 }
@@ -100,23 +130,30 @@ const applyAndAdjustAssociativeValue = (data, input, lastAst, callback) => {
 // make selections. also writes associative values upon selection
 // (substitution for a lambda combinator)
 const combine = (lastAst) => {
+  console.log("*** C ***");
   // TODO: get input
-  DataLib.readByAssociativeValue((input) => {
+  DataLib.readByRandomValue((input) => {
     // TODO: run associative value selection math
     // see if lastAst is usable as an abstraction to apply to the input
-    if (lastAst && (lastAst.type == 'abs' || (lastAst.type == 'free' && typeof lastAst.argCount === 'number' && lastAst.argCount > (lastAst.args.length)))) {
+    // TODO: make this selection (lastAst or read-abstraction or input) probabilistic
+    if (Math.random() > 0.5 
+        && lastAst 
+        && (lastAst.type == 'abs' || 
+           (lastAst.type == 'free' && typeof lastAst.argCount === 'number' && lastAst.argCount > lastAst.args.length))) {
       console.log("*** C1 *** -> " + input.type);
-      applyAndAdjustAssociativeValue(lastAst, input, lastAst, (astOut) => {
+      applyAndCreateAssociativeValue(lastAst, input, lastAst, (astOut) => {
         setTimeout(combine, 1, astOut);
       });
-    } else {
+    } else { //} if (Math.random() > 0.333) {
       // get a pseudo-random abstraction from diary
-      DataLib.readAbstractionByAssociativeValue((abstraction) => {
-        console.log("*** C2 *** -> " + abstraction.type + " : " + input.type);
-        applyAndAdjustAssociativeValue(abstraction, input, lastAst, (astOut) => {
+      DataLib.readApplicatorByAssociativeValue(input.id, (applicator) => {
+        console.log("*** C2 *** -> " + applicator.type + " : " + input.type);
+        applyAndAdjustAssociativeValue(applicator, input, lastAst, (astOut) => {
           setTimeout(combine, 1, astOut);
         });
       });
+//    } else {
+//      // TODO: get input
     }
   });
 }
