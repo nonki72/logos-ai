@@ -4,9 +4,9 @@ const DataLib = require('./datalib');
 const AssociativeValueIncreaseFactor = 1;
 const AssociativeValueDecreaseFactor = 0.5;
 
-const isValue = node => node instanceof AST.Abstraction;
-const isName = node => node instanceof AST.Identifier;
-const isApp = node => node instanceof AST.Application;
+const isValue = node => node instanceof AST.Abstraction || ('data' in node && node.data.type == 'abs');
+const isName = node => node instanceof AST.Identifier || ('data' in node && (node.data.type == 'id')); // TODO: add field to free denoting name or value
+const isApp = node => node instanceof AST.Application || ('data' in node && node.data.type == 'app');
 
 // determines whether the abstraction (function to call) is accepting one more
 // parameter, and the input given matches the expected type 
@@ -99,10 +99,10 @@ const adjustAssociativeValue = (association, success, cb) =>  {
 const applyAndAdjustAssociativeValue = (data, input, lastAst, callback) => {
   console.log('*** AA1 ***');
   apply(data, input, lastAst, (astOut, success) => {
-    console.log('*** AA2 ***');
     if ('association' in data && data.association && data.association.srcid == input.id && data.association.dstid == data.id) {
       // with association, was pulled using association table
       return adjustAssociativeValue(data.association, success, (written) => {
+        console.log('*** AA2 ***');
         callback(astOut);
       });
     }
@@ -110,14 +110,16 @@ const applyAndAdjustAssociativeValue = (data, input, lastAst, callback) => {
     // no association, was pulled straight from Diary, created anew, or has old association
     DataLib.readAssociationByIds(input.id, data.id, (association) => {
       if (association) {
-        return adjustAssociativeValue(data.association, success, (written) => {
+        console.log('*** AA3 *** ' + association.assv);
+        return adjustAssociativeValue(association, success, (written) => {
           callback(astOut);
         });
       }
 
-      DataLib.createAssociation(input.id, data.id, getValueFromX(Math.random()), (association) => {
-        if (association) console.log('created associative value ' + association.assv);
-        else             console.log('failed to create assv: ' + input.id + " -> " + data.id); // already exists is ok (TODO: should actually update in this case)
+      DataLib.createAssociation(input.id, data.id, getValueFromX(Math.random()), (association2) => {
+        console.log('*** AA4 ***');
+        if (association2) console.log('created associative value ' + association2.assv);
+        else              console.log('failed to create assv: ' + input.id + " -> " + data.id); // already exists is ok (TODO: should actually update in this case)
         return callback(astOut);
       });
     });
@@ -130,9 +132,14 @@ const applyAndAdjustAssociativeValue = (data, input, lastAst, callback) => {
 // make selections. also writes associative values upon selection
 // (substitution for a lambda combinator)
 const combine = (lastAst) => {
-  console.log("*** C ***");
+  console.log(lastAst);
   // TODO: get input
   DataLib.readByRandomValue((input) => {
+    if (!input) {
+      console.log("*** C0.5 *** ");
+      return setTimeout(combine, 1, lastAst);
+    }
+    console.log("********************* C0 ********************* " + input.id);
     // TODO: run associative value selection math
     // see if lastAst is usable as an abstraction to apply to the input
     // TODO: make this selection (lastAst or read-abstraction or input) probabilistic
@@ -147,6 +154,10 @@ const combine = (lastAst) => {
     } else { //} if (Math.random() > 0.333) {
       // get a pseudo-random abstraction from diary
       DataLib.readApplicatorByAssociativeValue(input.id, (applicator) => {
+        if (!applicator) {
+          console.log("*** C1.5 *** ");
+          return setTimeout(combine, 1, lastAst);
+        }
         console.log("*** C2 *** -> " + applicator.type + " : " + input.type);
         applyAndAdjustAssociativeValue(applicator, input, lastAst, (astOut) => {
           setTimeout(combine, 1, astOut);
@@ -158,27 +169,35 @@ const combine = (lastAst) => {
   });
 }
 
+// reads the datastore one layer deep
 const getAst = (data, cb) => {
   if (data.type == 'abs') {
     DataLib.readById(data.def2, (dataBody) => {
-      cb(new AST.Abstraction(data.name, dataBody));
+      var ast = new AST.Abstraction(data.name, dataBody);
+      ast.data = data;
+      cb(ast);
     });
   } else if (data.type == 'app') {
     DataLib.readById(data.def1, (dataLhs) => {
       DataLib.readById(data.def2, (dataRhs) => {
-        cb(new AST.Application(dataLhs, dataRhs));
+        var ast = new AST.Application(dataLhs, dataRhs);
+        ast.data = data;
+        cb(ast);
       });
     });
   } else if (data.type == 'id') {
-    cb(new AST.Identifier(data.indx));
+    var ast = new AST.Identifier(data.indx);
+    ast.data = data;
+    cb(ast);
   } else if (data.type == 'free') {
-    if (entity.astid) {
-      DataLib.readById(entity.astid, (entity2) => {
-        getAst(entity2, cb); // TODO: catch possible infinite recursion
+    if (data.astid) {
+      DataLib.readById(entity.astid, (entity) => {
+        getAst(entity, cb); // TODO: catch possible infinite recursion
       });
     } else {
       var identifierAst = new AST.Identifier(
-        entity.name, entity.astid, entity.fn, typeof entity.fn, entity.argCount, entity.argTypes);
+        data.name, data.astid, data.fn, typeof data.fn, data.argCount, data.argTypes);
+      identifierAst.data = data;
       cb(identifierAst);
     }
   } else {
@@ -235,7 +254,7 @@ const evaluate = (ast, cb) => {
          */
         ast.lhs = evaluate(ast.lhs, (result) => {
           ast.lhs = result;
-          evaluate(ast, cb);
+          evaluate(ast.lhs, cb);
         });
       }
     } else if (isValue(ast)) {

@@ -31,7 +31,7 @@ function readByEquivalenceClass (id) {
 // reads an applicator fragment using cascading methods
 function readApplicatorByAssociativeValue(sourceId, cb) {
 	readAssociationByAssociativeValue(sourceId, (association) => {
-		if (association) {
+		if (association && Math.random() > 0.5) {
 			console.log("$$$ A1 $$$");
 			return readById(association.dstid, (entity) => {
 				entity.association = association;
@@ -40,7 +40,7 @@ function readApplicatorByAssociativeValue(sourceId, cb) {
 		}
 
 		readAssociationByHighestAssociativeValue(sourceId, (association2) => {
-			if (association2) {
+			if (association2 && Math.random > 0.5) {
 				console.log("$$$ A2 $$$");
 				return readById(association2.dstid, (entity) => {
 					entity.association = association2;
@@ -81,7 +81,7 @@ function readAssociationByHighestAssociativeValue (sourceId, cb) {
 function readAssociationByAssociativeValue (sourceId, cb) {
 	const query = datastore.ds.createQuery('Association')
 	 .filter('srcid', '=', sourceId)
-   .filter('assv', '>=', Math.random() * Number.MAX_VALUE)
+   .filter('assv', '<=', Math.random())
 	 .order('assv', { descending: true })
 	 .limit(1);
   datastore.ds.runQuery(query, (err, entities, nextQuery) => {
@@ -114,7 +114,7 @@ function readAbstractionByRandomValue (cb) {
 	const query = datastore.ds.createQuery('Diary')
 	 .filter('type', '=', 'abs')
 	 .filter('invalid', '=', false)
-   .filter('rand', '>=', Math.random())
+   .filter('rand', '<=', Math.random())
 	 .order('rand', { descending: true })
    .limit(1);
   datastore.ds.runQuery(query, (err, entities, nextQuery) => {
@@ -136,7 +136,7 @@ function readFreeIdentifierByRandomValue (cb) {
 	const query = datastore.ds.createQuery('Diary')
 	 .filter('type', '=', 'free')
 	 .filter('invalid', '=', false)
-   .filter('rand', '>=', Math.random())
+   .filter('rand', '<=', Math.random())
 	 .order('rand', { descending: true })
    .limit(1);
   datastore.ds.runQuery(query, (err, entities, nextQuery) => {
@@ -157,7 +157,7 @@ function readFreeIdentifierByRandomValue (cb) {
 function readByRandomValue (cb) {
 	const query = datastore.ds.createQuery('Diary')
 	 .filter('invalid', '=', false)
-   .filter('rand', '>=', Math.random())
+   .filter('rand', '<=', Math.random())
 	 .order('rand', { descending: true })
 	 .limit(1);
   datastore.ds.runQuery(query, (err, entities, nextQuery) => {
@@ -174,6 +174,7 @@ function readByRandomValue (cb) {
 	   	// } else {
 	   		// normal case, return entity
 	   	entity.id = entity[datastore.ds.KEY]['id'];
+	   	console.log('^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^');
 	   	console.log(entity);
   		return cb(entity);
 	  	// }
@@ -253,7 +254,7 @@ function readOrCreateAbstraction (name, definition2, cb) {
 	  	name: name,
 	  	def2: definition2,
 	  	invalid: false,
-	    assv: Math.random()
+	    rand: Math.random()
 	  };
 		datastore.create('Diary', data, function(err, entity){
 	    return cb(entity);
@@ -282,7 +283,7 @@ function readOrCreateApplication (definition1, definition2, cb) {
 	  	def1: definition1,
 	  	def2: definition2,
 	  	invalid: false,
-	    assv: Math.random()
+	    rand: Math.random()
 	  };
 		datastore.create('Diary', data, function(err, entity) {
 	    return cb(entity);
@@ -309,7 +310,7 @@ function readOrCreateIdentifier ( index, cb ) {
 	  var data = {
 	  	type: 'id',
 	  	indx: index,
-	    assv: Math.random()
+	    rand: Math.random()
 	  };
 		datastore.create('Diary', data, function(err, entity){
 			if (err) {
@@ -339,7 +340,7 @@ function readOrCreateFreeIdentifier ( name, cb ) {
 	  	type: 'free',
 	  	name: name,
 	  	argn: 0,
-	    assv: Math.random()
+	    rand: Math.random()
 	  };
 		datastore.create('Diary', data, function(err, entity){
 			if (err) {
@@ -359,7 +360,7 @@ function createFreeIdentifier (name, astid, fn, fntype, argn, argTypes, cb) {
     fntype: fntype,
     argn: argn,
     argt: argTypes,
-	  assv: Math.random()
+	  rand: Math.random()
   };
 	datastore.create('Diary', data, function(err, entity){
 		if (err) {
