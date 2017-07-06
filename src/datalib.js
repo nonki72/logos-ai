@@ -4,7 +4,12 @@ const datastore = require('./datastore');
 
 
 
-// ########### READ FUNCTIONS ############
+
+
+//                          ########### READ FUNCTIONS ############
+
+
+
 
 // takes a lambda fragment and min value
 // reads most reduced equivalent fragment from its EC (Equivalence Class)
@@ -213,7 +218,64 @@ function readById (id, cb) {
 	});
 }
 
+function readClassByName(name, cb) {
+	const query = datastore.ds.createQuery('Class')
+	 .filter('name', '=', name)
+   .limit(1);
+  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
+  	if (entities && entities.length) {
+	   	var entity = entities[Object.keys(entities)[0]];
+	   	entity.id = entity[datastore.ds.KEY]['id'];
+	   	console.log(entity);
+  		return cb(entity);
+  	}
+  	
+		// if not found
+		return cb(null);
+  });
+}
+
+function readModuleByName(name, cb) {
+	const query = datastore.ds.createQuery('Module')
+	 .filter('name', '=', name)
+   .limit(1);
+  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
+  	if (entities && entities.length) {
+	   	var entity = entities[Object.keys(entities)[0]];
+	   	entity.id = entity[datastore.ds.KEY]['id'];
+	   	console.log(entity);
+  		return cb(entity);
+  	}
+  	
+		// if not found
+		return cb(null);
+  });
+}
+
+function readModuleByPath(path, cb) {
+	const query = datastore.ds.createQuery('Module')
+	 .filter('path', '=', path)
+   .limit(1);
+  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
+  	if (entities && entities.length) {
+	   	var entity = entities[Object.keys(entities)[0]];
+	   	entity.id = entity[datastore.ds.KEY]['id'];
+	   	console.log(entity);
+  		return cb(entity);
+  	}
+  	
+		// if not found
+		return cb(null);
+  });
+}
+
+
+
+
 //                     ######### WRITE FUNCTIONS ############
+
+
+
 
 function createAssociation (sourceId, destId, associativeValue, cb) {
   var data = {
@@ -396,6 +458,57 @@ function createSubstitution (subType, location1, location2, cb) {
 
 }
 
+function readOrCreateClass (name, module, cb) {
+	const query = datastore.ds.createQuery('Class')
+   .filter('name', '=', name)
+   .limit(1);
+  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
+  	if (entities && entities.length) {
+	   	var entity = entities[Object.keys(entities)[0]];
+	   	entity.id = entity[datastore.ds.KEY]['id'];
+	   	console.log(entity);
+  		return cb(entity);
+  	}
+
+	  var data = {
+	  	name: name,
+		  module: module
+	  };
+		datastore.create('Class', data, function(err, entity){
+			if (err) {
+				console.log("class err "+err);
+			}
+	    return cb(entity);
+		});
+	});
+}
+
+function readOrCreateModule (name, path, cb) {
+	const query = datastore.ds.createQuery('Module')
+   .filter('name', '=', name)
+   .limit(1);
+  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
+  	if (entities && entities.length) {
+	   	var entity = entities[Object.keys(entities)[0]];
+	   	entity.id = entity[datastore.ds.KEY]['id'];
+	   	console.log(entity);
+  		return cb(entity);
+  	}
+
+		// if not found
+	  var data = {
+	  	name: name,
+		  path: path
+	  };
+		datastore.create('Module', data, function(err, entity){
+			if (err) {
+				console.log("module err "+err);
+			}
+	    return cb(entity);
+		});
+	});
+}
+
 function update (data, cb) {
 	datastore.update('Diary', data.id, data, function(err) {
 		if (err) {
@@ -427,6 +540,9 @@ module.exports = {
 	readByRandomValue: readByRandomValue,
 	readAssociationByIds: readAssociationByIds,
 	readById: readById,
+	readClassByName: readClassByName,
+	readModuleByName: readModuleByName,
+	readModuleByPath: readModuleByPath,
 	createAssociation:createAssociation,
 	readOrCreateAbstraction: readOrCreateAbstraction,
 	readOrCreateApplication: readOrCreateApplication,
@@ -434,6 +550,8 @@ module.exports = {
 	readOrCreateFreeIdentifier: readOrCreateFreeIdentifier,
 	createFreeIdentifier: createFreeIdentifier,
 	createSubstitution: createSubstitution,
+	readOrCreateClass: readOrCreateClass,
+	readOrCreateModule: readOrCreateModule,
 	update: update,
 	updateAssociation: updateAssociation
 };

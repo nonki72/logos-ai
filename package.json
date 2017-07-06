@@ -24,6 +24,7 @@
   "homepage": "https://github.com/jcote/logos",
   "dependencies": {
     "@google-cloud/datastore": "^0.7.1",
+    "async": "^2.5.0",
     "nconf": "^0.8.4"
   }
 }
