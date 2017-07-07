@@ -27,7 +27,7 @@ function loadModules (moduleNames, cb) {
 	async.map(modules, (moduleName, callback) => {
 		DataLib.readModuleByName(moduleName, (module) => {
 			if (module == null) {
-				callback('Invalid module \'' + moduleName '\'');
+				callback('Invalid module \'' + moduleName + '\'');
 			}
 			callback(null, module);
 		});
@@ -38,6 +38,11 @@ function loadModules (moduleNames, cb) {
 
 		cb(results);
 	});
+}
+
+function loadStoredFunction(freeIdentifier) {
+	var storedFunction = new F.StoredFunction(freeIdentifier.memo, freeIdentifier.fntype, freeIdentifier.fnclas, freeIdentifier.argt, freeIdentifier.mods, freeIdentifier.fn);
+	return storedFunction; 
 }
 
 /* parse the given function for consistency and correctness
@@ -79,11 +84,12 @@ function parseFunction (storedFunction, args, cb) {
 	    		if (!(eval(`const ${module.name} = require(${module.path});
 	    	    	        result instanceof ' + ${module.name}.${klass.name}`))) {   // <=== CODE EXECUTION
 	    			return cb(`storedFunction is class '${result.constructor.name}' and not '${module.name}.${klass.name}'`);
-	    	}
-	    	return cb(null);
+	    	  }
+
+	    	  return cb(null);
+	      });
 	    });
-	  }
-		cb(null);
+    }
   });
 }
 
@@ -110,6 +116,7 @@ function executeFunction(storedFunction, args, cb) {
 }
 
 module.exports = {
+	loadStoredFunction: loadStoredFunction,
 	parseFunction: parseFunction,
 	executeFunction: executeFunction
 };

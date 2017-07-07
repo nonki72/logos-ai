@@ -157,6 +157,24 @@ function readFreeIdentifierByRandomValue (cb) {
   });
 }
 
+function readFreeIdentifierByName (name, cb) {
+	const query = datastore.ds.createQuery('Diary')
+	 .filter('type', '=', 'free')
+   .filter('name', '=', name)
+   .limit(1);
+  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
+  	if (entities && entities.length) {
+	   	var entity = entities[Object.keys(entities)[0]];
+	   	entity.id = entity[datastore.ds.KEY]['id'];
+	   	console.log(entity);
+  		return cb(entity);
+  	}
+  	
+		// if not found
+		return cb(null);
+  });
+}
+
 
 // randomly reads a fragment
 function readByRandomValue (cb) {
@@ -413,22 +431,35 @@ function readOrCreateFreeIdentifier ( name, cb ) {
 	});
 }
 
-function createFreeIdentifier (name, astid, fn, fntype, argn, argTypes, cb) {
-  var data = {
-  	type: 'free',
-  	name: name,
-    astid: astid, // location (id)
-    fn: fn,
-    fntype: fntype,
-    argn: argn,
-    argt: argTypes,
-	  rand: Math.random()
-  };
-	datastore.create('Diary', data, function(err, entity){
-		if (err) {
-			console.log("diary err "+err);
-		}
-    return cb( entity);
+function createFreeIdentifierFunction (name, astid, fn, fntype, fnclass, argnum, argtypes, modules, memoize,  cb) {
+	const query = datastore.ds.createQuery('Diary')
+	 .filter('type', '=', 'free')
+   .filter('name', '=', name)
+   .limit(1);
+  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
+  	if (entities && entities.length) {
+  		return cb(null);
+  	}
+
+	  var data = {
+	  	type: 'free',
+	  	name: name,
+	    astid: astid, // location (id)
+	    fn: fn,
+	    fntype: fntype,
+	    fnclas: fnclass,
+	    argn: argnum,
+	    argt: argtypes,
+	    mods: modules,
+	    memo: memoize,
+		  rand: Math.random()
+	  };
+		datastore.create('Diary', data, function(err, entity){
+			if (err) {
+				console.log("diary err "+err);
+			}
+	    return cb( entity);
+		});
 	});
 }
 
@@ -458,16 +489,13 @@ function createSubstitution (subType, location1, location2, cb) {
 
 }
 
-function readOrCreateClass (name, module, cb) {
+function createClass (name, module, cb) {
 	const query = datastore.ds.createQuery('Class')
    .filter('name', '=', name)
    .limit(1);
   datastore.ds.runQuery(query, (err, entities, nextQuery) => {
   	if (entities && entities.length) {
-	   	var entity = entities[Object.keys(entities)[0]];
-	   	entity.id = entity[datastore.ds.KEY]['id'];
-	   	console.log(entity);
-  		return cb(entity);
+  		return cb(null);
   	}
 
 	  var data = {
@@ -483,16 +511,13 @@ function readOrCreateClass (name, module, cb) {
 	});
 }
 
-function readOrCreateModule (name, path, cb) {
+function createModule (name, path, cb) {
 	const query = datastore.ds.createQuery('Module')
    .filter('name', '=', name)
    .limit(1);
   datastore.ds.runQuery(query, (err, entities, nextQuery) => {
   	if (entities && entities.length) {
-	   	var entity = entities[Object.keys(entities)[0]];
-	   	entity.id = entity[datastore.ds.KEY]['id'];
-	   	console.log(entity);
-  		return cb(entity);
+  		return cb(null);
   	}
 
 		// if not found
@@ -537,6 +562,7 @@ module.exports = {
 	readApplicatorByRandomValue: readApplicatorByRandomValue,
 	readAbstractionByRandomValue: readAbstractionByRandomValue,
   readFreeIdentifierByRandomValue: readFreeIdentifierByRandomValue,
+  readFreeIdentifierByName: readFreeIdentifierByName,
 	readByRandomValue: readByRandomValue,
 	readAssociationByIds: readAssociationByIds,
 	readById: readById,
@@ -548,10 +574,10 @@ module.exports = {
 	readOrCreateApplication: readOrCreateApplication,
 	readOrCreateIdentifier: readOrCreateIdentifier,
 	readOrCreateFreeIdentifier: readOrCreateFreeIdentifier,
-	createFreeIdentifier: createFreeIdentifier,
+	createFreeIdentifierFunction: createFreeIdentifierFunction,
 	createSubstitution: createSubstitution,
-	readOrCreateClass: readOrCreateClass,
-	readOrCreateModule: readOrCreateModule,
+	createClass: createClass,
+	createModule: createModule,
 	update: update,
 	updateAssociation: updateAssociation
 };

@@ -15,6 +15,12 @@ indexes:
   - name: rand
     direction: desc
 
+- kind: Diary
+  ancestor: no
+  properties:
+  - name: type
+  - name: name
+
 - kind: Association
   ancestor: no
   properties:

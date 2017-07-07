@@ -4,7 +4,7 @@
   "description": "Associative Interactive Recursive Structures",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js test.txt",
+    "start": "node app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -25,6 +25,8 @@
   "dependencies": {
     "@google-cloud/datastore": "^0.7.1",
     "async": "^2.5.0",
+    "body-parser": "^1.17.2",
+    "express": "^4.15.3",
     "nconf": "^0.8.4"
   }
 }
