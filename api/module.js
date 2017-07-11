@@ -30,11 +30,11 @@ request parameters:
   path
  */
 router.post('/:moduleName', function createModule (req, res, next) {
-  DataLib.createModule(req.params.moduleName, req.body.path, (module) => {
+  DataLib.readOrCreateModule(req.params.moduleName, req.body.path, (module) => {
     if (module == null) {
-      return next('Could not create module \'' + req.params.moduleName + '\' already exists');
+      return next('Could not create module \'' + req.params.moduleName);
     }
-    return res.status(200).json({"message":"Module created."});
+    return res.status(200).json({"module":module});
   });
 });
 

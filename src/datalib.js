@@ -295,21 +295,32 @@ function readModuleByPath(path, cb) {
 
 
 
-function createAssociation (sourceId, destId, associativeValue, cb) {
-  var data = {
-  	srcid: sourceId,
-  	dstid: destId,
-	  assv: associativeValue
-  };
-	datastore.create('Association', data, function(err, entity){
-		if (err) {
-			console.log("association err ", err);
-  		return cb(null);
-		}
-    return cb(entity);
-	});
+function readOrCreateAssociation (sourceId, destId, associativeValue, cb) {
+	const query = datastore.ds.createQuery('Association')
+   .filter('srcid', '=', sourceId)
+   .filter('dstid', '=', destId)
+   .limit(1);
+  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
+  	if (entities && entities.length) {
+	   	var entity = entities[Object.keys(entities)[0]];
+  		return cb(entity);
+  	}
 
-  return cb(null);
+		// if not found
+	  var data = {
+	  	srcid: sourceId,
+	  	dstid: destId,
+		  assv: associativeValue
+	  };
+		datastore.create('Association', data, function(err, entity){
+			if (err) {
+				console.log("association err ", err);
+	  		return cb(null);
+			}
+			entity.id = entity[datastore.ds.KEY]['id'];
+	    return cb(entity);
+		});
+  });
 }
 
 
@@ -431,14 +442,15 @@ function readOrCreateFreeIdentifier ( name, cb ) {
 	});
 }
 
-function createFreeIdentifierFunction (name, astid, fn, fntype, fnclass, argnum, argtypes, modules, memoize,  cb) {
+function readOrCreateFreeIdentifierFunction (name, astid, fn, fntype, fnclass, argnum, argtypes, modules, memoize,  cb) {
 	const query = datastore.ds.createQuery('Diary')
 	 .filter('type', '=', 'free')
    .filter('name', '=', name)
    .limit(1);
   datastore.ds.runQuery(query, (err, entities, nextQuery) => {
   	if (entities && entities.length) {
-  		return cb(null);
+	   	var entity = entities[Object.keys(entities)[0]];
+  		return cb(entity);
   	}
 
 	  var data = {
@@ -458,44 +470,58 @@ function createFreeIdentifierFunction (name, astid, fn, fntype, fnclass, argnum,
 			if (err) {
 				console.log("diary err "+err);
 			}
+			entity.id = entity[datastore.ds.KEY]['id'];
 	    return cb( entity);
 		});
 	});
 }
 
-function createSubstitution (subType, location1, location2, cb) {
+function readOrCreateSubstitution (subType, location1, location2, cb) {
   if (subType == 'beta') {
     // check that action1 lhs is abstraction
   }
+	const query = datastore.ds.createQuery('Diary')
+	 .filter('type', '=', 'sub')
+   .filter('styp', '=', subType)
+   .filter('def1', '=', location1)
+   .filter('def2', '=', location2)
+   .limit(1);
+  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
+  	if (entities && entities.length) {
+	   	var entity = entities[Object.keys(entities)[0]];
+  		return cb(entity);
+  	}
 
-  // actually create the substitution
-  var createSub = function(err,entity) {
-	  var data = {
-	  	type: 'sub',
-	  	styp: subType,
-	  	def1: location1,
-	  	def2: location2
-	  };
-		datastore.create('Diary', data, function(err, newEntity){
-  	  return cb( newEntity);
-		});
-	};
+	  // actually create the substitution
+	  var createSub = function(err,entity) {
+		  var data = {
+		  	type: 'sub',
+		  	styp: subType,
+		  	def1: location1,
+		  	def2: location2
+		  };
+			datastore.create('Diary', data, function(err, newEntity){
+				newEntity.id = newEntity[datastore.ds.KEY]['id'];
+	  	  return cb( newEntity);
+			});
+		};
 
-  // invalidate the old cat/sub anchored here
-  datastore.read('Diary', location1, function(err,entity) {
-  	entity.invalid = true;
-  	datastore.update('Diary', location1, entity, createSub);
+	  // invalidate the old cat/sub anchored here
+	  datastore.read('Diary', location1, function(err,entity) {
+	  	entity.invalid = true;
+	  	datastore.update('Diary', location1, entity, createSub);
+	  });
   });
-
 }
 
-function createClass (name, module, cb) {
+function readOrCreateClass (name, module, cb) {
 	const query = datastore.ds.createQuery('Class')
    .filter('name', '=', name)
    .limit(1);
   datastore.ds.runQuery(query, (err, entities, nextQuery) => {
   	if (entities && entities.length) {
-  		return cb(null);
+	   	var entity = entities[Object.keys(entities)[0]];
+  		return cb(entity);
   	}
 
 	  var data = {
@@ -506,18 +532,20 @@ function createClass (name, module, cb) {
 			if (err) {
 				console.log("class err "+err);
 			}
+			entity.id = entity[datastore.ds.KEY]['id'];
 	    return cb(entity);
 		});
 	});
 }
 
-function createModule (name, path, cb) {
+function readOrCreateModule (name, path, cb) {
 	const query = datastore.ds.createQuery('Module')
    .filter('name', '=', name)
    .limit(1);
   datastore.ds.runQuery(query, (err, entities, nextQuery) => {
   	if (entities && entities.length) {
-  		return cb(null);
+	   	var entity = entities[Object.keys(entities)[0]];
+  		return cb(entity);
   	}
 
 		// if not found
@@ -529,6 +557,7 @@ function createModule (name, path, cb) {
 			if (err) {
 				console.log("module err "+err);
 			}
+			entity.id = entity[datastore.ds.KEY]['id'];
 	    return cb(entity);
 		});
 	});
@@ -569,15 +598,15 @@ module.exports = {
 	readClassByName: readClassByName,
 	readModuleByName: readModuleByName,
 	readModuleByPath: readModuleByPath,
-	createAssociation:createAssociation,
+	readOrCreateAssociation:readOrCreateAssociation,
 	readOrCreateAbstraction: readOrCreateAbstraction,
 	readOrCreateApplication: readOrCreateApplication,
 	readOrCreateIdentifier: readOrCreateIdentifier,
 	readOrCreateFreeIdentifier: readOrCreateFreeIdentifier,
-	createFreeIdentifierFunction: createFreeIdentifierFunction,
-	createSubstitution: createSubstitution,
-	createClass: createClass,
-	createModule: createModule,
+	readOrCreateFreeIdentifierFunction: readOrCreateFreeIdentifierFunction,
+	readOrCreateSubstitution: readOrCreateSubstitution,
+	readOrCreateClass: readOrCreateClass,
+	readOrCreateModule: readOrCreateModule,
 	update: update,
 	updateAssociation: updateAssociation
 };

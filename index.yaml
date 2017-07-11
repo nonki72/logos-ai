@@ -21,6 +21,14 @@ indexes:
   - name: type
   - name: name
 
+- kind: Diary
+  ancestor: no
+  properties:
+  - name: type
+  - name: styp
+  - name: def1
+  - name: def2
+
 - kind: Association
   ancestor: no
   properties:

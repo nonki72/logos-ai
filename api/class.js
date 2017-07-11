@@ -30,11 +30,11 @@ request parameters:
   module
  */
 router.post('/:className', function createClass (req, res, next) {
-  DataLib.createClass(req.params.className, req.body.module, (klass) => {
+  DataLib.readOrCreateClass(req.params.className, req.body.module, (klass) => {
     if (klass == null) {
       return next('Could not create class \'' + req.params.className + '\' already exists');
     }
-    return res.status(200).json({"message":"Class created."});
+    return res.status(200).json({"class":klass});
   });
 });
 

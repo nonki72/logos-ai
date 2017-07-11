@@ -51,7 +51,7 @@ router.post('/:functionName', function createStoredFunction (req, res, next) {
       if (freeIdentifier == null) {
         return next('Could not create free identifier function \'' + req.params.functionName + '\' already exists');
       }
-      return res.status(200).json({"message":"Function created."});
+      return res.status(200).json({"storedfunction":freeIdentifier});
     });
   });
 });

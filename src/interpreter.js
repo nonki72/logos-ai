@@ -228,7 +228,7 @@ const evaluate = (ast, cb) => {
          * abstraction's body
          */
         substitute(ast.rhs, ast.lhs.body, function(ast2) {
-          DataLib.createSubstitution("beta", ast.id, ast2.id, (substitution) => {
+          DataLib.readOrCreateSubstitution("beta", ast.id, ast2.id, (substitution) => {
             evaluate(ast2, cb);
           });
         });
