@@ -43,6 +43,91 @@ router.post('/evaluate', function evaluateLambdaExpression (req, res, next) {
 });
 
 
+/*
+request parameters:
+  definition1
+  definition2
+ */
+router.post('/application', (req, res, next) => {
+  DataLib.readOrCreateApplication(req.body.definition1, req.body.definition2, (application) => {
+    if (application == null) {
+      return next('Could not create application');
+    }
+    return res.status(200).json({"application":application});
+  });
+});
+
+/*
+request parameters:
+  name
+  definition2
+ */
+router.post('/abstraction', (req, res, next) => {
+  DataLib.readOrCreateAbstraction(req.body.name, req.body.definition2, (abstraction) => {
+    if (abstraction == null) {
+      return next('Could not create abstraction');
+    }
+    return res.status(200).json({"abstraction":abstraction});
+  });
+});
+
+/*
+request parameters:
+  index
+ */
+router.post('/identifier', (req, res, next) => {
+  DataLib.readOrCreateIdentifier(req.body.index, (identifier) => {
+    if (identifier == null) {
+      return next('Could not create identifier');
+    }
+    return res.status(200).json({"identifier":identifier});
+  });
+});
+
+/*
+request parameters:
+  name
+ */
+router.post('/freeidentifier', (req, res, next) => {
+  DataLib.readOrCreateFreeIdentifier(req.body.name, (freeidentifier) => {
+    if (freeidentifier == null) {
+      return next('Could not create free identifier');
+    }
+    return res.status(200).json({"freeidentifier":freeidentifier});
+  });
+});
+
+/*
+request parameters:
+  type
+  definition1
+  definition2
+ */
+router.post('/substitution', (req, res, next) => {
+  DataLib.readOrCreateSubstitution(req.body.index, (substitution) => {
+    if (substitution == null) {
+      return next('Could not create substitution');
+    }
+    return res.status(200).json({"substitution":substitution});
+  });
+});
+
+/*
+request parameters:
+  sourceid
+  destinationid
+  associativevalue
+ */
+router.post('/association', (req, res, next) => {
+  DataLib.readOrCreateAssociation(req.body.index, (substitution) => {
+    if (substitution == null) {
+      return next('Could not create association');
+    }
+    return res.status(200).json({"substitution":substitution});
+  });
+});
+
+
 /**
  * Errors on "/api/function/*" routes.
  */

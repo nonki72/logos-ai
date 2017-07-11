@@ -4,6 +4,7 @@ var path = require('path');
 var express = require('express');
 
 var app = express();
+var router = express.Router();
 
 app.disable('etag');
 app.set('trust proxy', true);
@@ -25,6 +26,10 @@ app.use(function (err, req, res, next) {
   // If our routes specified a specific response, then send that. Otherwise,
   // send a generic message so as not to leak anything.
   res.status(500).send(err.response || 'Something broke!');
+});
+
+router.get('/health', function get (req, res, next) {
+  return res.status(200).json({"status": "ok"});
 });
 
 if (module === require.main) {
