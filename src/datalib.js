@@ -303,6 +303,7 @@ function readOrCreateAssociation (sourceId, destId, associativeValue, cb) {
   datastore.ds.runQuery(query, (err, entities, nextQuery) => {
   	if (entities && entities.length) {
 	   	var entity = entities[Object.keys(entities)[0]];
+	   	entity.id = entity[datastore.ds.KEY]['id'];
   		return cb(entity);
   	}
 
@@ -450,6 +451,7 @@ function readOrCreateFreeIdentifierFunction (name, astid, fn, fntype, fnclass, a
   datastore.ds.runQuery(query, (err, entities, nextQuery) => {
   	if (entities && entities.length) {
 	   	var entity = entities[Object.keys(entities)[0]];
+	   	entity.id = entity[datastore.ds.KEY]['id'];
   		return cb(entity);
   	}
 
@@ -489,6 +491,7 @@ function readOrCreateSubstitution (subType, location1, location2, cb) {
   datastore.ds.runQuery(query, (err, entities, nextQuery) => {
   	if (entities && entities.length) {
 	   	var entity = entities[Object.keys(entities)[0]];
+	   	entity.id = entity[datastore.ds.KEY]['id'];
   		return cb(entity);
   	}
 
@@ -521,6 +524,7 @@ function readOrCreateClass (name, module, cb) {
   datastore.ds.runQuery(query, (err, entities, nextQuery) => {
   	if (entities && entities.length) {
 	   	var entity = entities[Object.keys(entities)[0]];
+	   	entity.id = entity[datastore.ds.KEY]['id'];
   		return cb(entity);
   	}
 
@@ -545,6 +549,7 @@ function readOrCreateModule (name, path, cb) {
   datastore.ds.runQuery(query, (err, entities, nextQuery) => {
   	if (entities && entities.length) {
 	   	var entity = entities[Object.keys(entities)[0]];
+	   	entity.id = entity[datastore.ds.KEY]['id'];
   		return cb(entity);
   	}
 
