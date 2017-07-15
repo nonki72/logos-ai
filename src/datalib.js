@@ -318,7 +318,6 @@ function readOrCreateAssociation (sourceId, destId, associativeValue, cb) {
 				console.log("association err ", err);
 	  		return cb(null);
 			}
-			entity.id = entity[datastore.ds.KEY]['id'];
 	    return cb(entity);
 		});
   });
@@ -349,6 +348,9 @@ function readOrCreateAbstraction (name, definition2, cb) {
 	    rand: Math.random()
 	  };
 		datastore.create('Diary', data, function(err, entity){
+			if (err) {
+				console.log("diary err "+err);
+			}
 	    return cb(entity);
 		});
   });
@@ -378,6 +380,9 @@ function readOrCreateApplication (definition1, definition2, cb) {
 	    rand: Math.random()
 	  };
 		datastore.create('Diary', data, function(err, entity) {
+			if (err) {
+				console.log("diary err "+err);
+			}
 	    return cb(entity);
 		});
   });
@@ -472,7 +477,6 @@ function readOrCreateFreeIdentifierFunction (name, astid, fn, fntype, fnclass, a
 			if (err) {
 				console.log("diary err "+err);
 			}
-			entity.id = entity[datastore.ds.KEY]['id'];
 	    return cb( entity);
 		});
 	});
@@ -504,7 +508,9 @@ function readOrCreateSubstitution (subType, location1, location2, cb) {
 		  	def2: location2
 		  };
 			datastore.create('Diary', data, function(err, newEntity){
-				newEntity.id = newEntity[datastore.ds.KEY]['id'];
+				if (err) {
+					console.log("diary err "+err);
+				}
 	  	  return cb( newEntity);
 			});
 		};
@@ -536,7 +542,6 @@ function readOrCreateClass (name, module, cb) {
 			if (err) {
 				console.log("class err "+err);
 			}
-			entity.id = entity[datastore.ds.KEY]['id'];
 	    return cb(entity);
 		});
 	});
@@ -562,7 +567,6 @@ function readOrCreateModule (name, path, cb) {
 			if (err) {
 				console.log("module err "+err);
 			}
-			entity.id = entity[datastore.ds.KEY]['id'];
 	    return cb(entity);
 		});
 	});
