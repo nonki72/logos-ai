@@ -66,7 +66,7 @@ function parseFunction (storedFunction, args, cb) {
 	    return cb(`$(e.constructor.name) error on line $(e.lineNumber): $(e.message)`);
 		}
 
-	  if (typeof result !== storedFunction.type) {
+	  if (typeof result != new String(storedFunction.type)) {
 	    return cb(`storedFunction is type '${typeof result}' and not '${storedFunction.type}'`);
 	  }
 
@@ -90,6 +90,8 @@ function parseFunction (storedFunction, args, cb) {
 	      });
 	    });
     }
+
+    return cb(null);
   });
 }
 

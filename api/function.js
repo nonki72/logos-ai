@@ -41,12 +41,20 @@ request parameters:
   args (test args)
  */
 router.post('/:functionName', function createStoredFunction (req, res, next) {
-  var storedFunction = new F.StoredFunction(req.body.memoize, req.body.fntype, req.body.fnclass, req.body.argTypes, req.body.modules, req.body.fn);
-  functionParser.parseFunction(storedFunction, req.body.args, (err) => {
+  var argtypes = [];
+  if (req.body.argtypes != undefined) argtypes = JSON.parse(req.body.argtypes);
+  var modules = [];
+  if (req.body.modules != undefined) modules = JSON.parse(req.body.modules);
+  var args = [];
+  if (req.body.args != undefined) args = JSON.parse(req.body.args);
+
+  var storedFunction = new F.StoredFunction(req.body.memoize, req.body.fntype, req.body.fnclass, argtypes, modules, req.body.fn);
+  functionParser.parseFunction(storedFunction, args, (err) => {
     if (err) {
-      return next(err);
+      return next({message:err});
     }
-    DataLib.createFreeIdentifierFunction(req.params.functionName, 
+
+    DataLib.readOrCreateFreeIdentifierFunction(req.params.functionName, 
       req.body.astid, req.body.fn, req.body.fntype, req.body.fnclass, req.body.argnum, req.body.argtypes, req.body.modules, req.body.memoize, (freeIdentifier) => {
       if (freeIdentifier == null) {
         return next('Could not create free identifier function \'' + req.params.functionName + '\' already exists');
@@ -67,6 +75,7 @@ router.use(function handleRpcError (err, req, res, next) {
     message: err.message,
     internalCode: err.code
   };
+  delete err.message;
   next(err);
 });
 
