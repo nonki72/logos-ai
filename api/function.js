@@ -2,16 +2,13 @@
 'use strict';
 
 var express = require('express');
-var bodyParser = require('body-parser');
 const async = require('async');
 const DataLib = require('../src/datalib');
 const F = require('../src/function');
 const functionParser = require('../src/functionparser');
 
-var router = express.Router();
 
-// Automatically parse request body as JSON
-router.use(bodyParser.json());
+var router = express.Router();
 
 
 /**
@@ -28,6 +25,7 @@ router.get('/:functionName', function get (req, res, next) {
   });
 });
 
+
 /*
 request parameters:
   astid
@@ -41,19 +39,11 @@ request parameters:
   args (test args)
  */
 router.post('/:functionName', function createStoredFunction (req, res, next) {
-  var argtypes = [];
-  if (req.body.argtypes != undefined) argtypes = JSON.parse(req.body.argtypes);
-  var modules = [];
-  if (req.body.modules != undefined) modules = JSON.parse(req.body.modules);
-  var args = [];
-  if (req.body.args != undefined) args = JSON.parse(req.body.args);
-
-  var storedFunction = new F.StoredFunction(req.body.memoize, req.body.fntype, req.body.fnclass, argtypes, modules, req.body.fn);
-  functionParser.parseFunction(storedFunction, args, (err) => {
+  var storedFunction = new F.StoredFunction(req.body.memoize, req.body.fntype, req.body.fnclass, req.body.argtypes, req.body.modules, req.body.fn);
+  functionParser.parseFunction(storedFunction, req.body.args, (err) => {
     if (err) {
       return next({message:err});
     }
-
     DataLib.readOrCreateFreeIdentifierFunction(req.params.functionName, 
       req.body.astid, req.body.fn, req.body.fntype, req.body.fnclass, req.body.argnum, req.body.argtypes, req.body.modules, req.body.memoize, (freeIdentifier) => {
       if (freeIdentifier == null) {

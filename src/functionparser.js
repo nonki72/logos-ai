@@ -15,7 +15,7 @@ const contextClosure = function(str, args, modules) {
 	const CTX = {
 		args: args
 	};
-
+	
   return eval(requires + str);            // <=== CODE EXECUTION
 }
 
@@ -60,10 +60,10 @@ function parseFunction (storedFunction, args, cb) {
 			result = contextClosure.call(null, storedFunction.functionBody, args, modules);   // <=== CODE EXECUTION
 		} catch (e) {
 	    if (e instanceof SyntaxError) {
-	      return cb(`SyntaxError on line $(e.lineNumber): $(e.message)`);
+	      return cb(`SyntaxError on line ${e.lineNumber}: ${e.message}`);
 	    }
 
-	    return cb(`$(e.constructor.name) error on line $(e.lineNumber): $(e.message)`);
+	    return cb(`${e.constructor.name} error on line ${e.lineNumber}: ${e.message}`);
 		}
 
 	  if (typeof result != new String(storedFunction.type)) {
@@ -108,10 +108,10 @@ function executeFunction(storedFunction, args, cb) {
 			return cb(result);
 		} catch (e) {
 	    if (e instanceof SyntaxError) {
-	      console.error(`executeFunction -> SyntaxError on line $(e.lineNumber): $(e.message)`);
+	      console.error(`executeFunction -> SyntaxError on line ${e.lineNumber}: ${e.message}`);
 	    }
 
-	    console.error(`executeFunction -> $(e.constructor.name) error on line $(e.lineNumber): $(e.message)`);
+	    console.error(`executeFunction -> ${e.constructor.name} error on line ${e.lineNumber}: ${e.message}`);
 	    cb(null);
 		}
 	});

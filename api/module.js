@@ -2,14 +2,9 @@
 'use strict';
 
 var express = require('express');
-var bodyParser = require('body-parser');
 const DataLib = require('../src/datalib');
 
 var router = express.Router();
-
-// Automatically parse request body as JSON
-router.use(bodyParser.json());
-
 
 /**
  * GET /api/module

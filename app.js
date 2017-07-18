@@ -2,8 +2,17 @@
 
 var path = require('path');
 var express = require('express');
+var bodyParser = require('body-parser');
 
 var app = express();
+
+// Automatically parse request body as JSON
+app.use(bodyParser.urlencoded({
+  extended: true
+}));
+app.use(bodyParser.json({
+  strict:false
+}));
 
 app.disable('etag');
 app.set('trust proxy', true);

@@ -2,7 +2,6 @@
 'use strict';
 
 var express = require('express');
-var bodyParser = require('body-parser');
 const async = require('async');
 const DataLib = require('../src/datalib');
 const Lexer = require('../src/lexer');
@@ -10,9 +9,6 @@ const Parser = require('../src/parser');
 const Interpreter = require('../src/interpreter');
 
 var router = express.Router();
-
-// Automatically parse request body as JSON
-router.use(bodyParser.json());
 
 
 /*
@@ -48,11 +44,12 @@ request parameters:
   definition1
   definition2
  */
-router.post('/application', (req, res, next) => {
+router.post('/application', (req, res, next) => {console.log(req.body);
   DataLib.readOrCreateApplication(req.body.definition1, req.body.definition2, (application) => {
-    if (application == null) {
+    if (application == null) {console.log('null');
       return next('Could not create application');
     }
+    console.log(application);
     return res.status(200).json({"application":application});
   });
 });
@@ -104,7 +101,7 @@ request parameters:
   definition2
  */
 router.post('/substitution', (req, res, next) => {
-  DataLib.readOrCreateSubstitution(req.body.index, (substitution) => {
+  DataLib.readOrCreateSubstitution(req.body.type, req.body.definition1, req.body.definition2, (substitution) => {
     if (substitution == null) {
       return next('Could not create substitution');
     }
@@ -119,11 +116,11 @@ request parameters:
   associativevalue
  */
 router.post('/association', (req, res, next) => {
-  DataLib.readOrCreateAssociation(req.body.index, (substitution) => {
-    if (substitution == null) {
+  DataLib.readOrCreateAssociation(req.body.sourceid, req.body.destinationid, req.body.associativevalue, (association) => {
+    if (association == null) {
       return next('Could not create association');
     }
-    return res.status(200).json({"substitution":substitution});
+    return res.status(200).json({"association":association});
   });
 });
 

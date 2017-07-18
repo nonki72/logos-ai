@@ -428,7 +428,6 @@ function readOrCreateFreeIdentifier ( name, cb ) {
   	if (identifiers && identifiers.length) {
 	   	var identifier = identifiers[Object.keys(identifiers)[0]];
 	   	identifier.id = identifier[datastore.ds.KEY]['id'];
-	   	console.log(identifier);
   		return cb(identifier);
   	}
 
