@@ -4,9 +4,7 @@
 var express = require('express');
 const DataLib = require('../src/datalib');
 
-
-// Automatically parse request body as JSON
-router.use(bodyParser.json());
+var router = express.Router();
 
 
 /**

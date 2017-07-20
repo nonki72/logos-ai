@@ -3,6 +3,9 @@ const async = require("async");
 const DataLib = require('./datalib');
 const F = require('./function');
 
+const nativeTypeNames = ["promise"];
+const nativeClassNames = ["entry", "abstraction", "application", "identifier", "association", "substitution"];
+
 // context for evaluating the function body
 const contextClosure = function(str, args, modules) {
 	var requires = '';
@@ -66,29 +69,19 @@ function parseFunction (storedFunction, args, cb) {
 	    return cb(`${e.constructor.name} error on line ${e.lineNumber}: ${e.message}`);
 		}
 
-	  if (typeof result != new String(storedFunction.type)) {
+    if (storedFunction.type in nativeTypeNames) {
+    	// TODO: actually check if its a promise etc
+    } else if (typeof result != new String(storedFunction.type)) {
 	    return cb(`storedFunction is type '${typeof result}' and not '${storedFunction.type}'`);
 	  }
 
-	  if (typeof storedFunction.type === 'object') {
-	    DataLib.readClassByName(storedFunction.klass, (klass) => {
-	    	if (klass == null) {
-	    		return cb(`storedFunction type is object but class name '${storedFunction.klass}' is invalid`);
-	    	}
+	  if (typeof result === 'object' || storedFunction.type in nativeTypeNames) {
+	  	if (storedFunction.klass in nativeClassNames) {
+	  		// TODO: actually check if its a entry etc
+	    	return cb(null);
+	  	}
 
-	    	DataLib.readModuleByName(klass.module, (module) => {
-		    	if (klass == null) {
-		    		return cb(`storedFunction is class '${klass.name}' which belongs to module '${klass.module}' which is invalid`);
-		    	}
-
-	    		if (!(eval(`const ${module.name} = require(${module.path});
-	    	    	        result instanceof ' + ${module.name}.${klass.name}`))) {   // <=== CODE EXECUTION
-	    			return cb(`storedFunction is class '${result.constructor.name}' and not '${module.name}.${klass.name}'`);
-	    	  }
-
-	    	  return cb(null);
-	      });
-	    });
+	  	return checkClass(storedFunction, cb);
     }
 
     return cb(null);
@@ -102,19 +95,77 @@ function executeFunction(storedFunction, args, cb) {
 	}
 
   loadModules(storedFunction.modules, (modules) => {
-	  var result;
-		try {
-			result = contextClosure.call(null, storedFunction.functionBody, args, modules);   // <=== CODE EXECUTION
-			return cb(result);
-		} catch (e) {
-	    if (e instanceof SyntaxError) {
-	      console.error(`executeFunction -> SyntaxError on line ${e.lineNumber}: ${e.message}`);
-	    }
+  	checkArgs(storedFunction.argTypes, args, (err) => {
+  		if (err) {
+  			console.error("ExecuteFunction error: " + err);
+  			return cb(null);
+  		}
 
-	    console.error(`executeFunction -> ${e.constructor.name} error on line ${e.lineNumber}: ${e.message}`);
-	    cb(null);
-		}
+		  var result;
+			try {
+				result = contextClosure.call(null, storedFunction.functionBody, args, modules);   // <=== CODE EXECUTION
+				return cb(result);
+			} catch (e) {
+		    if (e instanceof SyntaxError) {
+		      console.error(`executeFunction -> SyntaxError on line ${e.lineNumber}: ${e.message}`);
+		    }
+
+		    console.error(`executeFunction -> ${e.constructor.name} error on line ${e.lineNumber}: ${e.message}`);
+		    cb(null);
+			}
+  	});
 	});
+}
+
+function checkClass(testObject, className, cb) {
+	if (className in nativeClassNames) return cb(null);
+
+  DataLib.readClassByName(storedFunction.klass, (klass) => {
+  	if (klass == null) {
+  		return cb(`class name '${className}' is invalid`);
+  	}
+
+  	DataLib.readModuleByName(klass.module, (module) => {
+    	if (klass == null) {
+    		return cb(`class '${klass.name}' belongs to module '${klass.module}' which is invalid`);
+    	}
+
+  		if (!(eval(`const ${module.name} = require(${module.path});
+  	    	        testObject instanceof ' + ${module.name}.${klass.name}`))) {   // <=== CODE EXECUTION
+  			return cb(`object is class '${result.constructor.name}' and not '${module.name}.${klass.name}'`);
+  	  }
+
+  	  return cb(null);
+    });
+  });
+}
+
+function checkArgs(argTypes, args, cb) {
+	if (!Array.isArray(argTypes)) {
+		if (!Array.isArray(args)) {
+		  return cb(null);
+	  }
+		if (args.length > 0) {
+			return cb("More args than argTypes");
+		}
+		return cb(null);
+	} 
+	if (argTypes.length > 0) {
+		return cb("More argTypes than args");
+	}
+
+	for (var i = 0; i < args.length; i++) {
+		var argType = argTypes[i];
+		var arg = args[i];
+		if (argType in nativeTypeNames || argType in nativeClassNames) {
+			continue;
+		}
+		if (typeof arg != argType) {
+			return cb("Arg `" + arg + "` is type `" + typeof arg + "` and not `" + argType + "`");
+		}
+	}
+
+	return cb (null);
 }
 
 module.exports = {

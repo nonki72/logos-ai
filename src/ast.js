@@ -33,13 +33,25 @@ class Identifier {
    * name is the string matched for this identifier.
    */
   constructor(value, astid, fn, fntype, argCount, argTypes) {
-    this.value = value;
-    this.astid = astid;
-    this.fn = fn;
-    this.fntype = fntype;
-    this.argCount = argCount;
-    this.argTypes = argTypes;
-    this.args = [];
+    if (typeof value === 'object') {
+      var data = value;
+      this.value = data.name;
+      this.astid = data.astid;
+      this.fn = data.fn;
+      this.fntype = data.fntype;
+      this.argCount = data.argc;
+      this.argTypes = data.argt;
+      this.args = [];      
+      this.object = data;
+    } else {
+      this.value = value;
+      this.astid = astid;
+      this.fn = fn;
+      this.fntype = fntype;
+      this.argCount = argCount;
+      this.argTypes = argTypes;
+      this.args = [];
+    }
   }
 
   toString(ctx) {
