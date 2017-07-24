@@ -40,9 +40,13 @@ request parameters:
  */
 router.post('/:functionName', function createStoredFunction (req, res, next) {
   var storedFunction = new F.StoredFunction(req.body.memoize, req.body.fntype, req.body.fnclass, req.body.argtypes, req.body.modules, req.body.fn);
-  functionParser.parseFunction(storedFunction, req.body.args, (err) => {
+  functionParser.parseFunction(storedFunction, req.body.args, (msg, err) => {
     if (err) {
-      return next({message:err});
+      err.message2 = err.message;
+      err.message = msg;
+      return next(err);
+    } else if (msg) {
+      return next({message:msg});
     }
     DataLib.readOrCreateFreeIdentifierFunction(req.params.functionName, 
       req.body.astid, req.body.fn, req.body.fntype, req.body.fnclass, req.body.argnum, req.body.argtypes, req.body.modules, req.body.memoize, (freeIdentifier) => {
@@ -63,7 +67,7 @@ router.use(function handleRpcError (err, req, res, next) {
   // responding to the request
   err.response = {
     message: err.message,
-    internalCode: err.code
+    internalCode: err.code,
   };
   delete err.message;
   next(err);

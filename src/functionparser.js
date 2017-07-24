@@ -2,6 +2,7 @@
 const async = require("async");
 const DataLib = require('./datalib');
 const F = require('./function');
+const Q = require('q');
 
 const nativeTypeNames = ["promise"];
 const nativeClassNames = ["entry", "abstraction", "application", "identifier", "association", "substitution"];
@@ -27,12 +28,12 @@ function loadModules (moduleNames, cb) {
 	if (moduleNames == null || moduleNames.length == 0) {
 		return cb([]);
 	}
-	async.map(modules, (moduleName, callback) => {
+	async.map(moduleNames, (moduleName, callback) => {
 		DataLib.readModuleByName(moduleName, (module) => {
 			if (module == null) {
-				callback('Invalid module \'' + moduleName + '\'');
+				return callback('Invalid module \'' + moduleName + '\'');
 			}
-			callback(null, module);
+			return callback(null, module);
 		});
 	}, (err, results) => {
 		if (err) {
@@ -63,14 +64,17 @@ function parseFunction (storedFunction, args, cb) {
 			result = contextClosure.call(null, storedFunction.functionBody, args, modules);   // <=== CODE EXECUTION
 		} catch (e) {
 	    if (e instanceof SyntaxError) {
-	      return cb(`SyntaxError on line ${e.lineNumber}: ${e.message}`);
+	      return cb(`SyntaxError on line ${e.lineNumber}: ${e.message}`, e);
 	    }
 
-	    return cb(`${e.constructor.name} error on line ${e.lineNumber}: ${e.message}`);
+	    return cb(`${e.constructor.name} error on line ${extractLineNumberFromStack(e.stack)}: ${e.message}`, e);
 		}
 
     if (storedFunction.type in nativeTypeNames) {
-    	// TODO: actually check if its a promise etc
+    	if (typeof result === 'object' && result instanceof Promise) {
+    		return cb(`storedFunction is of class ${result.constructor.name} and not Promise`);
+    	}
+    	return cb(null);
     } else if (typeof result != new String(storedFunction.type)) {
 	    return cb(`storedFunction is type '${typeof result}' and not '${storedFunction.type}'`);
 	  }
@@ -107,10 +111,10 @@ function executeFunction(storedFunction, args, cb) {
 				return cb(result);
 			} catch (e) {
 		    if (e instanceof SyntaxError) {
-		      console.error(`executeFunction -> SyntaxError on line ${e.lineNumber}: ${e.message}`);
+		      console.error(`executeFunction -> SyntaxError on line ${extractLineNumberFromStack(e.stack)}: ${e.message}`, e);
 		    }
 
-		    console.error(`executeFunction -> ${e.constructor.name} error on line ${e.lineNumber}: ${e.message}`);
+		    console.error(`executeFunction -> ${e.constructor.name} error on line ${e.lineNumber}: ${e.message}`, e);
 		    cb(null);
 			}
   	});
@@ -159,6 +163,7 @@ function checkArgs(argTypes, args, cb) {
 		var arg = args[i];
 		if (argType in nativeTypeNames || argType in nativeClassNames) {
 			continue;
+			// TODO: actually check if it is the native type specified
 		}
 		if (typeof arg != argType) {
 			return cb("Arg `" + arg + "` is type `" + typeof arg + "` and not `" + argType + "`");
@@ -166,6 +171,16 @@ function checkArgs(argTypes, args, cb) {
 	}
 
 	return cb (null);
+}
+
+function extractLineNumberFromStack (stack) {
+  if(!stack) return '?'; // fix undefined issue reported by @sigod
+
+	var caller_line = stack.split("\n")[1];
+	var index = caller_line.indexOf(",") + 14; // ` <anonymous>:`
+	var clean = caller_line.slice(index, caller_line.length - 1);
+
+  return clean;
 }
 
 module.exports = {
