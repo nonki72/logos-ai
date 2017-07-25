@@ -8,7 +8,7 @@ const nativeTypeNames = ["promise"];
 const nativeClassNames = ["entry", "abstraction", "application", "identifier", "association", "substitution"];
 
 // context for evaluating the function body
-const contextClosure = function(str, args, modules) {
+const contextClosure = function(str, argTypes, args, modules) {
 	var requires = '';
 	for (var i = 0; i < modules.length; i++) {
 		var module = modules[i];
@@ -17,8 +17,14 @@ const contextClosure = function(str, args, modules) {
 	}
 	
 	const CTX = {
-		args: args
+		args: {}
 	};
+
+	for (var i = 0; i < argTypes.length; i++) {
+		var argName = argTypes[i][0];
+		var argType = argTypes[i][1];
+		CTX.args[argName] = args[i];
+	}
 	
   return eval(requires + str);            // <=== CODE EXECUTION
 }
@@ -59,36 +65,42 @@ function parseFunction (storedFunction, args, cb) {
 	}
 
   loadModules(storedFunction.modules, (modules) => {
-	  var result;
-		try {
-			result = contextClosure.call(null, storedFunction.functionBody, args, modules);   // <=== CODE EXECUTION
-		} catch (e) {
-	    if (e instanceof SyntaxError) {
-	      return cb(`SyntaxError on line ${e.lineNumber}: ${e.message}`, e);
+  	checkArgs(storedFunction.argTypes, args, (err) => {
+  		if (err) {
+  			return cb("Argument error: " + err + " ... argtypes:" + JSON.stringify(storedFunction.argTypes) + " ... args:" + JSON.stringify(args));
+  		}
+
+		  var result;
+			try {
+				result = contextClosure.call(null, storedFunction.functionBody, storedFunction.argTypes, args, modules);   // <=== CODE EXECUTION
+			} catch (e) {
+		    if (e instanceof SyntaxError) {
+		      return cb(`SyntaxError on line ${e.lineNumber}: ${e.message}`, e);
+		    }
+
+		    return cb(`${e.constructor.name} error on line ${extractLineNumberFromStack(e.stack)}: ${e.message}`, e);
+			}
+
+	    if (nativeTypeNames.includes(storedFunction.type)) {
+	    	if (typeof result === 'object' && result instanceof Promise) {
+	    		return cb(`storedFunction is of class ${result.constructor.name} and not Promise`);
+	    	}
+	    	return cb(null);
+	    } else if (typeof result != new String(storedFunction.type)) {
+		    return cb(`storedFunction is type '${typeof result}' and not '${storedFunction.type}'`);
+		  }
+
+		  if (typeof result === 'object' || nativeTypeNames.includes(storedFunction.type)) {
+		  	if (nativeClassNames.includes(storedFunction.klass)) {
+		  		// TODO: actually check if its a entry etc
+		    	return cb(null);
+		  	}
+
+		  	return checkClass(storedFunction, cb);
 	    }
 
-	    return cb(`${e.constructor.name} error on line ${extractLineNumberFromStack(e.stack)}: ${e.message}`, e);
-		}
-
-    if (storedFunction.type in nativeTypeNames) {
-    	if (typeof result === 'object' && result instanceof Promise) {
-    		return cb(`storedFunction is of class ${result.constructor.name} and not Promise`);
-    	}
-    	return cb(null);
-    } else if (typeof result != new String(storedFunction.type)) {
-	    return cb(`storedFunction is type '${typeof result}' and not '${storedFunction.type}'`);
-	  }
-
-	  if (typeof result === 'object' || storedFunction.type in nativeTypeNames) {
-	  	if (storedFunction.klass in nativeClassNames) {
-	  		// TODO: actually check if its a entry etc
-	    	return cb(null);
-	  	}
-
-	  	return checkClass(storedFunction, cb);
-    }
-
-    return cb(null);
+	    return cb(null);
+	  });
   });
 }
 
@@ -101,7 +113,7 @@ function executeFunction(storedFunction, args, cb) {
   loadModules(storedFunction.modules, (modules) => {
   	checkArgs(storedFunction.argTypes, args, (err) => {
   		if (err) {
-  			console.error("ExecuteFunction error: " + err);
+  			console.error("ExecuteFunction error: " + err + " ... argtypes:" + JSON.stringify(storedFunction.argTypes) + " ... args:" + JSON.stringify(args));
   			return cb(null);
   		}
 
@@ -122,7 +134,7 @@ function executeFunction(storedFunction, args, cb) {
 }
 
 function checkClass(testObject, className, cb) {
-	if (className in nativeClassNames) return cb(null);
+	if (nativeClassNames.includes(className)) return cb(null);
 
   DataLib.readClassByName(storedFunction.klass, (klass) => {
   	if (klass == null) {
@@ -154,14 +166,21 @@ function checkArgs(argTypes, args, cb) {
 		}
 		return cb(null);
 	} 
-	if (argTypes.length > 0) {
+	if (argTypes.length > args.length) {
 		return cb("More argTypes than args");
+	}
+	if (argTypes.length < args.length) {
+		return cb("More args than argTypes");
 	}
 
 	for (var i = 0; i < args.length; i++) {
-		var argType = argTypes[i];
+		if (!Array.isArray(argTypes[i]) || argTypes[i].length < 2) {
+			return cb("Arg #" + i + " of length 2 specifying name and type");
+		}
+		var argName = argTypes[i][0];
+		var argType = argTypes[i][1];
 		var arg = args[i];
-		if (argType in nativeTypeNames || argType in nativeClassNames) {
+		if (nativeTypeNames.includes(argType) || nativeClassNames.includes(argType)) {
 			continue;
 			// TODO: actually check if it is the native type specified
 		}

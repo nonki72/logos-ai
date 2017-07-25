@@ -447,6 +447,29 @@ function readOrCreateFreeIdentifier ( name, cb ) {
 	});
 }
 
+function createFreeIdentifierFunction (name, astid, fn, fntype, fnclass, argnum, argtypes, modules, memoize,  cb) {
+  var data = {
+  	type: 'free',
+  	name: name,
+    astid: astid, // location (id)
+    fn: fn,
+    fntype: fntype,
+    fnclas: fnclass,
+    argn: argnum,
+    argt: argtypes,
+    mods: modules,
+    memo: memoize,
+	  rand: Math.random()
+  };
+	datastore.create('Diary', data, function(err, entity){
+		if (err) {
+			console.log("diary err "+err);
+		}
+    return cb( entity);
+	});
+
+}
+
 function readOrCreateFreeIdentifierFunction (name, astid, fn, fntype, fnclass, argnum, argtypes, modules, memoize,  cb) {
 	const query = datastore.ds.createQuery('Diary')
 	 .filter('type', '=', 'free')
@@ -456,28 +479,19 @@ function readOrCreateFreeIdentifierFunction (name, astid, fn, fntype, fnclass, a
   	if (entities && entities.length) {
 	   	var entity = entities[Object.keys(entities)[0]];
 	   	entity.id = entity[datastore.ds.KEY]['id'];
-  		return cb(entity);
+
+	   	// overwrite existing entry
+  		return datastore.delete('Diary', entity.id, (err2) => {
+  			if (err2) {
+  				console.log('diary delete err: ' + err2);
+  				return cb(null);
+  			}
+
+  			return createFreeIdentifierFunction(name, astid, fn, fntype, fnclass, argnum, argtypes, modules, memoize,  cb);
+			});
   	}
 
-	  var data = {
-	  	type: 'free',
-	  	name: name,
-	    astid: astid, // location (id)
-	    fn: fn,
-	    fntype: fntype,
-	    fnclas: fnclass,
-	    argn: argnum,
-	    argt: argtypes,
-	    mods: modules,
-	    memo: memoize,
-		  rand: Math.random()
-	  };
-		datastore.create('Diary', data, function(err, entity){
-			if (err) {
-				console.log("diary err "+err);
-			}
-	    return cb( entity);
-		});
+  	return createFreeIdentifierFunction(name, astid, fn, fntype, fnclass, argnum, argtypes, modules, memoize,  cb);
 	});
 }
 

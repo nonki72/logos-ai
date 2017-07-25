@@ -36,11 +36,11 @@ request parameters:
   argtypes
   modules
   memoize
-  args (test args)
+  testargs
  */
 router.post('/:functionName', function createStoredFunction (req, res, next) {
-  var storedFunction = new F.StoredFunction(req.body.memoize, req.body.fntype, req.body.fnclass, req.body.argtypes, req.body.modules, req.body.fn);
-  functionParser.parseFunction(storedFunction, req.body.args, (msg, err) => {
+  var storedFunction = new F.StoredFunction(req.body.memoize, req.body.fntype, req.body.fnclass, JSON.parse(req.body.argtypes), req.body.modules, req.body.fn);
+  functionParser.parseFunction(storedFunction, req.body.testargs, (msg, err) => {
     if (err) {
       err.message2 = err.message;
       err.message = msg;
@@ -51,7 +51,7 @@ router.post('/:functionName', function createStoredFunction (req, res, next) {
     DataLib.readOrCreateFreeIdentifierFunction(req.params.functionName, 
       req.body.astid, req.body.fn, req.body.fntype, req.body.fnclass, req.body.argnum, req.body.argtypes, req.body.modules, req.body.memoize, (freeIdentifier) => {
       if (freeIdentifier == null) {
-        return next('Could not create free identifier function \'' + req.params.functionName + '\' already exists');
+        return next({message: 'Could not create free identifier function \'' + req.params.functionName});
       }
       return res.status(200).json({"storedfunction":freeIdentifier});
     });
