@@ -32,7 +32,7 @@ request parameters:
   fn
   fntype
   fnclass
-  argnum
+  argnum (if non null and fntype=identifier then this describes a function and fnclass is the return type)
   argtypes
   modules
   memoize
@@ -40,13 +40,11 @@ request parameters:
  */
 router.post('/:functionName', function createStoredFunction (req, res, next) {
   var storedFunction = new F.StoredFunction(req.body.memoize, req.body.fntype, req.body.fnclass, JSON.parse(req.body.argtypes), req.body.modules, req.body.fn);
-  functionParser.parseFunction(storedFunction, req.body.testargs, (msg, err) => {
+  functionParser.parseFunction(storedFunction, req.body.testargs, (err) => {
     if (err) {
-      err.message2 = err.message;
-      err.message = msg;
-      return next(err);
-    } else if (msg) {
-      return next({message:msg});
+      var error = {};
+      error.message = err + " ... " + JSON.stringify(req.body);
+      return next(error);
     }
     DataLib.readOrCreateFreeIdentifierFunction(req.params.functionName, 
       req.body.astid, req.body.fn, req.body.fntype, req.body.fnclass, req.body.argnum, req.body.argtypes, req.body.modules, req.body.memoize, (freeIdentifier) => {

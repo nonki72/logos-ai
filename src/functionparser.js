@@ -3,9 +3,7 @@ const async = require("async");
 const DataLib = require('./datalib');
 const F = require('./function');
 const Q = require('q');
-
-const nativeTypeNames = ["promise"];
-const nativeClassNames = ["entry", "abstraction", "application", "identifier", "association", "substitution"];
+const Diary = require('./diary');
 
 // context for evaluating the function body
 const contextClosure = function(str, argTypes, args, modules) {
@@ -20,10 +18,12 @@ const contextClosure = function(str, argTypes, args, modules) {
 		args: {}
 	};
 
-	for (var i = 0; i < argTypes.length; i++) {
-		var argName = argTypes[i][0];
-		var argType = argTypes[i][1];
-		CTX.args[argName] = args[i];
+  if (args != null) {
+		for (var i = 0; i < argTypes.length; i++) {
+			var argName = argTypes[i][0];
+			var argType = argTypes[i][1];
+			CTX.args[argName] = args[i];
+		}
 	}
 	
   return eval(requires + str);            // <=== CODE EXECUTION
@@ -32,7 +32,7 @@ const contextClosure = function(str, argTypes, args, modules) {
 // retrieves all the modules given storedFunction's module array
 function loadModules (moduleNames, cb) {
 	if (moduleNames == null || moduleNames.length == 0) {
-		return cb([]);
+		return cb(null, []);
 	}
 	async.map(moduleNames, (moduleName, callback) => {
 		DataLib.readModuleByName(moduleName, (module) => {
@@ -43,10 +43,10 @@ function loadModules (moduleNames, cb) {
 		});
 	}, (err, results) => {
 		if (err) {
-			return cb([]);
+			return cb(err, []);
 		}
 
-		cb(results);
+		cb(null, results);
 	});
 }
 
@@ -57,6 +57,10 @@ function loadStoredFunction(freeIdentifier) {
 
 /* parse the given function for consistency and correctness
  *
+ * note: if argTypes is null this is a stored value (a function has empty array [] for argTypes)
+ *       in this case we can still evaluate the functionbody to match its type & class
+ *       (the last line is the returned value of an eval)
+ *
  * returns null on success, error message on failure
 */
 function parseFunction (storedFunction, args, cb) {
@@ -64,42 +68,51 @@ function parseFunction (storedFunction, args, cb) {
 		return cb('Must be instance of StoredFunction');
 	}
 
-  loadModules(storedFunction.modules, (modules) => {
-  	checkArgs(storedFunction.argTypes, args, (err) => {
-  		if (err) {
-  			return cb("Argument error: " + err + " ... argtypes:" + JSON.stringify(storedFunction.argTypes) + " ... args:" + JSON.stringify(args));
+
+  loadModules(storedFunction.modules, (err, modulePaths) => {
+		if (err) {
+			return cb("Module error: " + err  + JSON.stringify(storedFunction));
+		}
+  	checkArgs(storedFunction.argTypes, args, (err2) => {
+  		if (err2) {
+  			return cb("Argument error: " + err  + JSON.stringify(storedFunction));
   		}
+
+			if (storedFunction.functionBody == null) {
+				// this is an extensional function (defined by substitutions) or maybe a plain free identifier ended up here
+				return cb(null);
+			}
 
 		  var result;
 			try {
-				result = contextClosure.call(null, storedFunction.functionBody, storedFunction.argTypes, args, modules);   // <=== CODE EXECUTION
+				result = contextClosure.call(null, storedFunction.functionBody, storedFunction.argTypes, args, modulePaths);   // <=== CODE EXECUTION
 			} catch (e) {
 		    if (e instanceof SyntaxError) {
-		      return cb(`SyntaxError on line ${e.lineNumber}: ${e.message}`, e);
+		      return cb(`SyntaxError on line ${e.lineNumber}: ${e.message}` + JSON.stringify(storedFunction), e);
 		    }
 
-		    return cb(`${e.constructor.name} error on line ${extractLineNumberFromStack(e.stack)}: ${e.message}`, e);
+		    return cb(`${e.constructor.name} error on line ${extractLineNumberFromStack(e.stack)}: ${e.message}` + JSON.stringify(storedFunction), e);
 			}
 
-	    if (nativeTypeNames.includes(storedFunction.type)) {
-	    	if (typeof result === 'object' && result instanceof Promise) {
-	    		return cb(`storedFunction is of class ${result.constructor.name} and not Promise`);
+	    if (storedFunction.type == 'promise') {
+	    	if (typeof result === 'object' && isPromiseLike(result)) {
+	    		return cb(`storedFunction is of class ${result.constructor.name} and not a promise: ` + JSON.stringify(storedFunction));
 	    	}
-	    	return cb(null);
+	    	return cb(null); // return ok since we cannot verify promise return type (fnclass)
 	    } else if (typeof result != new String(storedFunction.type)) {
-		    return cb(`storedFunction is type '${typeof result}' and not '${storedFunction.type}'`);
+		    return cb(`storedFunction is type '${typeof result}' and not '${storedFunction.type}'` + JSON.stringify(storedFunction));
 		  }
 
-		  if (typeof result === 'object' || nativeTypeNames.includes(storedFunction.type)) {
-		  	if (nativeClassNames.includes(storedFunction.klass)) {
-		  		// TODO: actually check if its a entry etc
-		    	return cb(null);
-		  	}
-
-		  	return checkClass(storedFunction, cb);
+		  if (typeof result === 'object') {
+		  	return checkClass(result, storedFunction.klass, (err3) => {
+		  		if (err3) {
+		  			return cb(err + JSON.stringify(storedFunction));
+		  		}
+		  		return cb(null);
+		  	});
+	    } else {
+	   	  return cb(null);
 	    }
-
-	    return cb(null);
 	  });
   });
 }
@@ -113,7 +126,7 @@ function executeFunction(storedFunction, args, cb) {
   loadModules(storedFunction.modules, (modules) => {
   	checkArgs(storedFunction.argTypes, args, (err) => {
   		if (err) {
-  			console.error("ExecuteFunction error: " + err + " ... argtypes:" + JSON.stringify(storedFunction.argTypes) + " ... args:" + JSON.stringify(args));
+  			console.error("ExecuteFunction error: " + err  + JSON.stringify(storedFunction));
   			return cb(null);
   		}
 
@@ -123,10 +136,10 @@ function executeFunction(storedFunction, args, cb) {
 				return cb(result);
 			} catch (e) {
 		    if (e instanceof SyntaxError) {
-		      console.error(`executeFunction -> SyntaxError on line ${extractLineNumberFromStack(e.stack)}: ${e.message}`, e);
+		      console.error(`executeFunction -> SyntaxError on line ${extractLineNumberFromStack(e.stack)}: ${e.message}` + JSON.stringify(storedFunction), e);
 		    }
 
-		    console.error(`executeFunction -> ${e.constructor.name} error on line ${e.lineNumber}: ${e.message}`, e);
+		    console.error(`executeFunction -> ${e.constructor.name} error on line ${e.lineNumber}: ${e.message}` + JSON.stringify(storedFunction), e);
 		    cb(null);
 			}
   	});
@@ -134,21 +147,19 @@ function executeFunction(storedFunction, args, cb) {
 }
 
 function checkClass(testObject, className, cb) {
-	if (nativeClassNames.includes(className)) return cb(null);
-
-  DataLib.readClassByName(storedFunction.klass, (klass) => {
+  DataLib.readClassByName(className, (klass) => {
   	if (klass == null) {
-  		return cb(`class name '${className}' is invalid`);
+  		return cb(`class name '${className}' is not found in the database`);
   	}
 
   	DataLib.readModuleByName(klass.module, (module) => {
-    	if (klass == null) {
-    		return cb(`class '${klass.name}' belongs to module '${klass.module}' which is invalid`);
+    	if (module == null) {
+    		return cb(`class '${klass.name}' belongs to module '${klass.module}' which is not found in the database`);
     	}
 
   		if (!(eval(`const ${module.name} = require(${module.path});
   	    	        testObject instanceof ' + ${module.name}.${klass.name}`))) {   // <=== CODE EXECUTION
-  			return cb(`object is class '${result.constructor.name}' and not '${module.name}.${klass.name}'`);
+  			return cb(`object is class '${testObject.constructor.name}' and not '${module.name}.${klass.name}'`);
   	  }
 
   	  return cb(null);
@@ -156,6 +167,10 @@ function checkClass(testObject, className, cb) {
   });
 }
 
+// match each of args with its respective argType which specifies the 
+// colloquial name, the type and optionally the class name
+// verify these for consistency in parallel
+// if class name is specified then code execution occurs
 function checkArgs(argTypes, args, cb) {
 	if (!Array.isArray(argTypes)) {
 		if (!Array.isArray(args)) {
@@ -173,23 +188,34 @@ function checkArgs(argTypes, args, cb) {
 		return cb("More args than argTypes");
 	}
 
-	for (var i = 0; i < args.length; i++) {
+	async.eachOf(args, (arg, i, callback) => {
 		if (!Array.isArray(argTypes[i]) || argTypes[i].length < 2) {
-			return cb("Arg #" + i + " of length 2 specifying name and type");
+			return callback("Argtype #" + i + " is not of length >= 2 specifying name and type (& class)" + JSON.stringify(argTypes));
 		}
 		var argName = argTypes[i][0];
 		var argType = argTypes[i][1];
-		var arg = args[i];
-		if (nativeTypeNames.includes(argType) || nativeClassNames.includes(argType)) {
-			continue;
-			// TODO: actually check if it is the native type specified
+		var argClass = (argTypes[i].length > 2) ? argTypes[i][2] : null;
+
+	  if (argType == 'promise') {
+	  	if (typeof arg !== 'object') {
+			  return callback("Arg " + argName+ " `" + arg + "` is type `" + typeof arg + "` and not `promise`");
+			} else if (!isPromiseLike(arg)) {
+			  return callback("Arg " + argName+ " `" + arg + "` is not promiselike");
+      }				
 		}
 		if (typeof arg != argType) {
-			return cb("Arg `" + arg + "` is type `" + typeof arg + "` and not `" + argType + "`");
+			return callback("Arg " + argName+ " `" + arg + "` is type `" + typeof arg + "` and not `" + argType + "`");
 		}
-	}
-
-	return cb (null);
+    if (argClass) {
+		  checkClass(arg, argClass, (err) => {
+		  	return callback(err);
+		  });
+    } else {
+    	return callback(null);
+    }
+  }, (err) => {
+  	return cb(err);
+  });
 }
 
 function extractLineNumberFromStack (stack) {
@@ -200,6 +226,10 @@ function extractLineNumberFromStack (stack) {
 	var clean = caller_line.slice(index, caller_line.length - 1);
 
   return clean;
+}
+
+function isPromiseLike(obj) {
+  return obj && (typeof obj.then === 'function');
 }
 
 module.exports = {

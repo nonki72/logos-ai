@@ -528,7 +528,7 @@ function readOrCreateSubstitution (subType, location1, location2, cb) {
 			});
 		};
 
-	  // invalidate the old cat/sub anchored here
+	  // invalidate the old app/sub anchored here
 	  datastore.read('Diary', location1, function(err,entity) {
 	  	entity.invalid = true;
 	  	datastore.update('Diary', location1, entity, createSub);
