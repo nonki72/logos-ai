@@ -66,3 +66,4 @@ exports.Application = Application;
 exports.Identifier = Identifier;
 exports.FreeIdentifier = FreeIdentifier;
 exports.Substitution = Substitution;
+exports.Association = Association;

@@ -1,8 +1,9 @@
 class StoredFunction {
   /**
    * memoize: boolean - should return values be stored or not
-   * type: javascript type
+   * type: javascript type (or 'promise')
    * klass: if type=='object' then the name of the class goes here. must exist in Class database
+   *        if type=='promise' then the js type of the eventual value goes here, or the class name if desired (js type 'object' is assumed)
    * argTypes: array of javascript types. 
    *           may be Application, Identifier, Abstraction from ast.js
    * modules: array of 'Module' names which are already stored in the 'Module' database

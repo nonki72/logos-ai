@@ -5,12 +5,18 @@ const F = require('./function');
 const Q = require('q');
 const Diary = require('./diary');
 
+
+
+// TODO: use node vm
+
+
+
 // context for evaluating the function body
 const contextClosure = function(str, argTypes, args, modules) {
 	var requires = '';
 	for (var i = 0; i < modules.length; i++) {
 		var module = modules[i];
-		requires += `const ${module.name} = require(${module.path});
+		requires += `const ${module.name} = require('${module.path}');
 								`;
 	}
 	
@@ -25,7 +31,7 @@ const contextClosure = function(str, argTypes, args, modules) {
 			CTX.args[argName] = args[i];
 		}
 	}
-	
+
   return eval(requires + str);            // <=== CODE EXECUTION
 }
 
@@ -75,7 +81,7 @@ function parseFunction (storedFunction, args, cb) {
 		}
   	checkArgs(storedFunction.argTypes, args, (err2) => {
   		if (err2) {
-  			return cb("Argument error: " + err  + JSON.stringify(storedFunction));
+  			return cb("Check argument error: " + err2  + JSON.stringify(storedFunction));
   		}
 
 			if (storedFunction.functionBody == null) {
@@ -95,7 +101,7 @@ function parseFunction (storedFunction, args, cb) {
 			}
 
 	    if (storedFunction.type == 'promise') {
-	    	if (typeof result === 'object' && isPromiseLike(result)) {
+	    	if (isPromise(result)) {
 	    		return cb(`storedFunction is of class ${result.constructor.name} and not a promise: ` + JSON.stringify(storedFunction));
 	    	}
 	    	return cb(null); // return ok since we cannot verify promise return type (fnclass)
@@ -123,16 +129,20 @@ function executeFunction(storedFunction, args, cb) {
 		return cb(null);
 	}
 
-  loadModules(storedFunction.modules, (modules) => {
-  	checkArgs(storedFunction.argTypes, args, (err) => {
+  loadModules(storedFunction.modules, (err, modulePaths) => {
+  	if (err) {
+  		console.error("ExecuteFunction module error: " + err  + JSON.stringify(storedFunction));
+  		return cb(null);
+  	}
+  	checkArgs(storedFunction.argTypes, args, (err2) => {
   		if (err) {
-  			console.error("ExecuteFunction error: " + err  + JSON.stringify(storedFunction));
+  			console.error("ExecuteFunction args error: " + err2  + JSON.stringify(storedFunction));
   			return cb(null);
   		}
 
 		  var result;
 			try {
-				result = contextClosure.call(null, storedFunction.functionBody, args, modules);   // <=== CODE EXECUTION
+				result = contextClosure.call(null, storedFunction.functionBody, storedFunction.argTypes, args, modulePaths);   // <=== CODE EXECUTION
 				return cb(result);
 			} catch (e) {
 		    if (e instanceof SyntaxError) {
@@ -196,12 +206,8 @@ function checkArgs(argTypes, args, cb) {
 		var argType = argTypes[i][1];
 		var argClass = (argTypes[i].length > 2) ? argTypes[i][2] : null;
 
-	  if (argType == 'promise') {
-	  	if (typeof arg !== 'object') {
-			  return callback("Arg " + argName+ " `" + arg + "` is type `" + typeof arg + "` and not `promise`");
-			} else if (!isPromiseLike(arg)) {
-			  return callback("Arg " + argName+ " `" + arg + "` is not promiselike");
-      }				
+	  if (argType == 'promise' && !isPromise(arg)) {
+		  return callback("Arg " + argName+ " `" + arg + "` is not promise");
 		}
 		if (typeof arg != argType) {
 			return callback("Arg " + argName+ " `" + arg + "` is type `" + typeof arg + "` and not `" + argType + "`");
@@ -228,8 +234,8 @@ function extractLineNumberFromStack (stack) {
   return clean;
 }
 
-function isPromiseLike(obj) {
-  return obj && (typeof obj.then === 'function');
+function isPromise(obj) {
+  return Promise.resolve(obj) == obj;
 }
 
 module.exports = {
