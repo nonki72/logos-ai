@@ -29,6 +29,7 @@ const typecheck = (abstraction, input) => {
 // if astid is referenced in the given free identifier,
 // retrieve it from the database
 const getAstIfNeeded = (entity, cb) => {
+  console.log('### G1 ###');
   if (entity.type == 'free' && entity.astid) {
     DataLib.readById(entity.astid, (entity2) => {
       return cb(entity2)
@@ -116,7 +117,7 @@ const applyAndAdjustAssociativeValue = (data, input, lastAst, callback) => {
         });
       }
 
-      DataLib.createAssociation(input.id, data.id, getValueFromX(Math.random()), (association2) => {
+      DataLib.readOrCreateAssociation(input.id, data.id, getValueFromX(Math.random()), (association2) => {
         console.log('*** AA4 ***');
         if (association2) console.log('created associative value ' + association2.assv);
         else              console.log('failed to create assv: ' + input.id + " -> " + data.id); // already exists is ok (TODO: should actually update in this case)
@@ -172,12 +173,15 @@ const combine = (lastAst) => {
 // reads the datastore one layer deep
 const getAst = (data, cb) => {
   if (data.type == 'abs') {
+  console.log('### G2 ###');
+console.log(JSON.stringify(data, null, 2));
     DataLib.readById(data.def2, (dataBody) => {
       var ast = new AST.Abstraction(data.name, dataBody);
       ast.data = data;
       cb(ast);
     });
   } else if (data.type == 'app') {
+  console.log('### G3 ###');
     DataLib.readById(data.def1, (dataLhs) => {
       DataLib.readById(data.def2, (dataRhs) => {
         var ast = new AST.Application(dataLhs, dataRhs);

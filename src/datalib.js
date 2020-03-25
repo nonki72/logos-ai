@@ -229,7 +229,7 @@ function readAssociationByIds(sourceId, destId, cb) {
 function readById (id, cb) {
 	datastore.read('Diary', id, function(err, entity) {
 		if (err) {
-			console.log("readById error: " + err);
+			console.log("readById error: " + JSON.stringify(err, null, 2));
 			return cb(null);
 		}
 		return cb(entity);
@@ -371,20 +371,20 @@ function readOrCreateApplication (definition1, definition2, cb) {
   		return cb(application);
   	}
 
-		// if not found
-	  var data = {
+	// if not found
+	var data = {
 	  	type: 'app',
 	  	def1: definition1,
 	  	def2: definition2,
 	  	invalid: false,
 	    rand: Math.random()
-	  };
-		datastore.create('Diary', data, function(err, entity) {
-			if (err) {
-				console.log("diary err "+err);
-			}
+	};
+	datastore.create('Diary', data, function(err, entity) {
+		if (err) {
+			console.log("diary err "+err);
+		}
 	    return cb(entity);
-		});
+	});
   });
 }
 
@@ -512,27 +512,28 @@ function readOrCreateSubstitution (subType, location1, location2, cb) {
   		return cb(entity);
   	}
 
-	  // actually create the substitution
-	  var createSub = function(err,entity) {
-		  var data = {
-		  	type: 'sub',
-		  	styp: subType,
-		  	def1: location1,
-		  	def2: location2
-		  };
-			datastore.create('Diary', data, function(err, newEntity){
-				if (err) {
-					console.log("diary err "+err);
-				}
-	  	  return cb( newEntity);
-			});
-		};
+    // actually create the substitution
+    var createSub = function(err,entity) {
+      var data = {
+      	type: 'sub',
+      	styp: subType,
+      	def1: location1,
+      	def2: location2
+      };
+	    datastore.create('Diary', data, function(err, newEntity){
+		    if (err) {
+			    console.log("diary err "+err);
+		    }
+      return cb( newEntity);
+	    });
+    };
 
-	  // invalidate the old app/sub anchored here
-	  datastore.read('Diary', location1, function(err,entity) {
+	// invalidate the old app/sub anchored here
+	datastore.read('Diary', location1, function(err,entity) {
 	  	entity.invalid = true;
-	  	datastore.update('Diary', location1, entity, createSub);
-	  });
+        delete entity['id'];
+		datastore.update('Diary', location1, entity, createSub);
+	});
   });
 }
 
