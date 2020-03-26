@@ -23,7 +23,7 @@
   },
   "homepage": "https://github.com/jcote/logos",
   "dependencies": {
-    "@google-cloud/datastore": "^0.7.1",
+    "@google-cloud/datastore": "^5.1.0",
     "async": "^2.5.0",
     "body-parser": "^1.17.2",
     "express": "^4.17.1",

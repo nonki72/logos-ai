@@ -175,6 +175,23 @@ function readFreeIdentifierByName (name, cb) {
   });
 }
 
+function readFreeIdentifierByFn (fn, cb) {
+	const query = datastore.ds.createQuery('Diary')
+	 .filter('type', '=', 'free')
+   .filter('fn', '=', fn)
+   .limit(1);
+  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
+  	if (entities && entities.length) {
+	   	var entity = entities[Object.keys(entities)[0]];
+	   	entity.id = entity[datastore.ds.KEY]['id'];
+	   	console.log(entity);
+  		return cb(entity);
+  	}
+  	
+		// if not found
+		return cb(null);
+  });
+}
 
 // randomly reads a fragment
 function readByRandomValue (cb) {
@@ -615,6 +632,7 @@ module.exports = {
 	readAbstractionByRandomValue: readAbstractionByRandomValue,
   readFreeIdentifierByRandomValue: readFreeIdentifierByRandomValue,
   readFreeIdentifierByName: readFreeIdentifierByName,
+  readFreeIdentifierByFn: readFreeIdentifierByFn,
 	readByRandomValue: readByRandomValue,
 	readAssociationByIds: readAssociationByIds,
 	readById: readById,

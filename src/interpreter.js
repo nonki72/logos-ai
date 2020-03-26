@@ -149,10 +149,10 @@ const combine = (lastAst) => {
         && (lastAst.type == 'abs' || 
            (lastAst.type == 'free' && typeof lastAst.argCount === 'number' && lastAst.argCount > lastAst.args.length))) {
       console.log("*** C1 *** -> " + input.type);
-      applyAndCreateAssociativeValue(lastAst, input, lastAst, (astOut) => {
+      applyAndAdjustAssociativeValue(lastAst, input, lastAst, (astOut) => {
         setTimeout(combine, 1, astOut);
       });
-    } else { //} if (Math.random() > 0.333) {
+    } else {
       // get a pseudo-random abstraction from diary
       DataLib.readApplicatorByAssociativeValue(input.id, (applicator) => {
         if (!applicator) {
@@ -164,8 +164,6 @@ const combine = (lastAst) => {
           setTimeout(combine, 1, astOut);
         });
       });
-//    } else {
-//      // TODO: get input
     }
   });
 }

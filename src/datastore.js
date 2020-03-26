@@ -13,10 +13,10 @@
 
 'use strict';
 
-var Datastore = require('@google-cloud/datastore');
+const {Datastore} = require('@google-cloud/datastore');
 
 // [START config]
-var ds = Datastore({
+const ds = new Datastore({
   projectId: "logos-162301"
 });
 // [END config]
