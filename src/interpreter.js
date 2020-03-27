@@ -20,7 +20,7 @@ const typecheck = (abstraction, input) => {
         // abstraction already has args. check if does not match 'next' arg
         var inputType = (input.type == 'free') ? typeof input.fn : input.type;
         if (abstraction.argTypes[abstraction.args.length] != inputType) return false;
-      } else if (abstraction.argTypes[0] != typeof input) return false;
+      } else if (!('argTypes' in abstraction) || abstraction.argTypes[0] != typeof input) return false;
     }
   }
   return true;
@@ -134,24 +134,38 @@ const applyAndAdjustAssociativeValue = (data, input, lastAst, callback) => {
 // (substitution for a lambda combinator)
 const combine = (lastAst) => {
   console.log(lastAst);
-  // TODO: get input
-  DataLib.readByRandomValue((input) => {
+  if (lastAst != null) console.log("*** C LAST AST *** " + lastAst.data.id);
+//  DataLib.readByRandomValue((input) => {
+    DataLib.readFreeIdentifierByRandomValue((input) => {
+
     if (!input) {
       console.log("*** C0.5 *** ");
       return setTimeout(combine, 1, lastAst);
     }
-    console.log("********************* C0 ********************* " + input.id);
+    console.log("********************* C0 ********************* " + input.type + ","+input.id);
     // TODO: run associative value selection math
     // see if lastAst is usable as an abstraction to apply to the input
     // TODO: make this selection (lastAst or read-abstraction or input) probabilistic
-    if (Math.random() > 0.5 
-        && lastAst 
+    if (//Math.random() > 0.5 &&
+         lastAst 
         && (lastAst.type == 'abs' || 
            (lastAst.type == 'free' && typeof lastAst.argCount === 'number' && lastAst.argCount > lastAst.args.length))) {
-      console.log("*** C1 *** -> " + input.type);
+      console.log("*** C1 *** -> " + input.type + " : " + lastAst.type);
       applyAndAdjustAssociativeValue(lastAst, input, lastAst, (astOut) => {
         setTimeout(combine, 1, astOut);
       });
+    } else if (Math.random() > 0.5) {
+        //get a pseudo-random free identifier from diary
+        DataLib.readFreeIdentifierByRandomValue((freeIdentifier) => {
+            if (!freeIdentifier) {
+              console.log("*** C1.5 *** ");
+              return setTimeout(combine, 1, lastAst);
+            }
+            console.log("*** C2 *** -> " + input.type + " : " + freeIdentifier.type);
+            applyAndAdjustAssociativeValue(freeIdentifier, input, lastAst, (astOut) => {
+              setTimeout(combine, 1, astOut);
+            });
+        });
     } else {
       // get a pseudo-random abstraction from diary
       DataLib.readApplicatorByAssociativeValue(input.id, (applicator) => {
@@ -159,12 +173,12 @@ const combine = (lastAst) => {
           console.log("*** C1.5 *** ");
           return setTimeout(combine, 1, lastAst);
         }
-        console.log("*** C2 *** -> " + applicator.type + " : " + input.type);
+        console.log("*** C2 *** -> " + input.type + " : " + applicator.type);
         applyAndAdjustAssociativeValue(applicator, input, lastAst, (astOut) => {
           setTimeout(combine, 1, astOut);
         });
       });
-    }
+    } //else {// TODO: output a random selection
   });
 }
 

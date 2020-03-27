@@ -23,7 +23,7 @@ function readByEquivalenceClass (id) {
 	  	if (entities && entities.length) {
 		   	var entity = entities[Object.keys(entities)[0]];
 		   	entity.id = entity[datastore.ds.KEY]['id'];
-		   	console.log(entity);
+//		   	console.log(entity);
 	  		return cb(entity);
 	  	}
 
@@ -75,7 +75,6 @@ function readAssociationByHighestAssociativeValue (sourceId, cb) {
 	   	console.log(entity.srcid, ' => ', entity.dstid);
   		return cb(entity);
   	}
-
 		// if not found
 		return cb(null);
   });
@@ -126,7 +125,7 @@ function readAbstractionByRandomValue (cb) {
   	if (entities && entities.length) {
 	   	var entity = entities[Object.keys(entities)[0]];
 	   	entity.id = entity[datastore.ds.KEY]['id'];
-	   	console.log(entity);
+//	   	console.log(entity);
   		return cb(entity);
   	}
   	
@@ -140,7 +139,7 @@ function readAbstractionByRandomValue (cb) {
 function readFreeIdentifierByRandomValue (cb) {
 	const query = datastore.ds.createQuery('Diary')
 	 .filter('type', '=', 'free')
-	 .filter('invalid', '=', false)
+	 //.filter('invalid', '=', false)
    .filter('rand', '<=', Math.random())
 	 .order('rand', { descending: true })
    .limit(1);
@@ -148,7 +147,7 @@ function readFreeIdentifierByRandomValue (cb) {
   	if (entities && entities.length) {
 	   	var entity = entities[Object.keys(entities)[0]];
 	   	entity.id = entity[datastore.ds.KEY]['id'];
-	   	console.log(entity);
+//	   	console.log(entity);
   		return cb(entity);
   	}
   	
@@ -166,7 +165,7 @@ function readFreeIdentifierByName (name, cb) {
   	if (entities && entities.length) {
 	   	var entity = entities[Object.keys(entities)[0]];
 	   	entity.id = entity[datastore.ds.KEY]['id'];
-	   	console.log(entity);
+//	   	console.log(entity);
   		return cb(entity);
   	}
   	
@@ -184,7 +183,7 @@ function readFreeIdentifierByFn (fn, cb) {
   	if (entities && entities.length) {
 	   	var entity = entities[Object.keys(entities)[0]];
 	   	entity.id = entity[datastore.ds.KEY]['id'];
-	   	console.log(entity);
+//	   	console.log(entity);
   		return cb(entity);
   	}
   	
@@ -214,8 +213,8 @@ function readByRandomValue (cb) {
 	   	// } else {
 	   		// normal case, return entity
 	   	entity.id = entity[datastore.ds.KEY]['id'];
-	   	console.log('^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^');
-	   	console.log(entity);
+//	   	console.log('^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^');
+//	   	console.log(entity);
   		return cb(entity);
 	  	// }
 	  }
@@ -234,7 +233,7 @@ function readAssociationByIds(sourceId, destId, cb) {
   	if (entities && entities.length) {
 	   	var entity = entities[Object.keys(entities)[0]];
 	   	entity.id = entity[datastore.ds.KEY]['id'];
-	   	console.log(entity);
+//	   	console.log(entity);
   		return cb(entity);
   	}
   	
@@ -261,7 +260,7 @@ function readClassByName(name, cb) {
   	if (entities && entities.length) {
 	   	var entity = entities[Object.keys(entities)[0]];
 	   	entity.id = entity[datastore.ds.KEY]['id'];
-	   	console.log(entity);
+//	   	console.log(entity);
   		return cb(entity);
   	}
   	
@@ -278,7 +277,7 @@ function readModuleByName(name, cb) {
   	if (entities && entities.length) {
 	   	var entity = entities[Object.keys(entities)[0]];
 	   	entity.id = entity[datastore.ds.KEY]['id'];
-	   	console.log(entity);
+//	   	console.log(entity);
   		return cb(entity);
   	}
   	
@@ -295,7 +294,7 @@ function readModuleByPath(path, cb) {
   	if (entities && entities.length) {
 	   	var entity = entities[Object.keys(entities)[0]];
 	   	entity.id = entity[datastore.ds.KEY]['id'];
-	   	console.log(entity);
+//	   	console.log(entity);
   		return cb(entity);
   	}
   	
@@ -352,7 +351,7 @@ function readOrCreateAbstraction (name, definition2, cb) {
   	if (abstractions && abstractions.length) {
 	   	var abstraction = abstractions[Object.keys(abstractions)[0]];
 	   	abstraction.id = abstraction[datastore.ds.KEY]['id'];
-	   	console.log(abstraction);
+//	   	console.log(abstraction);
   		return cb(abstraction);
   	}
 
@@ -384,7 +383,7 @@ function readOrCreateApplication (definition1, definition2, cb) {
   	if (applications && applications.length) {
 	   	var application = applications[Object.keys(applications)[0]];
 	   	application.id = application[datastore.ds.KEY]['id'];
-	   	console.log(application);
+//	   	console.log(application);
   		return cb(application);
   	}
 
@@ -416,7 +415,7 @@ function readOrCreateIdentifier ( index, cb ) {
   	if (identifiers && identifiers.length) {
 	   	var identifier = identifiers[Object.keys(identifiers)[0]];
 	   	identifier.id = identifier[datastore.ds.KEY]['id'];
-	   	console.log(identifier);
+//	   	console.log(identifier);
   		return cb(identifier);
   	}
 

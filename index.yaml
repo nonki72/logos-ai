@@ -19,6 +19,13 @@ indexes:
   ancestor: no
   properties:
   - name: type
+  - name: rand
+    direction: desc
+
+- kind: Diary
+  ancestor: no
+  properties:
+  - name: type
   - name: name
 
 - kind: Diary
