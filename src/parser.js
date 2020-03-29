@@ -9,7 +9,7 @@ class Parser {
 
   parse(cb) {
     var self=this;
-    this.term([], function(result) {
+    return this.term([], function(result) {
     // make sure we consumed all the program, otherwise there was a syntax error
           self.lexer.match(Token.EOF);
           return cb(result);
@@ -44,19 +44,19 @@ class Parser {
       // application' ::= atom application'
       //                | ε
       var atomizer = function() {
-        self.atom(ctx, function(rhs) {
+        return self.atom(ctx, function(rhs) {
           if (!rhs) {
             return cb(lhs);
           } else {
             DataLib.readOrCreateApplication(lhs.id, rhs.id, (application) => {
               lhs = new AST.Application(lhs, rhs);
               lhs.id = application.id;
-              atomizer();
+              return atomizer();
             });
           }
         });
       };
-      atomizer();
+      return atomizer();
 
     });
 

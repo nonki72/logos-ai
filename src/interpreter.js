@@ -228,7 +228,7 @@ console.log(JSON.stringify(data, null, 2));
 const evaluate = (ast, cb) => {
     if ('type' in ast) {
       return getAst(ast, (realAst) => {
-        evaluate(realAst, cb);
+        return evaluate(realAst, cb);
       })
     }
     if (isApp(ast)) {
@@ -243,9 +243,9 @@ const evaluate = (ast, cb) => {
          * abstraction's parameter in the evaluation body and then evaluate the
          * abstraction's body
          */
-        substitute(ast.rhs, ast.lhs.body, function(ast2) {
+        return substitute(ast.rhs, ast.lhs.body, function(ast2) {
           DataLib.readOrCreateSubstitution("beta", ast.id, ast2.id, (substitution) => {
-            evaluate(ast2, cb);
+            return evaluate(ast2, cb);
           });
         });
       } else if (isValue(ast.lhs)) {
@@ -253,7 +253,7 @@ const evaluate = (ast, cb) => {
         /**
          * We should only evaluate rhs once lhs has been reduced to a value
          */
-        ast.rhs = evaluate(ast.rhs, cb);
+        return ast.rhs = evaluate(ast.rhs, cb);
       } else if (isName(ast.lhs) && ast.lhs.fn && ast.lhs.args.length < ast.lhs.argCount) {
         console.log("### I 3 ###");
         /**
@@ -261,7 +261,7 @@ const evaluate = (ast, cb) => {
          */
         // curry in one more arg
         tryExtractArg(ast, (astOut) => {
-          evaluate(astOut, cb);
+          return evaluate(astOut, cb);
         });
       } else {
         console.log("### I 4 ###");
@@ -270,7 +270,7 @@ const evaluate = (ast, cb) => {
          */
         ast.lhs = evaluate(ast.lhs, (result) => {
           ast.lhs = result;
-          evaluate(ast.lhs, cb);
+          return evaluate(ast.lhs, cb);
         });
       }
     } else if (isValue(ast)) {
@@ -304,6 +304,7 @@ const evaluate = (ast, cb) => {
       }
     } else {
       console.log('### UNKNOWN TYPE ### ' + typeof ast + ' ' + ast.type);
+      return cb(ast);
     }
 };
 
