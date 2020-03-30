@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node app.js",
-    "test": "mocha --reporter spec"
+    "test": "mocha --timeout 10000 --reporter spec"
   },
   "repository": {
     "type": "git",
@@ -26,11 +26,14 @@
     "@google-cloud/datastore": "^5.1.0",
     "async": "^2.5.0",
     "body-parser": "^1.17.2",
-    "chai": "^4.2.0",
     "express": "^4.17.1",
-    "mocha": "^7.1.1",
     "nconf": "^0.8.4",
     "q": "^1.5.0",
     "request": "^2.88.2"
+  },
+  "devDependencies": {
+    "mocha": "^7.1.1",
+    "chai": "^4.2.0",
+    "chai-http": "^4.3.0"
   }
 }
