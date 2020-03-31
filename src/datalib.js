@@ -404,36 +404,6 @@ function readOrCreateApplication (definition1, definition2, cb) {
   });
 }
 
-
-function readOrCreateIdentifier ( index, cb ) {
-	const query = datastore.ds.createQuery('Diary')
-	 .filter('type', '=', 'id')
-   .filter('indx', '=', index)
-   .limit(1);
-  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
-   	var identifiers = entities;
-  	if (identifiers && identifiers.length) {
-	   	var identifier = identifiers[Object.keys(identifiers)[0]];
-	   	identifier.id = identifier[datastore.ds.KEY]['id'];
-//	   	console.log(identifier);
-  		return cb(identifier);
-  	}
-
-		// if not found
-	  var data = {
-	  	type: 'id',
-	  	indx: index,
-	    rand: Math.random()
-	  };
-		datastore.create('Diary', data, function(err, entity){
-			if (err) {
-				console.log("diary err "+err);
-			}
-	    return cb( entity);
-		});
-	});
-}
-
 function readOrCreateFreeIdentifier ( name, cb ) {
 	const query = datastore.ds.createQuery('Diary')
 	 .filter('type', '=', 'free')
@@ -546,9 +516,11 @@ function readOrCreateSubstitution (subType, location1, location2, cb) {
 
 	// invalidate the old app/sub anchored here
 	datastore.read('Diary', location1, function(err,entity) {
-	  	entity.invalid = true;
+      if (entity) {
+	  	  entity.invalid = true;
         delete entity['id'];
-		datastore.update('Diary', location1, entity, createSub);
+		    datastore.update('Diary', location1, entity, createSub);
+      }
 	});
   });
 }
@@ -641,7 +613,6 @@ module.exports = {
 	readOrCreateAssociation:readOrCreateAssociation,
 	readOrCreateAbstraction: readOrCreateAbstraction,
 	readOrCreateApplication: readOrCreateApplication,
-	readOrCreateIdentifier: readOrCreateIdentifier,
 	readOrCreateFreeIdentifier: readOrCreateFreeIdentifier,
 	readOrCreateFreeIdentifierFunction: readOrCreateFreeIdentifierFunction,
 	readOrCreateSubstitution: readOrCreateSubstitution,

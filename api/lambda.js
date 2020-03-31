@@ -3,6 +3,7 @@
 
 var express = require('express');
 const async = require('async');
+const execFile = require('child_process').execFile;
 const DataLib = require('../src/datalib');
 const Lexer = require('../src/lexer');
 const Parser = require('../src/parser');
@@ -17,24 +18,45 @@ request parameters:
   printast
  */
 router.post('/evaluate', function evaluateLambdaExpression (req, res, next) {
-  const lexer = new Lexer(req.body.expression);
-  const parser = new Parser(lexer);
-  parser.parse(function (ast) {
-    if (req.body.printast) {
-      const output = util.inspect(ast, {
-        depth: null,
-        colors: true,
-      });
-      return res.status(200).json({"result": output});
-    } else {
-      Interpreter.evaluate(ast, (result) => {
-        if (result) {
-          return res.status(200).json({"result": result.toString()});
-        }
-      });
-    }
 
-  });
+  const source = req.body.expression + '\0';
+  const lexer = new Lexer(source);
+  const parser = new Parser(lexer);
+
+  const ast = parser.parse();
+
+  if (req.body.printast) {
+    const output = util.inspect(ast, {
+      depth: null,
+      colors: true,
+    });
+    return res.status(200).json({"result": output});
+  } else {
+    const callback = (error, stdout, stderr) => {
+      if (error)
+        return res.status(400).json({"message":error.message});
+      if (stderr)
+        return res.status(400).json({"message":stderr});
+      if (!stdout)
+        return res.status(400).json({"message":'Empty evaluation result'});
+
+      const source2 = stdout;
+      const lexer2 = new Lexer(source2);
+      const parser2 = new Parser(lexer2);
+
+      const ast2 = parser2.parse();
+      if (ast.id) {
+        DataLib.readOrCreateSubstitution("beta", ast.id, ast2.id, (substitution) => {
+
+          return res.status(200).json({"result": stdout.slice(0,-1),"createdsub":"true"});
+        });
+      } else {
+        return res.status(200).json({"result": stdout.slice(0,-1)});
+      }
+    };
+
+    const lambda = execFile('bin/Lambda', [source], callback);
+  }
 
 });
 

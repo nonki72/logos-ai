@@ -9,7 +9,7 @@ describe("Lambda evaluator", function() {
     describe("Simple expression", function() {
       it("Simple substitutions to variable", function(done) {
         let request = {
-            expression: "((λx.((λy.(x y))x))(λz.w))"
+            expression: "((&x.((&y.(xy))x))(&z.w))"
         };
 
         chai.request(app)
@@ -27,7 +27,7 @@ describe("Lambda evaluator", function() {
     describe("Simple expression", function() {
       it("Simple substitutions to variable", function(done) {
         let request = {
-            expression: "(λx.λy.(x y))(λx.λy.(x y))"
+            expression: "(&x.&y.(xy))(&x.&y.(xy))"
         };
 
         chai.request(app)
@@ -36,7 +36,7 @@ describe("Lambda evaluator", function() {
             .end((err, res) => {
                   res.should.have.status(200);
                   res.body.result.should.be.a('string');
-                  res.body.result.should.be.eql("(λy.(λt.yt))");
+                  res.body.result.should.be.eql("\\y.\\a.ya");
               done();
             });
       });

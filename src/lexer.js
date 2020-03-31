@@ -32,7 +32,7 @@ class Lexer {
     } while (/\s/.test(c));
 
     switch (c) {
-      case 'λ':
+      case '&':
       case '\\':
         this._token = new Token(Token.LAMBDA);
         break;
@@ -52,7 +52,7 @@ class Lexer {
       case '\0':
         this._token = new Token(Token.EOF);
         break;
-
+//TODO: add number support
       default:
         if (/[a-z]/.test(c)) {
           let str = '';
