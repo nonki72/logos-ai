@@ -1,9 +1,14 @@
 const Lexer = require('./src/lexer');
 const Parser = require('./src/parser');
-const Interpreter = require('./src/interpreter');
+const axios = require('axios').default;
 
 const fs = require('fs');
 const util = require('util');
+
+const axi = axios.create({
+	baseURL: 'http://localhost:8080/api/',
+	timeout: 1000
+  });
 
 let filename;
 let printAST = false;
@@ -16,22 +21,12 @@ if (process.argv[2] === '--ast') {
 
 const source = fs.readFileSync(filename).toString();
 
-const lexer = new Lexer(source);
-const parser = new Parser(lexer);
-parser.parse(function (ast) {
-	if (printAST) {
-	  const output = util.inspect(ast, {
-	    depth: null,
-	    colors: true,
-	  });
-	  console.log(output);
-	} else {
-	  Interpreter.evaluate(ast, (result) => {
-	  	if (result) {
-	  	  console.log(result.toString());
-	  	}
-	  });
-	}
-
-});
-
+axi.post('/lambda/evaluate', {
+	expression: source
+	})
+	.then(function (response) {
+	console.log(response.data.result);
+	})
+	.catch(function (error) {
+	console.log(error);
+	});

@@ -22,42 +22,45 @@ router.post('/evaluate', function evaluateLambdaExpression (req, res, next) {
   const source = req.body.expression + '\0';
   const lexer = new Lexer(source);
   const parser = new Parser(lexer);
+  parser.parse(function (ast) {
+    if (req.body.printast) {
+      const output = util.inspect(ast, {
+        depth: null,
+        colors: true,
+      });
+      return res.status(200).json({"result": output});
+    } else {
+      const callback = (error, stdout, stderr) => {
+        if (error)
+          return res.status(400).json({"message":error.message});
+        if (stderr)
+          return res.status(400).json({"message":stderr});
+        if (!stdout)
+          return res.status(400).json({"message":'Empty evaluation result'});
 
-  const ast = parser.parse();
+        const source2 = stdout;
+        const lexer2 = new Lexer(source2);
+        const parser2 = new Parser(lexer2);
+        parser2.parse(function (ast2) {
 
-  if (req.body.printast) {
-    const output = util.inspect(ast, {
-      depth: null,
-      colors: true,
-    });
-    return res.status(200).json({"result": output});
-  } else {
-    const callback = (error, stdout, stderr) => {
-      if (error)
-        return res.status(400).json({"message":error.message});
-      if (stderr)
-        return res.status(400).json({"message":stderr});
-      if (!stdout)
-        return res.status(400).json({"message":'Empty evaluation result'});
+          if (ast.id) {
+            DataLib.readOrCreateSubstitution("beta", ast.id, ast2.id, (substitution) => {
 
-      const source2 = stdout;
-      const lexer2 = new Lexer(source2);
-      const parser2 = new Parser(lexer2);
-
-      const ast2 = parser2.parse();
-      if (ast.id) {
-        DataLib.readOrCreateSubstitution("beta", ast.id, ast2.id, (substitution) => {
-
-          return res.status(200).json({"result": stdout.slice(0,-1),"createdsub":"true"});
+              return res.status(200).json({"result": stdout.slice(0,-1),"createdsub":"true"});
+            });
+          } else {
+            return res.status(200).json({"result": stdout.slice(0,-1)});
+          }
         });
-      } else {
-        return res.status(200).json({"result": stdout.slice(0,-1)});
-      }
-    };
+      };
 
-    const lambda = execFile('bin/Lambda', [source], callback);
-  }
-
+//      Interpreter.evaluate(ast, (result) => {
+//        console.log(result.toString());
+//        return callback(null, result.toString(), null);
+//      });
+      const lambda = execFile('bin/Lambda', [source], callback);
+    }
+  });
 });
 
 

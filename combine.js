@@ -5,7 +5,6 @@ const Interpreter = require('./src/interpreter');
 const fs = require('fs');
 const util = require('util');
 
-let filename;
 let printAST = false;
 if (process.argv[2] === '--ast') {
   printAST = true;
