@@ -45,39 +45,42 @@ function insertAssociationRecord (associationRecord, callback) {
 
 function getRandomAssociationRecord (srcid, callback) {
     // get cumulative probabilities
-  pool.query('SELECT Association,'+
-       'CAST((SELECT sum(assv)' +
-       '      FROM Associations AS b2' +
-       '     WHERE b2.srcid = ?' +
-       '     AND b2.dstid <= Associations.dstid' +
-       '     ) AS FLOAT) /' +
-       '(SELECT sum(assv) FROM Associations)' +
-       'AS CumProb' +
-       'FROM Associations' +
-       'ORDER BY dstid',
+  pool.query('SELECT dstid, '+
+       'CAST((SELECT sum(assv) ' +
+       '      FROM Associations AS b2 ' +
+       '     WHERE b2.srcid = ? ' +
+       '     AND b2.dstid <= Associations.dstid ' +
+       '     ) AS FLOAT) / ' +
+       '(SELECT sum(assv) FROM Associations) ' +
+       'AS CumProb ' +
+       'FROM Associations ' +
+       'ORDER BY dstid ', [ srcid ], function (err, results) {
+       if (err) {
+         return callback(err);
+       }
 
-       'WITH CPAssociations(dstid, CumProb) AS (' +
+       pool.query('WITH CPAssociations(dstid, CumProb) AS ( ' +
          'SELECT dstid, ' +
-         'CAST((SELECT sum(assv)' +
-              'FROM Associations AS b2' +
-              'WHERE b2.dstid <= Associations.dstid' +
-              ') AS FLOAT) /' +
-         '(SELECT sum(assv) FROM Associations)' +
-         'FROM Associations' +
-         ')' +
-         'SELECT dstid' +
-         'FROM CPAssociations' +
-         'WHERE CumProb >= ?' +
-         'ORDER BY CumProb ASC' +
-         'LIMIT 1', [srcid, Math.random()], function (err, results) {
+         'CAST((SELECT sum(assv) ' +
+              'FROM Associations AS b2 ' +
+              'WHERE b2.dstid <= Associations.dstid ' +
+              ') AS FLOAT) / ' +
+         '(SELECT sum(assv) FROM Associations) ' +
+         'FROM Associations ' +
+         ') ' +
+         'SELECT dstid ' +
+         'FROM CPAssociations ' +
+         'WHERE CumProb >= ? ' +
+         'ORDER BY CumProb ASC ' +
+         'LIMIT 1', [Math.random()], function (err, results) {
 
           if (err) {
             return callback(err);
           }
 
-          callback(null, res, hasMore);
-        
-  });
+          callback(null, results[0].dstid);
+        });
+     });
 }
 
 
