@@ -43,8 +43,8 @@ function insertAssociationRecord (associationRecord, callback) {
       }
 
       connection.release();
-      console.log("Associations record stored in SQL for id: " + result.insertId);
-      return callback(null, result.insertId);
+      console.log("Associations record stored in SQL for srcid/dstid: " + associationRecord.srcid + "/" + associationRecord.dstid);
+      return callback(null, result);
     });
   });
 }
@@ -60,7 +60,7 @@ function getRandomAssociationRecord (srcid, callback) {
     connection.query('SELECT Association,'+
        'CAST((SELECT sum(assv)' +
        '      FROM Associations AS b2' +
-       '     WHERE b2.srcid = ?'
+       '     WHERE b2.srcid = ?' +
        '     AND b2.dstid <= Associations.dstid' +
        '     ) AS FLOAT) /' +
        '(SELECT sum(assv) FROM Associations)' +
@@ -96,12 +96,11 @@ function getRandomAssociationRecord (srcid, callback) {
 
 
 function getAssociationRecord(srcid, dstid, callback) {
-  var set = {assv: assv};
-  pool.query('SELECT Associations SET ? WHERE srcid = ? AND dstid = ?', [srcid, dstid], function (err, res) {
+  pool.query('SELECT * FROM Associations WHERE srcid = ? AND dstid = ? LIMIT 1', [srcid, dstid], function (err, res) {
     if (err) {
       return callback(err);
     }
-    return callback(null, res);
+    return callback(null, res[0]);
   });
 }
 
@@ -111,15 +110,25 @@ function updateAssociationRecord(srcid, dstid, assv, callback) {
     if (err) {
       return callback(err);
     }
-    console.log("Associations record updated in SQL for id: " + id);
+    console.log("Associations record updated in SQL for srcid/dstid: " + srcid + "/" + dstid);
     return callback(null, res);
   });
 }
 
+function deleteAssociationRecord(srcid, dstid, callback) {
+  pool.query('DELETE FROM Associations WHERE srcid = ? AND dstid = ?', [srcid, dstid], function (err, res) {
+    if (err) {
+      return callback(err, false);
+    }
+    console.log("Associations record deleted in SQL for srcid/dstid: " + srcid + "/" + dstid);
+    return callback(null, true);
+  });
+}
 
 module.exports = {
   insertAssociationRecord: insertAssociationRecord,
   getRandomAssociationRecord: getRandomAssociationRecord,
   getAssociationRecord: getAssociationRecord,
-  updateAssociationRecord: updateAssociationRecord
+  updateAssociationRecord: updateAssociationRecord,
+  deleteAssociationRecord: deleteAssociationRecord
 };

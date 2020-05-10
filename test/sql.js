@@ -1,44 +1,50 @@
-let chai = require('chai');
-let chaiHttp = require('chai-http');
-let should = chai.should();
-chai.use(chaiHttp);
+const { assert } = require('chai')
 let app = require('../app');
+const Sql = require('../src/sql');
 
-describe("Lambda evaluator", function() {
+describe("Sql associative value storage", function() {
 
-    describe("Simple expression", function() {
-      it("Simple substitutions to variable", function(done) {
-        let request = {
-            expression: "((&x.((&y.(xy))x))(&z.w))"
+    describe("Association select", function() {
+      it("Select a random Association", function(done) {
+        let association = {
+            srcid: 12321,
+            dstid: 34324,
+            assv: 23
         };
 
-        chai.request(app)
-            .post('/api/lambda/evaluate')
-            .send(request)
-            .end((err, res) => {
-                  res.should.have.status(200);
-                  res.body.result.should.be.a('string');
-                  res.body.result.should.be.eql("w");
-              done();
-            });
-      });
-    });
 
-    describe("Simple expression", function() {
-      it("Simple substitutions to variable", function(done) {
-        let request = {
-            expression: "(&x.&y.(xy))(&x.&y.(xy))"
-        };
+        Sql.deleteAssociationRecord(association.srcid,association.dstid, function(err, deleted) {
+          if (err) {
+            assert.fail(err);
+          }
 
-        chai.request(app)
-            .post('/api/lambda/evaluate')
-            .send(request)
-            .end((err, res) => {
-                  res.should.have.status(200);
-                  res.body.result.should.be.a('string');
-                  res.body.result.should.be.eql("\\y.\\a.ya");
-              done();
+          assert.ok(deleted);
+
+          Sql.insertAssociationRecord(association, function(err, result) {
+            if (err) {
+              assert.fail(err);
+            }
+
+            Sql.getAssociationRecord(association.srcid,association.dstid, function(err, result) {
+              if (err) {
+                assert.fail(err);
+              }
+
+              assert.equal(result.srcid, association.srcid);
+              assert.equal(result.dstid, association.dstid);
+              assert.equal(result.assv, association.assv);  
+
+              Sql.deleteAssociationRecord(association.srcid,association.dstid, function(err, deleted) {
+                if (err) {
+                  assert.fail(err);
+                }
+
+                assert.ok(deleted);
+                done();
+              });
             });
+          });
+        });
       });
     });
 
