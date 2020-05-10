@@ -32,32 +32,20 @@ handleDisconnect();
 
 
 function insertAssociationRecord (associationRecord, callback) {
-
-  pool.getConnection(function(err, connection) {
-    if (err) {
-      return callback(err);
-    }
-    connection.query('INSERT INTO Associations SET ?', associationRecord, function (err, result) {
+  pool.query('INSERT INTO Associations SET ?', associationRecord, function (err, result) {
       if (err) {
         return callback(err);
       }
 
-      connection.release();
       console.log("Associations record stored in SQL for srcid/dstid: " + associationRecord.srcid + "/" + associationRecord.dstid);
       return callback(null, result);
     });
-  });
 }
 
 
 function getRandomAssociationRecord (srcid, callback) {
-  // obtain all entities within bounding box from point position
-  pool.getConnection(function(err, connection) {
-    if (err) {
-      return callback(err);
-    }
     // get cumulative probabilities
-    connection.query('SELECT Association,'+
+  pool.query('SELECT Association,'+
        'CAST((SELECT sum(assv)' +
        '      FROM Associations AS b2' +
        '     WHERE b2.srcid = ?' +
@@ -87,10 +75,8 @@ function getRandomAssociationRecord (srcid, callback) {
             return callback(err);
           }
 
-          connection.release();
           callback(null, res, hasMore);
         
-      });
   });
 }
 
@@ -100,6 +86,7 @@ function getAssociationRecord(srcid, dstid, callback) {
     if (err) {
       return callback(err);
     }
+
     return callback(null, res[0]);
   });
 }
