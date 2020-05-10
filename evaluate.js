@@ -6,8 +6,8 @@ const fs = require('fs');
 const util = require('util');
 
 const axi = axios.create({
-	baseURL: 'http://localhost:8080/api/',
-	timeout: 1000
+	baseURL: 'http://localhost:9001/api/',
+	timeout: 10000
   });
 
 let filename;
