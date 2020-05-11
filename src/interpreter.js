@@ -1,8 +1,6 @@
 const AST = require('./ast');
 const DataLib = require('./datalib');
-
-const AssociativeValueIncreaseFactor = 1;
-const AssociativeValueDecreaseFactor = 0.5;
+const Sql = require('./sql');
 
 const isValue = node => node instanceof AST.Abstraction || ('data' in node && node.data.type == 'abs');
 const isName = node => node instanceof AST.Identifier || ('data' in node && (node.data.type == 'id')); // TODO: add field to free denoting name or value
@@ -39,24 +37,21 @@ const getAstIfNeeded = (entity, cb) => {
   }
 }
 
-const apply = (abstraction, input, lastAst, callback) => {
+const apply = (abstraction, input, callback) => {
   console.log('### A1 ###');
   if (!typecheck(abstraction, input)) {
     // can't apply these two. return unchanged AST
-    return callback(lastAst, false);
+    return callback(null, false);
   }
   // create an application of the two entities
   getAstIfNeeded(abstraction, (abstractionPreAst) => {
     getAstIfNeeded(input, (inputPreAst) => {
       console.log('### A2 ###');
-      DataLib.readOrCreateApplication(abstractionPreAst.id, inputPreAst.id, (application) => {
-        var applicationAst = new AST.Application(abstractionPreAst, inputPreAst);
-        return evaluate(applicationAst, (astOut) => {
-          console.log('### A3 ###');
-          // was able to apply. return changed AST
-          return callback(astOut, true);
-          // TODO: write associative value
-        });
+      var applicationAst = new AST.Application(abstractionPreAst, inputPreAst);
+      return evaluate(applicationAst, (astOut) => {
+        console.log('### A3 ###');
+        // was able to apply. return changed AST
+        return callback(astOut, true);
       });
     });
   });
@@ -70,59 +65,42 @@ const getValueFromX = (x) => {
   return x / (x + Math.E);
 }
 
-const getAdjustedAssociativeValue = (assv, success) => {
-  var x = getXfromValue(assv);
-  if (success) {
-    x += AssociativeValueIncreaseFactor;
-  } else {
-    x -= AssociativeValueDecreaseFactor;
-    if (x < 0) x = 0; // minimum for x (no max)
-  }
-  return getValueFromX(x);
-}
-
-const adjustAssociativeValue = (association, success, cb) =>  {
-  var oldAssv = association.assv;
-  var newAssv = getAdjustedAssociativeValue(oldAssv, success);
-  association.assv = newAssv;
-  DataLib.updateAssociation(association, function(written) {
-    if (written) {
-      console.log('updated associative value ' + oldAssv + '=>' + newAssv);
-      return cb(true);
-    } else {
-      console.log('failed to update assv: ' + association.srcid + " -> " + association.dstid);
+const adjustAssociativeValue = (srcid, dstid, cb) =>  {
+  Sql.incrementAssociationRecord(srcid, dstid, function(err, result) {
+    if (err) {
+      console.log('failed to update assv: ' + srcid + " -> " + dstid);
       return cb(false);
-    }  
-  });   
+    }
+
+    association.assv = association.assv + 1;
+    console.log('incremented associative value ' + srcid + " -> " + dstid);
+    return cb(true);
+  });
 }
 
 // TODO: assv from lastAst -> input
-const applyAndAdjustAssociativeValue = (data, input, lastAst, callback) => {
+const applyAndAdjustAssociativeValue = (data, input, callback) => {
   console.log('*** AA1 ***');
-  apply(data, input, lastAst, (astOut, success) => {
+  apply(data, input, (astOut, success) => {
     if ('association' in data && data.association && data.association.srcid == input.id && data.association.dstid == data.id) {
       // with association, was pulled using association table
-      return adjustAssociativeValue(data.association, success, (written) => {
+      return adjustAssociativeValue(input.id, data.id, (written) => {
         console.log('*** AA2 ***');
         callback(astOut);
       });
     }
 
     // no association, was pulled straight from Diary, created anew, or has old association
-    DataLib.readAssociationByIds(input.id, data.id, (association) => {
-      if (association) {
-        console.log('*** AA3 *** ' + association.assv);
-        return adjustAssociativeValue(association, success, (written) => {
-          callback(astOut);
-        });
+      var association = {
+        srcid: input.id, 
+        dstid: data.id,
+        assv: 1
       }
-
-      DataLib.readOrCreateAssociation(input.id, data.id, getValueFromX(Math.random()), (association2) => {
+      Sql.insertAssociationRecord(association, (err, association2) => {
         console.log('*** AA4 ***');
-        if (association2) console.log('created associative value ' + association2.assv);
-        else              console.log('failed to create assv: ' + input.id + " -> " + data.id); // already exists is ok (TODO: should actually update in this case)
+        if (!err) console.log('created associative value ' + input.id + " -> " + data.id + " : " + association2.assv);
+        else              console.log('failed to create assv: ' + input.id + " -> " + data.id + " : " + err); // already exists somehow or errored out
         return callback(astOut);
-      });
     });
   });
 }
@@ -133,6 +111,7 @@ const applyAndAdjustAssociativeValue = (data, input, lastAst, callback) => {
 // make selections. also writes associative values upon selection
 // (substitution for a lambda combinator)
 const combine = (lastAst) => {
+  console.log("*** C ***");
   console.log(lastAst);
   if (lastAst != null) console.log("*** C LAST AST *** " + lastAst.data.id);
 //  DataLib.readByRandomValue((input) => {
@@ -143,15 +122,14 @@ const combine = (lastAst) => {
       return setTimeout(combine, 1, lastAst);
     }
     console.log("********************* C0 ********************* " + input.type + ","+input.id);
-    // TODO: run associative value selection math
     // see if lastAst is usable as an abstraction to apply to the input
-    // TODO: make this selection (lastAst or read-abstraction or input) probabilistic
-    if (//Math.random() > 0.5 &&
+    // this selection (lastAst or read-abstraction or input) is probabilistic
+    if (Math.random() > 0.5 &&
          lastAst 
         && (lastAst.type == 'abs' || 
            (lastAst.type == 'free' && typeof lastAst.argCount === 'number' && lastAst.argCount > lastAst.args.length))) {
       console.log("*** C1 *** -> " + input.type + " : " + lastAst.type);
-      applyAndAdjustAssociativeValue(lastAst, input, lastAst, (astOut) => {
+      applyAndAdjustAssociativeValue(lastAst, input, (astOut) => {
         setTimeout(combine, 1, astOut);
       });
     } else if (Math.random() > 0.5) {
@@ -162,7 +140,7 @@ const combine = (lastAst) => {
               return setTimeout(combine, 1, lastAst);
             }
             console.log("*** C2 *** -> " + input.type + " : " + freeIdentifier.type);
-            applyAndAdjustAssociativeValue(freeIdentifier, input, lastAst, (astOut) => {
+            applyAndAdjustAssociativeValue(freeIdentifier, input, (astOut) => {
               setTimeout(combine, 1, astOut);
             });
         });
@@ -174,7 +152,7 @@ const combine = (lastAst) => {
           return setTimeout(combine, 1, lastAst);
         }
         console.log("*** C2 *** -> " + input.type + " : " + applicator.type);
-        applyAndAdjustAssociativeValue(applicator, input, lastAst, (astOut) => {
+        applyAndAdjustAssociativeValue(applicator, input, (astOut) => {
           setTimeout(combine, 1, astOut);
         });
       });

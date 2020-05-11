@@ -2,6 +2,7 @@
 
 const datastore = require('./datastore');
 
+const Sql = require('./sql');
 
 
 
@@ -33,73 +34,23 @@ function readByEquivalenceClass (id) {
   });
 }
 
-// reads an applicator fragment using cascading methods
+// reads applicator based on probabilistic selection of matching associations
 function readApplicatorByAssociativeValue(sourceId, cb) {
-	readAssociationByAssociativeValue(sourceId, (association) => {
-		if (association && Math.random() > 0.5) {
+	Sql.getRandomAssociationRecord(sourceId, (err, association) => {
+		if (!err && association && association.dstid) {
 			console.log("$$$ A1 $$$");
 			return readById(association.dstid, (entity) => {
-				entity.association = association;
-				return cb(entity);
+				if (entity) {
+					entity.association = association;
+					return cb(entity);
+				}
 			});
 		}
 
-		readAssociationByHighestAssociativeValue(sourceId, (association2) => {
-			if (association2 && Math.random > 0.5) {
-				console.log("$$$ A2 $$$");
-				return readById(association2.dstid, (entity) => {
-					entity.association = association2;
-					return cb(entity);
-				});
-			}
-
-      // no assv to report
+      // no assv to report, select at random
 			console.log("$$$ A3 $$$");
 			return readApplicatorByRandomValue(cb);
-		});
 	});
-}
-
-
-// reads a fragment with highest available associative value
-function readAssociationByHighestAssociativeValue (sourceId, cb) {
-	const query = datastore.ds.createQuery('Association')
-	 .filter('srcid', '=', sourceId)
-	 .order('assv', { descending: true })
-	 .limit(1);
-  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
-  	if (entities && entities.length) {
-   		// normal case, return entity
-	   	var entity = entities[Object.keys(entities)[0]];
-	   	entity.id = entity[datastore.ds.KEY]['id'];
-	   	console.log(entity.srcid, ' => ', entity.dstid);
-  		return cb(entity);
-  	}
-		// if not found
-		return cb(null);
-  });
-}
-
-
-// reads a fragment with random associative value
-function readAssociationByAssociativeValue (sourceId, cb) {
-	const query = datastore.ds.createQuery('Association')
-	 .filter('srcid', '=', sourceId)
-   .filter('assv', '<=', Math.random())
-	 .order('assv', { descending: true })
-	 .limit(1);
-  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
-  	if (entities && entities.length) {
-   		// normal case, return entity
-	   	var entity = entities[Object.keys(entities)[0]];
-	   	entity.id = entity[datastore.ds.KEY]['id'];
-	   	console.log(entity.srcid, ' => ', entity.dstid);
-  		return cb(entity);
-  	}
-
-		// if not found
-		return cb(null);
-  });
 }
 
 // randomly reads an abs or free id fragment
@@ -597,8 +548,6 @@ function updateAssociation (data, cb) {
 module.exports = {
 	readByEquivalenceClass: readByEquivalenceClass,
 	readApplicatorByAssociativeValue: readApplicatorByAssociativeValue,
-	readAssociationByHighestAssociativeValue: readAssociationByHighestAssociativeValue,
-	readAssociationByAssociativeValue: readAssociationByAssociativeValue,
 	readApplicatorByRandomValue: readApplicatorByRandomValue,
 	readAbstractionByRandomValue: readAbstractionByRandomValue,
   readFreeIdentifierByRandomValue: readFreeIdentifierByRandomValue,

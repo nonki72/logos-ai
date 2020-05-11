@@ -5,6 +5,7 @@ var express = require('express');
 const async = require('async');
 const execFile = require('child_process').execFile;
 const DataLib = require('../src/datalib');
+const Sql = require('../src/sql');
 const Lexer = require('../src/lexer');
 const Parser = require('../src/parser');
 const Interpreter = require('../src/interpreter');
@@ -141,9 +142,14 @@ request parameters:
   associativevalue
  */
 router.post('/association', (req, res, next) => {
-  DataLib.readOrCreateAssociation(req.body.sourceid, req.body.destinationid, req.body.associativevalue, (association) => {
-    if (association == null) {
-      return next('Could not create association');
+  var association = {
+    srcid: req.body.sourceid,
+    dstid: req.body.destinationid,
+    assv: req.body.associativevalue
+  };
+  Sql.insertAssociationRecord(association, (err, result) => {
+    if (err) {
+      return next('Could not create association:' + err);
     }
     return res.status(200).json({"association":association});
   });

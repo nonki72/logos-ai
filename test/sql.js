@@ -5,7 +5,7 @@ const util = require('util');
 
 describe("Sql associative value storage", async function() {
 
-    describe("Association create get delete", async function() {
+    describe("Association create get increment get delete", async function() {
       it("Select a random Association", async function() {
         let association = {
             srcid: 12321,

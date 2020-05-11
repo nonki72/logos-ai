@@ -37,8 +37,9 @@
     "request": "^2.88.2"
   },
   "devDependencies": {
-    "mocha": "^7.1.1",
     "chai": "^4.2.0",
-    "chai-http": "^4.3.0"
+    "chai-http": "^4.3.0",
+    "google-datastore-emulator": "^3.0.2",
+    "mocha": "^7.1.1"
   }
 }

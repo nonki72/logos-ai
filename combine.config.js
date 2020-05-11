@@ -1,8 +1,8 @@
 module.exports = {
   apps : [
       {
-        name: "Logos",
-        script: "./app.js",
+        name: "Logos combinator",
+        script: "node -- combine.js",
         watch: true,
         autorestart : false,
         env: {
