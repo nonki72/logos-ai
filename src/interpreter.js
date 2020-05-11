@@ -72,7 +72,6 @@ const adjustAssociativeValue = (srcid, dstid, cb) =>  {
       return cb(false);
     }
 
-    association.assv = association.assv + 1;
     console.log('incremented associative value ' + srcid + " -> " + dstid);
     return cb(true);
   });
@@ -82,25 +81,27 @@ const adjustAssociativeValue = (srcid, dstid, cb) =>  {
 const applyAndAdjustAssociativeValue = (data, input, callback) => {
   console.log('*** AA1 ***');
   apply(data, input, (astOut, success) => {
-    if ('association' in data && data.association && data.association.srcid == input.id && data.association.dstid == data.id) {
-      // with association, was pulled using association table
-      return adjustAssociativeValue(input.id, data.id, (written) => {
-        console.log('*** AA2 ***');
-        callback(astOut);
-      });
-    }
+    Sql.getAssociationRecord(input.id, data.id, function(err, association) {
+      if (!err) {
+        adjustAssociativeValue(input.id, data.id, (written) => {
+          console.log('*** AA2 ***');
+          return callback(astOut);
+        });
+      } else {
 
-    // no association, was pulled straight from Diary, created anew, or has old association
-      var association = {
-        srcid: input.id, 
-        dstid: data.id,
-        assv: 1
+        // no association, was pulled straight from Diary, created anew, or has old association
+          var association = {
+            srcid: input.id, 
+            dstid: data.id,
+            assv: 1
+          }
+          Sql.insertAssociationRecord(association, (err, association2) => {
+            console.log('*** AA4 ***');
+            if (!err) console.log('created associative value ' + input.id + " -> " + data.id + " : " + association2.assv);
+            else              console.log('failed to create assv: ' + input.id + " -> " + data.id + " : " + err); // already exists somehow or errored out
+            return callback(astOut);
+        });
       }
-      Sql.insertAssociationRecord(association, (err, association2) => {
-        console.log('*** AA4 ***');
-        if (!err) console.log('created associative value ' + input.id + " -> " + data.id + " : " + association2.assv);
-        else              console.log('failed to create assv: ' + input.id + " -> " + data.id + " : " + err); // already exists somehow or errored out
-        return callback(astOut);
     });
   });
 }
