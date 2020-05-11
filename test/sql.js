@@ -28,7 +28,14 @@ describe("Sql associative value storage", async function() {
           const getOut = await getAssociationRecord(association.srcid,association.dstid);
           assert.equal(getOut.srcid, association.srcid);
           assert.equal(getOut.dstid, association.dstid);
-          assert.equal(getOut.assv, association.assv);  
+          assert.equal(getOut.assv, association.assv);
+
+          var incrementAssociationRecord = util.promisify(Sql.incrementAssociationRecord);
+          const incOut = await incrementAssociationRecord(association.srcid, association.dstid);
+          assert.equal(incOut.changedRows,1);
+
+          const getOut2 = await getAssociationRecord(association.srcid,association.dstid);
+          assert.equal(getOut2.assv,association.assv+1);
 
           const deleteOut2 = await deleteAssociationRecord(association.srcid,association.dstid);
           assert.ok(deleteOut2);

@@ -96,11 +96,21 @@ function getAssociationRecord(srcid, dstid, callback) {
 
 function updateAssociationRecord(srcid, dstid, assv, callback) {
   var set = {assv: assv};
-  pool.query('UPDATE Associations SET ? WHERE srcid = ? AND dstid = ?', [srcid, dstid], function (err, res) {
+  pool.query('UPDATE Associations SET ? WHERE srcid = ? AND dstid = ?', [set, srcid, dstid], function (err, res) {
     if (err) {
       return callback(err);
     }
     console.log("Associations record updated in SQL for srcid/dstid: " + srcid + "/" + dstid);
+    return callback(null, res);
+  });
+}
+
+function incrementAssociationRecord(srcid, dstid, callback) {
+  pool.query('UPDATE Associations SET assv = assv + 1 WHERE srcid = ? AND dstid = ?', [srcid, dstid], function (err, res) {
+    if (err) {
+      return callback(err);
+    }
+    console.log("Associations record incremented in SQL for srcid/dstid: " + srcid + "/" + dstid);
     return callback(null, res);
   });
 }
@@ -120,5 +130,6 @@ module.exports = {
   getRandomAssociationRecord: getRandomAssociationRecord,
   getAssociationRecord: getAssociationRecord,
   updateAssociationRecord: updateAssociationRecord,
+  incrementAssociationRecord: incrementAssociationRecord,
   deleteAssociationRecord: deleteAssociationRecord
 };
