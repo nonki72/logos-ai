@@ -74,7 +74,7 @@ function getRandomAssociationRecord (srcid, callback) {
          'ORDER BY CumProb ASC ' +
          'LIMIT 1', [Math.random()], function (err, results) {
 
-          if (err) {
+          if (err || !results || results.length == 0) {
             return callback(err);
           }
 

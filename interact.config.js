@@ -1,15 +1,17 @@
 module.exports = {
   apps : [
       {
-        name: "Logos",
-        script: "./app.js",
+        name: "Logos interact",
+        script: "node -- interact.js",
         watch: true,
-        autorestart : true,
+        autorestart : false,
         env: {
-	  "GOOGLE_APPLICATION_CREDENTIALS":"/home/chrx/.google/logos-162301-5257396ab743.json",
           "GCLOUD_PROJECT": "logos-162301",
           "CLOUD_BUCKET": "logos-162301",
           "DATASTORE_DATASET":"logos-162301",
+          "DATASTORE_EMULATOR_HOST_PATH":"localhost:8081/datastore",
+          "DATASTORE_EMULATOR_HOST":"localhost:8081",
+          "DATASTORE_HOST":"http://localhost:8081",
           "DATASTORE_PROJECT_ID":"logos-162301",
           "MYSQL_USER":"logos",
           "MYSQL_PASSWORD":"sparkle8twilight",

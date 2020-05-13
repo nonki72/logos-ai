@@ -67,9 +67,19 @@ const getValueFromX = (x) => {
 
 const adjustAssociativeValue = (srcid, dstid, cb) =>  {
   Sql.incrementAssociationRecord(srcid, dstid, function(err, result) {
-    if (err) {
-      console.log('failed to update assv: ' + srcid + " -> " + dstid);
-      return cb(false);
+    if (err || result.affectedRows == 0) {
+      var association = {
+        srcid: srcid,
+        dstid: dstid,
+        assv: 1
+      };
+      Sql.insertAssociationRecord(association, function(err2, result2) {
+        if (err2) {
+          console.log('failed to update assv: ' + srcid + " -> " + dstid);
+          return cb(false);
+        }
+        return cb(true);
+      });
     }
 
     console.log('incremented associative value ' + srcid + " -> " + dstid);

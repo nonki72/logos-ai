@@ -1,4 +1,5 @@
 const DataLib = require('./datalib');
+const Sql = require('./sql');
 const FunctionParser = require('./functionparser.js');
 
 const interact = () => {
@@ -24,15 +25,18 @@ const interact = () => {
                                         console.log("*** C3 *** -> " + inputResult + " not found");
                                         return setTimeout(interact, 1);
                                     }
-                                    DataLib.readAssociationByHighestAssociativeValue(namedFreeIdentifier.id, (highestAssociation) => {
-                                        if (highestAssociation == null) {
+                                    console.log(inputResult + " id: " + namedFreeIdentifier.id);
+                                    Sql.getRandomAssociationRecord(namedFreeIdentifier.id, (err, randomAssociationId) => {
+                                        if (err || randomAssociationId == null) {
                                             console.log("*** C3 *** -> " + inputResult + " no assv found");
                                             return setTimeout(interact, 1);
                                         }
-console.log("****************************");
-console.log(highestAssociation);
-                                        FunctionParser.executeFunction(storedOutputFunction, "OUTPUT:"+highestAssociation, () => {
-                                            return setTimeout(interact, 1);
+                                        DataLib.readById(randomAssociationId, function(randomAssociation) {
+                                            console.log("****************************");
+                                            console.log(JSON.stringify(randomAssociation,null,4));
+                                            FunctionParser.executeFunction(storedOutputFunction, "OUTPUT:"+randomAssociation, () => {
+                                                return setTimeout(interact, 1);
+                                            });
                                         });
                                     });
                                 });
