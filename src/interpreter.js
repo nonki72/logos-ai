@@ -116,8 +116,7 @@ const combine = (lastAst) => {
   console.log(lastAst);
   if (lastAst != null) console.log("*** C LAST AST *** " + lastAst.data.id);
 //  DataLib.readByRandomValue((input) => {
-    DataLib.readFreeIdentifierByRandomValue((input) => {
-
+  DataLib.readFreeIdentifierByRandomValue((input) => {
     if (!input) {
       console.log("*** C0.5 *** ");
       return setTimeout(combine, 1, lastAst);

@@ -4,7 +4,7 @@ module.exports = {
         name: "Logos",
         script: "./app.js",
         watch: true,
-        autorestart : false,
+        autorestart : true,
         env: {
           "GCLOUD_PROJECT": "logos-162301",
           "CLOUD_BUCKET": "logos-162301",
