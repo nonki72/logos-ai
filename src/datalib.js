@@ -166,24 +166,6 @@ async function readByRandomValue (cb) {
   }
   return cb(res);
 }
-//**************************************************************************************************************TODO:MYSQL
-async function readAssociationByIds(sourceId, destId, cb) {
-	const query = datastore.ds.createQuery('Association')
-	 .filter('srcid', '=', sourceId)
-   .filter('dstid', '=', destId)
-   .limit(1);
-  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
-  	if (entities && entities.length) {
-	   	var entity = entities[Object.keys(entities)[0]];
-	   	entity.id = entity[datastore.ds.KEY]['id'];
-//	   	console.log(entity);
-  		return cb(entity);
-  	}
-  	
-		// if not found
-		return cb(null);
-  });
-}
 
 async function readById (id, cb) {
 	const query = {
@@ -257,37 +239,6 @@ async function readModuleByPath(path, cb) {
 
 
 //                     ######### WRITE FUNCTIONS ############
-
-
-
-//****************************************************************************************TODO MYSQL
-function readOrCreateAssociation (sourceId, destId, associativeValue, cb) {
-	const query = datastore.ds.createQuery('Association')
-   .filter('srcid', '=', sourceId)
-   .filter('dstid', '=', destId)
-   .limit(1);
-  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
-  	if (entities && entities.length) {
-	   	var entity = entities[Object.keys(entities)[0]];
-	   	entity.id = entity[datastore.ds.KEY]['id'];
-  		return cb(entity);
-  	}
-
-		// if not found
-	  var data = {
-	  	srcid: sourceId,
-	  	dstid: destId,
-		  assv: associativeValue
-	  };
-		datastore.create('Association', data, function(err, entity){
-			if (err) {
-				console.log("association err ", err);
-	  		return cb(null);
-			}
-	    return cb(entity);
-		});
-  });
-}
 
 
 async function readOrCreateAbstraction (name, definition2, cb) {
@@ -595,16 +546,6 @@ async function update (data, cb) {
   return cb(res);
 }
 
-//**************************************************************************** TODO MYSQL
-function updateAssociation (data, cb) {
-	datastore.update('Association', data.id, data, function(err) {
-		if (err) {
-			console.log("update (lib) error: " + err);
-			return cb(false);
-		}
-		return cb(true);
-	});
-}
 
 module.exports = {
 	readByEquivalenceClass: readByEquivalenceClass,
@@ -615,12 +556,10 @@ module.exports = {
   readFreeIdentifierByName: readFreeIdentifierByName,
   readFreeIdentifierByFn: readFreeIdentifierByFn,
 	readByRandomValue: readByRandomValue,
-	readAssociationByIds: readAssociationByIds,
 	readById: readById,
 	readClassByName: readClassByName,
 	readModuleByName: readModuleByName,
 	readModuleByPath: readModuleByPath,
-	readOrCreateAssociation:readOrCreateAssociation,
 	readOrCreateAbstraction: readOrCreateAbstraction,
 	readOrCreateApplication: readOrCreateApplication,
 	readOrCreateFreeIdentifier: readOrCreateFreeIdentifier,
@@ -629,5 +568,4 @@ module.exports = {
 	readOrCreateClass: readOrCreateClass,
 	readOrCreateModule: readOrCreateModule,
 	update: update,
-	updateAssociation: updateAssociation
 };

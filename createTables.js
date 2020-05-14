@@ -29,6 +29,7 @@ var SQL_STRING_ASSOCIATION = 'CREATE TABLE Associations (\n' +
 '    assv BIGINT UNSIGNED NOT NULL,\n' +
 '    INDEX (assv),\n' +
 '    INDEX (srcid,dstid),\n' +
+'    INDEX (dstid,srcid), \n' +
 '    UNIQUE (srcid, dstid)\n' +
 ');';
 
