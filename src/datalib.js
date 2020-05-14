@@ -1,11 +1,21 @@
 'use strict';
-
-const datastore = require('./datastore');
-
+var mongo = require('mongodb');
+var MongoClient = mongo.MongoClient;
+var ObjectID = mongo.ObjectID;
 const Sql = require('./sql');
 
+const connectOption = {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+}
 
 
+
+async function getDb() {
+	var url = "mongodb://localhost:27017/";
+  const client = await MongoClient.connect(url, connectOption).catch(err => { console.error(err); });
+	return client;
+}
 
 //                          ########### READ FUNCTIONS ############
 
@@ -14,24 +24,21 @@ const Sql = require('./sql');
 
 // takes a lambda fragment and min value
 // reads most reduced equivalent fragment from its EC (Equivalence Class)
-function readByEquivalenceClass (id) {
-  datastore.read('EC', id, function(err, entity) {
-		const query = datastore.ds.createQuery('EC')
-	   .filter('ecid', '=', entity.ecid)
-	   .order('size')
-	   .limit(1)
-  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
-	  	if (entities && entities.length) {
-		   	var entity = entities[Object.keys(entities)[0]];
-		   	entity.id = entity[datastore.ds.KEY]['id'];
-//		   	console.log(entity);
-	  		return cb(entity);
-	  	}
-
-			// if none found
-			return cb(entity);
-	  });
-  });
+async function readByEquivalenceClass (id) {
+	const query = {
+		'ecid': entity.ecid
+	};
+	var client = await getDb();
+	let res;
+	try {
+		const db = await client.db("logos");
+		res = await db.collection('EC').find(query).sort({'size':-1}).limit(1);
+  } catch(err) {
+  	console.error(err);
+  } finally {
+  	client.close();
+  }
+  return cb(res);
 }
 
 // reads applicator based on probabilistic selection of matching associations
@@ -41,7 +48,7 @@ function readApplicatorByAssociativeValue(sourceId, cb) {
 			console.log("$$$ A1 $$$");
 			return readById(association.dstid, (entity) => {
 				if (entity) {
-					entity.association = association;
+					entity.association = association; // ************************* needed?
 					return cb(entity);
 				}
 			});
@@ -65,117 +72,102 @@ function readApplicatorByRandomValue (cb) {
 
 // randomly reads an abs fragment
 // may be suitable for using as a lhs to apply to input
-function readAbstractionByRandomValue (cb) {
-	const query = datastore.ds.createQuery('Diary')
-	 .filter('type', '=', 'abs')
-	 .filter('invalid', '=', false)
-   .filter('rand', '<=', Math.random())
-	 .order('rand', { descending: true })
-   .limit(1);
-  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
-  	if (entities && entities.length) {
-	   	var entity = entities[Object.keys(entities)[0]];
-	   	entity.id = entity[datastore.ds.KEY]['id'];
-//	   	console.log(entity);
-  		return cb(entity);
-  	}
-  	
-		// if not found
-		return cb(null);
-  });
+async function readAbstractionByRandomValue (cb) {
+	const query = {
+		'type': 'abs',
+		'invalid': 'false',
+		'rand': {$lte: Math.random()}
+	};
+	var client = await getDb();
+	let res;
+	try {
+		const db = await client.db("logos");
+		res = await db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
+  } catch(err) {
+  	console.error(err);
+  } finally {
+  	client.close();
+  }
+  return cb(res);
 }
 
 // randomly reads a free fragment
 // may be suitable for using as a lhs to apply to input
-function readFreeIdentifierByRandomValue (cb) {
-	const query = datastore.ds.createQuery('Diary')
-	 .filter('type', '=', 'free')
-	 //.filter('invalid', '=', false)
-   .filter('rand', '<=', Math.random())
-	 .order('rand', { descending: true })
-   .limit(1);
-  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
-  	if (entities && entities.length) {
-	   	var entity = entities[Object.keys(entities)[0]];
-	   	entity.id = entity[datastore.ds.KEY]['id'];
-//	   	console.log(entity);
-  		return cb(entity);
-  	}
-  	
-		// if not found
-		return cb(null);
-  });
+async function readFreeIdentifierByRandomValue (cb) {
+	const query = {
+		'type': 'free',
+		'invalid': 'false',
+		'rand': {$lte: Math.random()}
+	};
+	var client = await getDb();
+	let res;
+	try {
+		const db = await client.db("logos");
+		res = await db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
+  } catch(err) {
+  	console.error(err);
+  } finally {
+  	client.close();
+  }
+  return cb(res);
 }
 
-function readFreeIdentifierByName (name, cb) {
-	const query = datastore.ds.createQuery('Diary')
-	 .filter('type', '=', 'free')
-   .filter('name', '=', name)
-   .limit(1);
-  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
-  	if (entities && entities.length) {
-	   	var entity = entities[Object.keys(entities)[0]];
-	   	entity.id = entity[datastore.ds.KEY]['id'];
-//	   	console.log(entity);
-  		return cb(entity);
-  	}
-  	
-		// if not found
-		return cb(null);
-  });
+async function readFreeIdentifierByName (name, cb) {
+	const query = {
+		'type': 'free',
+		'name': name
+	};
+	var client = await getDb();
+	let res;
+	try {
+		const db = await client.db("logos");
+		res = await db.collection('Diary').findOne(query);
+  } catch(err) {
+  	console.error(err);
+  } finally {
+  	client.close();
+  }
+  return cb(res);
 }
 
-function readFreeIdentifierByFn (fn, cb) {
-	const query = datastore.ds.createQuery('Diary')
-	 .filter('type', '=', 'free')
-   .filter('fn', '=', fn)
-   .limit(1);
-  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
-  	if (entities && entities.length) {
-	   	var entity = entities[Object.keys(entities)[0]];
-	   	entity.id = entity[datastore.ds.KEY]['id'];
-//	   	console.log(entity);
-  		return cb(entity);
-  	}
-  	
-		// if not found
-		return cb(null);
-  });
+async function readFreeIdentifierByFn (fn, cb) {
+	const query = {
+		'type': 'free',
+		'fn': fn
+	};
+	var client = await getDb();
+	let res;
+	try {
+		const db = await client.db("logos");
+		res = await db.collection('Diary').findOne(query);
+  } catch(err) {
+  	console.error(err);
+  } finally {
+  	client.close();
+  }
+  return cb(res);
 }
 
 // randomly reads a fragment
-function readByRandomValue (cb) {
-	const query = datastore.ds.createQuery('Diary')
-	 .filter('invalid', '=', false)
-   .filter('rand', '<=', Math.random())
-	 .order('rand', { descending: true })
-	 .limit(1);
-  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
-  	if (entities && entities.length) {
-   		// normal case, return entity
-	   	var entity = entities[Object.keys(entities)[0]];
-	   	// if (entity.type == 'sub') {
-	   	// 	// if substitution, use the replacement
-			  // datastore.read('Diary', entity.def2, function(err,entity2) {
-			  //  	entity2.id = entity2[datastore.ds.KEY]['id'];
-			  //  	console.log(entity2);
-			  // 	return cb(entity2);
-			  // });
-	   	// } else {
-	   		// normal case, return entity
-	   	entity.id = entity[datastore.ds.KEY]['id'];
-//	   	console.log('^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^');
-//	   	console.log(entity);
-  		return cb(entity);
-	  	// }
-	  }
-
-		// if not found
-		return cb(null);
-  });
+async function readByRandomValue (cb) {
+	const query = {
+		'invalid': 'false',
+		'rand': {$lte: Math.random()}
+	};
+	var client = await getDb();
+	let res;
+	try {
+		const db = await client.db("logos");
+		res = await db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
+  } catch(err) {
+  	console.error(err);
+  } finally {
+  	client.close();
+  }
+  return cb(res);
 }
-
-function readAssociationByIds(sourceId, destId, cb) {
+//**************************************************************************************************************TODO:MYSQL
+async function readAssociationByIds(sourceId, destId, cb) {
 	const query = datastore.ds.createQuery('Association')
 	 .filter('srcid', '=', sourceId)
    .filter('dstid', '=', destId)
@@ -193,65 +185,72 @@ function readAssociationByIds(sourceId, destId, cb) {
   });
 }
 
-function readById (id, cb) {
-	datastore.read('Diary', id, function(err, entity) {
-		if (err) {
-			console.log("readById error: " + JSON.stringify(err, null, 2));
-			return cb(null);
-		}
-		return cb(entity);
-	});
+async function readById (id, cb) {
+	const query = {
+		'id': new ObjectID(id)
+	};
+	var client = await getDb();
+	let res;
+	try {
+		const db = await client.db("logos");
+		res = await db.collection('Diary').findOne(query);
+  } catch(err) {
+  	console.error(err);
+  } finally {
+  	client.close();
+  }
+  return cb(res);
 }
 
-function readClassByName(name, cb) {
-	const query = datastore.ds.createQuery('Class')
-	 .filter('name', '=', name)
-   .limit(1);
-  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
-  	if (entities && entities.length) {
-	   	var entity = entities[Object.keys(entities)[0]];
-	   	entity.id = entity[datastore.ds.KEY]['id'];
-//	   	console.log(entity);
-  		return cb(entity);
-  	}
-  	
-		// if not found
-		return cb(null);
-  });
+async function readClassByName(name, cb) {
+	const query = {
+		'name': name
+	};
+	var client = await getDb();
+	let res;
+	try {
+		const db = await client.db("logos");
+		res = await db.collection('Class').findOne(query);
+  } catch(err) {
+  	console.error(err);
+  } finally {
+  	client.close();
+  }
+  return cb(res);
 }
 
-function readModuleByName(name, cb) {
-	const query = datastore.ds.createQuery('Module')
-	 .filter('name', '=', name)
-   .limit(1);
-  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
-  	if (entities && entities.length) {
-	   	var entity = entities[Object.keys(entities)[0]];
-	   	entity.id = entity[datastore.ds.KEY]['id'];
-//	   	console.log(entity);
-  		return cb(entity);
-  	}
-  	
-		// if not found
-		return cb(null);
-  });
+async function readModuleByName(name, cb) {
+	const query = {
+		'name': name
+	};
+	var client = await getDb();
+	let res;
+	try {
+		const db = await client.db("logos");
+		res = await db.collection('Module').findOne(query);
+  } catch(err) {
+  	console.error(err);
+  } finally {
+  	client.close();
+  }
+  return cb(res);
 }
 
-function readModuleByPath(path, cb) {
-	const query = datastore.ds.createQuery('Module')
-	 .filter('path', '=', path)
-   .limit(1);
-  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
-  	if (entities && entities.length) {
-	   	var entity = entities[Object.keys(entities)[0]];
-	   	entity.id = entity[datastore.ds.KEY]['id'];
-//	   	console.log(entity);
-  		return cb(entity);
-  	}
-  	
-		// if not found
-		return cb(null);
-  });
+async function readModuleByPath(path, cb) {
+	const query = {
+		'path': path
+	};
+	var client = await getDb();
+	let res;
+	try {
+		const db = await client.db("logos");
+		res = await db.collection('Module').findOne(query);
+  } catch(err) {
+  	console.error(err);
+  } finally {
+  	client.close();
+  }
+  return cb(res);
 }
 
 
@@ -261,7 +260,7 @@ function readModuleByPath(path, cb) {
 
 
 
-
+//****************************************************************************************TODO MYSQL
 function readOrCreateAssociation (sourceId, destId, associativeValue, cb) {
 	const query = datastore.ds.createQuery('Association')
    .filter('srcid', '=', sourceId)
@@ -291,101 +290,148 @@ function readOrCreateAssociation (sourceId, destId, associativeValue, cb) {
 }
 
 
-function readOrCreateAbstraction (name, definition2, cb) {
-	const query = datastore.ds.createQuery('Diary') // TODO: save the lookups for EC. Remove cat's
-	 .filter('type', '=', 'abs')
-//   .filter('name', '=', name)
-   .filter('def2', '=', definition2)
-   .limit(1);
-  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
-   	var abstractions = entities;
-  	if (abstractions && abstractions.length) {
-	   	var abstraction = abstractions[Object.keys(abstractions)[0]];
-	   	abstraction.id = abstraction[datastore.ds.KEY]['id'];
-//	   	console.log(abstraction);
-  		return cb(abstraction);
-  	}
-
-		// if not found
-	  var data = {
-	  	type: 'abs',
-	  	name: name,
-	  	def2: definition2,
-	  	invalid: false,
-	    rand: Math.random()
-	  };
-		datastore.create('Diary', data, function(err, entity){
-			if (err) {
-				console.log("diary err "+err);
-			}
-	    return cb(entity);
-		});
-  });
-}
-
-function readOrCreateApplication (definition1, definition2, cb) {
-	const query = datastore.ds.createQuery('Diary')
-	 .filter('type', '=', 'app')
-   .filter('def1', '=', definition1)
-   .filter('def2', '=', definition2)
-   .limit(1);
-  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
-   	var applications = entities;
-  	if (applications && applications.length) {
-	   	var application = applications[Object.keys(applications)[0]];
-	   	application.id = application[datastore.ds.KEY]['id'];
-//	   	console.log(application);
-  		return cb(application);
-  	}
+async function readOrCreateAbstraction (name, definition2, cb) {
+	const query = {
+		'type': 'abs',
+//		'name': name,
+		'def2': definition2
+	};
+	var client = await getDb();
+	let res;
+	try {
+		const db = await client.db("logos");
+		res = await db.collection('Diary').findOne(query);
+		if (res) {
+			client.close();
+			return cb(res);
+		}
+  } catch(err) {
+  	console.error(err);
+  }
 
 	// if not found
-	var data = {
-	  	type: 'app',
-	  	def1: definition1,
-	  	def2: definition2,
-	  	invalid: false,
-	    rand: Math.random()
-	};
-	datastore.create('Diary', data, function(err, entity) {
-		if (err) {
-			console.log("diary err "+err);
-		}
-	    return cb(entity);
-	});
-  });
-}
-
-function readOrCreateFreeIdentifier ( name, cb ) {
-	const query = datastore.ds.createQuery('Diary')
-	 .filter('type', '=', 'free')
-   .filter('name', '=', name)
-   .limit(1);
-  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
-   	var identifiers = entities;
-  	if (identifiers && identifiers.length) {
-	   	var identifier = identifiers[Object.keys(identifiers)[0]];
-	   	identifier.id = identifier[datastore.ds.KEY]['id'];
-  		return cb(identifier);
-  	}
-
-		// if not found
-	  var data = {
-	  	type: 'free',
-	  	name: name,
-	  	argn: 0,
-	    rand: Math.random()
-	  };
-		datastore.create('Diary', data, function(err, entity){
-			if (err) {
-				console.log("diary err "+err);
-			}
-	    return cb( entity);
-		});
-	});
-}
-
-function createFreeIdentifierFunction (name, astid, fn, fntype, fnclass, argnum, argtypes, modules, memoize,  cb) {
   var data = {
+  	id: new ObjectID(),
+  	type: 'abs',
+  	name: name,
+  	def2: definition2,
+  	invalid: false,
+    rand: Math.random()
+  };
+
+  try {
+		const db = await client.db("logos");
+  	res = await db.collection('Diary').insertOne(data);
+  } catch (err) {
+  	console.error(err);
+  } finally {
+  	client.close();
+  }
+
+  return cb(data);
+}
+
+async function readOrCreateApplication (definition1, definition2, cb) {
+	const query = {
+		'type': 'app',
+		'def1': definition1,
+		'def2': definition2
+	};
+	var client = await getDb();
+	let res;
+	try {
+		const db = await client.db("logos");
+		res = await db.collection('Diary').findOne(query);
+		if (res) {
+			client.close();
+			return cb(res);
+		}
+  } catch(err) {
+  	console.error(err);
+  }
+
+	// if not found
+  var data = {
+  	id: new ObjectID(),
+  	type: 'app',
+  	def1: definition1,
+  	def2: definition2,
+  	invalid: false,
+    rand: Math.random()
+  };
+
+  try {
+		const db = await client.db("logos");
+  	res = await db.collection('Diary').insertOne(data);
+  } catch (err) {
+  	console.error(err);
+  } finally {
+  	client.close();
+  }
+
+  return cb(data);
+}
+
+async function readOrCreateFreeIdentifier ( name, cb ) {
+	const query = {
+		'type': 'free',
+		'name': name
+	};
+	var client = await getDb();
+	let res;
+	try {
+		const db = await client.db("logos");
+		res = await db.collection('Diary').findOne(query);
+		if (res) {
+			client.close();
+			return cb(res);
+		}
+  } catch(err) {
+  	console.error(err);
+  }
+
+	// if not found
+  var data = {
+  	id: new ObjectID(),
+  	type: 'free',
+  	name: name,
+  	argn: 0,
+    rand: Math.random()
+  };
+
+  try {
+		const db = await client.db("logos");
+  	res = await db.collection('Diary').insertOne(data);
+  } catch (err) {
+  	console.error(err);
+  } finally {
+  	client.close();
+  }
+
+  return cb(data);
+}
+
+async function readOrCreateFreeIdentifierFunction (name, astid, fn, fntype, fnclass, argnum, argtypes, modules, memoize, dbo, cb) {
+	const query = {
+		'type': 'free',
+		'name': name
+	};
+	var client = await getDb();
+	let res;
+	try {
+		const db = await client.db("logos");
+		res = await db.collection('Diary').findOne(query);
+		if (res) {
+			client.close();
+			return cb(res);
+		}
+  } catch(err) {
+  	console.error(err);
+  }
+
+	// if not found
+  var data = {
+  	id: new ObjectID(),
   	type: 'free',
   	name: name,
     astid: astid, // location (id)
@@ -398,143 +444,158 @@ function createFreeIdentifierFunction (name, astid, fn, fntype, fnclass, argnum,
     memo: memoize,
 	  rand: Math.random()
   };
-	datastore.create('Diary', data, function(err, entity){
-		if (err) {
-			console.log("diary err "+err);
-		}
-    return cb( entity);
-	});
+  try {
+		const db = await client.db("logos");
+  	res = await db.collection('Diary').insertOne(data);
+  } catch (err) {
+  	console.error(err);
+  } finally {
+  	client.close();
+  }
 
+  return cb(data);
 }
 
-function readOrCreateFreeIdentifierFunction (name, astid, fn, fntype, fnclass, argnum, argtypes, modules, memoize,  cb) {
-	const query = datastore.ds.createQuery('Diary')
-	 .filter('type', '=', 'free')
-   .filter('name', '=', name)
-   .limit(1);
-  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
-  	if (entities && entities.length) {
-	   	var entity = entities[Object.keys(entities)[0]];
-	   	entity.id = entity[datastore.ds.KEY]['id'];
 
-	   	// overwrite existing entry
-  		return datastore.delete('Diary', entity.id, (err2) => {
-  			if (err2) {
-  				console.log('diary delete err: ' + err2);
-  				return cb(null);
-  			}
-
-  			return createFreeIdentifierFunction(name, astid, fn, fntype, fnclass, argnum, argtypes, modules, memoize,  cb);
-			});
-  	}
-
-  	return createFreeIdentifierFunction(name, astid, fn, fntype, fnclass, argnum, argtypes, modules, memoize,  cb);
-	});
-}
-
-function readOrCreateSubstitution (subType, location1, location2, cb) {
+async function readOrCreateSubstitution (subType, location1, location2, cb) {
   if (subType == 'beta') {
     // check that action1 lhs is abstraction
   }
-	const query = datastore.ds.createQuery('Diary')
-	 .filter('type', '=', 'sub')
-   .filter('styp', '=', subType)
-   .filter('def1', '=', location1)
-   .filter('def2', '=', location2)
-   .limit(1);
-  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
-  	if (entities && entities.length) {
-	   	var entity = entities[Object.keys(entities)[0]];
-	   	entity.id = entity[datastore.ds.KEY]['id'];
-  		return cb(entity);
-  	}
 
-    // actually create the substitution
-    var createSub = function(err,entity) {
-      var data = {
-      	type: 'sub',
-      	styp: subType,
-      	def1: location1,
-      	def2: location2
-      };
-	    datastore.create('Diary', data, function(err, newEntity){
-		    if (err) {
-			    console.log("diary err "+err);
-		    }
-      return cb( newEntity);
-	    });
-    };
-
-	// invalidate the old app/sub anchored here
-	datastore.read('Diary', location1, function(err,entity) {
-      if (entity) {
-	  	  entity.invalid = true;
-        delete entity['id'];
-		    datastore.update('Diary', location1, entity, createSub);
-      }
-	});
-  });
-}
-
-function readOrCreateClass (name, module, cb) {
-	const query = datastore.ds.createQuery('Class')
-   .filter('name', '=', name)
-   .limit(1);
-  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
-  	if (entities && entities.length) {
-	   	var entity = entities[Object.keys(entities)[0]];
-	   	entity.id = entity[datastore.ds.KEY]['id'];
-  		return cb(entity);
-  	}
-
-	  var data = {
-	  	name: name,
-		  module: module
-	  };
-		datastore.create('Class', data, function(err, entity){
-			if (err) {
-				console.log("class err "+err);
-			}
-	    return cb(entity);
-		});
-	});
-}
-
-function readOrCreateModule (name, path, cb) {
-	const query = datastore.ds.createQuery('Module')
-   .filter('name', '=', name)
-   .limit(1);
-  datastore.ds.runQuery(query, (err, entities, nextQuery) => {
-  	if (entities && entities.length) {
-	   	var entity = entities[Object.keys(entities)[0]];
-	   	entity.id = entity[datastore.ds.KEY]['id'];
-  		return cb(entity);
-  	}
-
-		// if not found
-	  var data = {
-	  	name: name,
-		  path: path
-	  };
-		datastore.create('Module', data, function(err, entity){
-			if (err) {
-				console.log("module err "+err);
-			}
-	    return cb(entity);
-		});
-	});
-}
-
-function update (data, cb) {
-	datastore.update('Diary', data.id, data, function(err) {
-		if (err) {
-			console.log("update (lib) error: " + err);
-			return cb(false);
+	const query = {
+		'type': 'sub',
+		'styp': subType,
+		'def1': location1,
+		'def2': location2
+	};
+	var client = await getDb();
+	let res;
+	try {
+		const db = await client.db("logos");
+		res = await db.collection('Diary').findOne(query);
+		if (res) {
+			client.close();
+			return cb(res);
 		}
-		return cb(true);
-	});
+  } catch(err) {
+  	console.error(err);
+  }
+
+	// if not found
+  var data = {
+  	id: new ObjectID(),
+  	type: 'sub',
+  	styp: subType,
+  	def1: location1,
+  	def2: location2
+  };
+  try {
+		const db = await client.db("logos");
+  	res = await db.collection('Diary').insertOne(data);
+
+  	// invalidate old app/sub anchored here
+  	const queryOld = {
+  		location1: location1
+  	};
+  	let resOld = await db.collection('Diary').updateOne(queryOld, {$set:{invalid:true}});
+  } catch (err) {
+  	console.error(err);
+  } finally {
+  	client.close();
+  }
+
+  return cb(data);
 }
 
+async function readOrCreateClass (name, module, cb) {
+	const query = {
+		'name': name
+	};
+	var client = await getDb();
+	let res;
+	try {
+		const db = await client.db("logos");
+		res = await db.collection('Class').findOne(query);
+		if (res) {
+			client.close();
+			return cb(res);
+		}
+  } catch(err) {
+  	console.error(err);
+  }
+
+	// if not found
+  var data = {
+  	id: new ObjectID(),
+  	name: name,
+  	module: module
+  };
+  try {
+		const db = await client.db("logos");
+  	res = await db.collection('Class').insertOne(data);
+  } catch (err) {
+  	console.error(err);
+  } finally {
+  	client.close();
+  }
+
+  return cb(data);
+}
+
+async function readOrCreateModule (name, path, cb) {
+	const query = {
+		'name': name
+	};
+	var client = await getDb();
+	let res;
+	try {
+		const db = await client.db("logos");
+		res = await db.collection('Module').findOne(query);
+		if (res) {
+			client.close();
+			return cb(res);
+		}
+  } catch(err) {
+  	console.error(err);
+  }
+
+	// if not found
+  var data = {
+  	id: new ObjectID(),
+  	name: name,
+  	path: path
+  };
+  try {
+		const db = await client.db("logos");
+  	res = await db.collection('Module').insertOne(data);
+  } catch (err) {
+  	console.error(err);
+  } finally {
+  	client.close();
+  }
+
+  return cb(data);
+}
+
+async function update (data, cb) {
+	const query = {
+		'id': data.id
+	};
+
+  let res;
+  try {
+		const db = await client.db("logos");
+  	res = await db.updateOne(query, data);
+  } catch (err) {
+  	console.error(err);
+  } finally {
+  	client.close();
+  }
+
+  return cb(res);
+}
+
+//**************************************************************************** TODO MYSQL
 function updateAssociation (data, cb) {
 	datastore.update('Association', data.id, data, function(err) {
 		if (err) {
