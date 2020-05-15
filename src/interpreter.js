@@ -67,55 +67,51 @@ const getValueFromX = (x) => {
   return x / (x + Math.E);
 }
 
-const adjustAssociativeValue = (srcid, dstid, cb) =>  {
-  Sql.incrementAssociationRecord(srcid, dstid, function(err, result) {
-    if (err || result.affectedRows == 0) {
-      var association = {
-        srcid: srcid,
-        dstid: dstid,
-        assv: 1
-      };
-      Sql.insertAssociationRecord(association, function(err2, result2) {
-        if (err2) {
-          console.log('failed to update assv: ' + srcid + " -> " + dstid + " : " + err2);
-          return cb(false);
-        }
-        return cb(true);
-      });
+const adjustAssociativeValue = async (srcid, dstid, cb) =>  {
+  var res = await Sql.incrementAssociationRecord(srcid, dstid);
+  if (!res) {
+    var association = {
+      srcid: srcid,
+      dstid: dstid,
+      assv: 1
+    };
+    var res2 = await Sql.insertAssociationRecord(association);
+    if (!res2) {
+      console.log('failed to update assv: ' + srcid + " -> " + dstid + " : " + err2);
+      return cb(false);
     }
-
-    console.log('incremented associative value ' + srcid + " -> " + dstid);
     return cb(true);
-  });
+  }
+
+  console.log('incremented associative value ' + srcid + " -> " + dstid);
+  return cb(true);
 }
 
 // TODO: assv from lastAst -> input
-const applyAndAdjustAssociativeValue = (data, input, callback) => {
+const applyAndAdjustAssociativeValue = async (data, input, callback) => {
   console.log('*** AA1 ***');
-  apply(data, input, (astOut, success) => {
+  apply(data, input, async (astOut, success) => {
     if (!success) return callback(data); // if param mismatch, discard input and use only the first part next time
-    Sql.getAssociationRecord(input.id, data.id, function(err, association) {
-      if (!err) {
-        adjustAssociativeValue(input.id, data.id, (written) => {
-          console.log('*** AA2 ***');
-          return callback(astOut);
-        });
-      } else {
+    var association = await Sql.getAssociationRecord(input.id, data.id);
+    if (association != null) {
+      adjustAssociativeValue(input.id, data.id, (written) => {
+        console.log('*** AA2 ***');
+        return callback(astOut);
+      });
+    } else {
 
-        // no association, was pulled straight from Diary, created anew, or has old association
-          var association = {
-            srcid: input.id, 
-            dstid: data.id,
-            assv: 1
-          }
-          Sql.insertAssociationRecord(association, (err, res) => {
-            console.log('*** AA4 ***');
-            if (!err) console.log('created associative value ' + input.id + " -> " + data.id + " : " + association.assv);
-            else              console.log('failed to create assv: ' + input.id + " -> " + data.id + " : " + err); // already exists somehow or errored out
-            return callback(astOut);
-        });
-      }
-    });
+      // no association, was pulled straight from Diary, created anew, or has old association
+        var association = {
+          srcid: input.id, 
+          dstid: data.id,
+          assv: 1
+        }
+        var res = await Sql.insertAssociationRecord(association);
+        console.log('*** AA4 ***');
+        if (res) console.log('created associative value ' + input.id + " -> " + data.id + " : " + association.assv);
+        else              console.log('failed to create assv: ' + input.id + " -> " + data.id + " : " + err); // already exists somehow or errored out
+        return callback(astOut);
+    }
   });
 }
 
@@ -124,7 +120,7 @@ const applyAndAdjustAssociativeValue = (data, input, callback) => {
 // possible evaluation points by use of associative value to 
 // make selections. also writes associative values upon selection
 // (substitution for a lambda combinator)
-const combine = (lastAst) => {
+const combine = async (lastAst) => {
   console.log("*** C ***");
   console.log("lastAst: " + JSON.stringify(lastAst,null,4));
   if (lastAst != null) console.log("*** C LASTAST *** " + lastAst.id);
@@ -247,7 +243,7 @@ console.log(JSON.stringify(data, null, 2));
 // and returns the reduced (extended) lambda calculus expression
 // executing any complete applications of functional (JS) identifiers
 // TODO: make turbo substitutions using EC
-const evaluate = (ast, cb) => {
+const evaluate = async (ast, cb) => {
     if ('type' in ast) {
       return getAst(ast, (realAst) => {
         return evaluate(realAst, cb);

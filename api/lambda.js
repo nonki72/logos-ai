@@ -141,18 +141,17 @@ request parameters:
   destinationid
   associativevalue
  */
-router.post('/association', (req, res, next) => {
+router.post('/association', async (req, res, next) => {
   var association = {
     srcid: req.body.sourceid,
     dstid: req.body.destinationid,
     assv: req.body.associativevalue
   };
-  Sql.insertAssociationRecord(association, (err, result) => {
-    if (err) {
-      return next('Could not create association:' + err);
-    }
-    return res.status(200).json({"association":association});
-  });
+  var result = await Sql.insertAssociationRecord(association);
+  if (!result) {
+    return next('Could not create association');
+  }
+  return res.status(200).json({"association":association});
 });
 
 

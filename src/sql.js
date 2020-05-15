@@ -31,9 +31,13 @@ async function insertAssociationRecord (associationRecord) {
   try {
     var myDb = await getMyDb();
     var result = await myDb.sql('INSERT INTO Associations SET srcid = 0x'+srcid+', dstid = 0x'+dstid+', assv = '+assv).execute();
-    console.log("Associations record stored in SQL for srcid/dstid: " + associationRecord.srcid + "/" + associationRecord.dstid);
+    console.log("Associations record stored in SQL for srcid/dstid: " + srcid + "/" + dstid);
     return true;
   } catch (err) {
+    if (err.info.code === 1062) {
+      console.error("Associations record already exists: " +srcid + "/" + dstid);
+      return true;
+    }
     console.error(err);
     return false;
   }
