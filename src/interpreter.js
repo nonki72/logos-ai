@@ -38,19 +38,21 @@ const getAstIfNeeded = (entity, cb) => {
 }
 
 const apply = (abstraction, input, callback) => {
-  console.log('### A1 ###');
+  console.log('### APPLY 1 ###');
   if (!typecheck(abstraction, input)) {
     // can't apply these two. return unchanged AST
+    console.log('### APPLY UNSUCCESSFUL ###');
     return callback(null, false);
   }
   // create an application of the two entities
   getAstIfNeeded(abstraction, (abstractionPreAst) => {
     getAstIfNeeded(input, (inputPreAst) => {
-      console.log('### A2 ###');
+      console.log('### APPLY 2 ###');
       var applicationAst = new AST.Application(abstractionPreAst, inputPreAst);
       return evaluate(applicationAst, (astOut) => {
-        console.log('### A3 ###');
+        console.log('### APPLY 3 ###');
         // was able to apply. return changed AST
+        console.log('### APPLY SUCCESSFUL ###');
         return callback(astOut, true);
       });
     });
@@ -91,6 +93,7 @@ const adjustAssociativeValue = (srcid, dstid, cb) =>  {
 const applyAndAdjustAssociativeValue = (data, input, callback) => {
   console.log('*** AA1 ***');
   apply(data, input, (astOut, success) => {
+    if (!success) return callback(data); // if param mismatch, discard input and use only the first part next time
     Sql.getAssociationRecord(input.id, data.id, function(err, association) {
       if (!err) {
         adjustAssociativeValue(input.id, data.id, (written) => {
@@ -123,60 +126,82 @@ const applyAndAdjustAssociativeValue = (data, input, callback) => {
 // (substitution for a lambda combinator)
 const combine = (lastAst) => {
   console.log("*** C ***");
-  console.log("lastAst: " + lastAst);
-  if (lastAst != null) console.log("*** C LAST AST *** " + lastAst.data.id);
-//  DataLib.readByRandomValue((input) => {
-  // Get a random free identifier as fresh input to be applied to lastAst (input is second part)
-  DataLib.readFreeIdentifierByRandomValue((input) => {
-    console.log("input: " + JSON.stringify(input,null,4));
-    if (!input) {
-      console.log("*** C0.5 *** ");
-      return setTimeout(combine, 1, lastAst);
+  console.log("lastAst: " + JSON.stringify(lastAst,null,4));
+  if (lastAst != null) console.log("*** C LASTAST *** " + lastAst.id);
+
+  // see if lastAst is usable as an abstraction to apply to the input
+  // this selection (lastAst or read-abstraction or input) is probabilistic
+  if (//Math.random() > 0.5 &&
+       lastAst 
+      && (//lastAst.type == 'abs' || 
+         (lastAst.type == 'free' && typeof lastAst.argn === 'number'))) {
+    if (!('args' in lastAst)) {
+      lastAst.args = [];
+      lastAst.argCount = 0;
     }
-    console.log("********************* C0 ********************* " + input.type + ","+input.id);
+    if (lastAst.argn > lastAst.args.length) {
+      // need more arg
+      console.log("*** C LASTAST, FREE *** TYPE "+ lastAst.argt[0][0]);
+      DataLib.readFreeIdentifierByTypeAndRandomValue(lastAst.argt[lastAst.argCount][1], (input) => {
+        console.log("********************* C0 ********************* " + input.type + ","+input.id);
+        console.log("*** C1 *** MATCH -> " + lastAst.type + " : " + input.type);
 
-    // see if lastAst is usable as an abstraction to apply to the input
-    // this selection (lastAst or read-abstraction or input) is probabilistic
-    if (Math.random() > 0.5 &&
-         lastAst 
-        && (lastAst.type == 'abs' || 
-           (lastAst.type == 'free' && typeof lastAst.argCount === 'number' && lastAst.argCount > lastAst.args.length))) {
-
-      console.log("*** C LASTAST *** ");
-      console.log("*** C1 *** -> " + input.type + " : " + lastAst.type);
-      applyAndAdjustAssociativeValue(lastAst, input, (astOut) => {
-        setTimeout(combine, 1, astOut);
-      });
-
-    // no lastAst or randomly not using it
-    } else if (Math.random() > 0.5) {
-        console.log("*** C FREE *** ");
-        //get a pseudo-random free identifier from diary as replacement for lastAst (first part)
-        DataLib.readFreeIdentifierByRandomValue((freeIdentifier) => {
-            if (!freeIdentifier) {
-              console.log("*** C1.5 *** ");
-              return setTimeout(combine, 1, lastAst);
-            }
-            console.log("*** C2 *** -> " + input.type + " : " + freeIdentifier.type);
-            applyAndAdjustAssociativeValue(freeIdentifier, input, (astOut) => {
+        lastAst.args.push(input);
+        lastAst.argCount++;
+        adjustAssociativeValue(lastAst.id, input.id, (written)=>{
+          if (lastAst.args.length == lastAst.argn) {
+            // got enough arg
+            evaluate(lastAst, (astOut) => {
               setTimeout(combine, 1, astOut);
             });
+          } else {
+            // still need more arg
+            setTimeout(combine, 1, lastAst);
+          }
         });
+
+      });
     } else {
-      console.log("*** C ASSOCIATIVE *** ");
+      // got enough arg
+      evaluate(lastAst, (astOut) => {
+        setTimeout(combine, 1, astOut);
+      });
+    }
+
+  // no lastAst or randomly not using it
+  } else {//if (Math.random() > 0.5) {
+      console.log("*** C FN_TAKE_ARGS, NULL *** ");
+      //get a pseudo-random free identifier function that takes args from diary as replacement for lastAst (first part)
+      DataLib.readRandomFreeIdentifierFnThatTakesArgs((freeIdentifierFn) => {
+          console.log("********************* C1 ********************* " + freeIdentifierFn.type + ","+freeIdentifierFn.id);
+          setTimeout(combine, 1, freeIdentifierFn);
+      });
+  } //else {
+/*    console.log("*** C FREE, ASSOCIATIVE *** ");
+    // Get a random free identifier as fresh input to be applied to lastAst (input is second part)
+    DataLib.readFreeIdentifierByRandomValue((freeIdentifier) => {
+      console.log("freeIdentifier: " + JSON.stringify(freeIdentifier,null,4));
+      if (!freeIdentifier) {
+        console.log("*** C1 *** ");
+        return setTimeout(combine, 1, lastAst);
+      }
+      console.log("********************* C2 ********************* " + freeIdentifier.type + ","+freeIdentifier.id);
       // get a pseudo-random abstraction from diary as replacement for lastAst (first part)
-      DataLib.readApplicatorByAssociativeValue(input.id, (applicator) => {
-        if (!applicator) {
-          console.log("*** C1.5 *** ");
+      DataLib.readByAssociativeValue(freeIdentifier.id, (fragment) => {
+        if (!fragment) {
+          console.log("*** C2 *** ");
           return setTimeout(combine, 1, lastAst);
         }
-        console.log("*** C2 *** -> " + input.type + " : " + applicator.type);
-        applyAndAdjustAssociativeValue(applicator, input, (astOut) => {
+
+        console.log("********************* C3 ********************* " + fragment.type + ","+fragment.id);
+        console.log("*** C3 *** -> " + freeIdentifier.type + " : " + fragment.type);
+        applyAndAdjustAssociativeValue(freeIdentifier, fragment, (astOut) => {
           setTimeout(combine, 1, astOut);
         });
       });
-    } //else {// TODO: output a random selection
-  });
+    });
+  } //else {// TODO: output a random selection
+*/
 }
 
 // reads the datastore one layer deep
@@ -289,6 +314,7 @@ const evaluate = (ast, cb) => {
         // has enough args, execute
         if (typeof ast.fn == 'string') {
           ast.fn = eval(ast.fn);  // <= CODE EXECUTION
+          console.log("!!!!!!!!!!!!!!CODE EXECUTION!!!!!!!!!!!\n"+ast.fn+"\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
         }
         var output = ast.fn.apply(null, ast.args);  // <= CODE EXECUTION
         // substitute the named function with its output
