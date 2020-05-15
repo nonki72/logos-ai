@@ -6,7 +6,7 @@ const Sql = require('./sql');
 
 const connectOption = {
     useNewUrlParser: true,
-    useUnifiedTopology: true,
+    useUnifiedTopology: true
 }
 var _client = null;
 
@@ -18,6 +18,7 @@ async function getDb() {
 	return _client;
 }
 
+getDb();
 //                          ########### READ FUNCTIONS ############
 
 
@@ -291,7 +292,6 @@ async function readOrCreateAbstraction (name, definition2, cb) {
 		const db = client.db("logos");
 		res = await db.collection('Diary').findOne(query);
 		if (res) {
-			client.close();
 			return cb(res);
 		}
   } catch(err) {
@@ -330,7 +330,6 @@ async function readOrCreateApplication (definition1, definition2, cb) {
 		const db = client.db("logos");
 		res = await db.collection('Diary').findOne(query);
 		if (res) {
-			client.close();
 			return cb(res);
 		}
   } catch(err) {
@@ -368,7 +367,6 @@ async function readOrCreateFreeIdentifier ( name, cb ) {
 		const db = client.db("logos");
 		res = await db.collection('Diary').findOne(query);
 		if (res) {
-			client.close();
 			return cb(res);
 		}
   } catch(err) {
@@ -405,7 +403,6 @@ async function readOrCreateFreeIdentifierFunction (name, astid, fn, fntype, fncl
 		const db = client.db("logos");
 		res = await db.collection('Diary').findOne(query);
 		if (res) {
-			client.close();
 			return cb(res);
 		}
   } catch(err) {
@@ -455,7 +452,6 @@ async function readOrCreateSubstitution (subType, location1, location2, cb) {
 		const db = client.db("logos");
 		res = await db.collection('Diary').findOne(query);
 		if (res) {
-			client.close();
 			return cb(res);
 		}
   } catch(err) {
@@ -496,7 +492,6 @@ async function readOrCreateClass (name, module, cb) {
 		const db = client.db("logos");
 		res = await db.collection('Class').findOne(query);
 		if (res) {
-			client.close();
 			return cb(res);
 		}
   } catch(err) {
@@ -529,7 +524,6 @@ async function readOrCreateModule (name, path, cb) {
 		const db = client.db("logos");
 		res = await db.collection('Module').findOne(query);
 		if (res) {
-			client.close();
 			return cb(res);
 		}
   } catch(err) {

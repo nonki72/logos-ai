@@ -16,9 +16,25 @@
 'use strict';
 
 // [START setup]
-var mysql = require('mysql');
+var mysqlx = require('@mysql/xdevapi');
 var prompt = require('prompt');
 const async = require('async');
+
+
+async function getMyDb() {
+  var mySession = await mysqlx.getSession( {
+  host: process.env.MYSQL_HOST, port: process.env.MYSQL_PORT,
+  user: process.env.MYSQL_USER, password: process.env.MYSQL_PASSWORD} );
+
+  const mySchema = mySession.getSchema(process.env.MYSQL_DATABASE);
+  if (!(await mySchema.existsInDatabase())) {
+    await mySession.createSchema(process.env.MYSQL_DATABASE);
+  }
+
+  await mySession.sql(`USE `+process.env.MYSQL_DATABASE).execute();
+  return mySession;
+}
+
 // [END setup]
 
 // [START createTable]
@@ -34,31 +50,22 @@ var SQL_STRING_ASSOCIATION = 'CREATE TABLE Associations (\n' +
 ');';
 
 
-function createAssociationsTable (connection, callback) {
-  connection.query(SQL_STRING_ASSOCIATION, callback);
+async function createAssociationsTable () {
+  try {
+    var myDb = await getMyDb();
+    return await myDb.sql(SQL_STRING_ASSOCIATION).execute();
+  } catch (err) {
+    console.error(err);
+  }
 }
-
-function processResult (result, result2, callback) {
-  console.log(result, result2);
-  callback(null);
-}
-
-var connection = mysql.createConnection({
-  user: process.env.MYSQL_USER,
-  password: process.env.MYSQL_PASSWORD,
-  socketPath: process.env.MYSQL_SOCKET_PATH,
-  database: process.env.MYSQL_DATABASE
-});
 
 // [START main]
-async.waterfall([
-  createAssociationsTable.bind(null, connection),
-  processResult,
-  ], function (err, result) {
-    if (err) {
-      return console.error(err);
-    }
-    connection.end();
-});
+async function main() {
+  var result = await createAssociationsTable();
+  if (result) {
+    console.log(result.getResults());
+  }
+}
+main();
 // [END main]
 // [END createTables]

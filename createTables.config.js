@@ -8,7 +8,8 @@ module.exports = {
           "MYSQL_USER":"logos",
           "MYSQL_PASSWORD":"sparkle8twilight",
           "MYSQL_DATABASE":"logos",
-          "MYSQL_HOST":"localhost"
+          "MYSQL_HOST":"localhost",
+          "MYSQL_PORT":"33060"
         }
       }
   ]
