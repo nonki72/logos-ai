@@ -75,7 +75,7 @@ const adjustAssociativeValue = (srcid, dstid, cb) =>  {
       };
       Sql.insertAssociationRecord(association, function(err2, result2) {
         if (err2) {
-          console.log('failed to update assv: ' + srcid + " -> " + dstid);
+          console.log('failed to update assv: ' + srcid + " -> " + dstid + " : " + err2);
           return cb(false);
         }
         return cb(true);
@@ -105,9 +105,9 @@ const applyAndAdjustAssociativeValue = (data, input, callback) => {
             dstid: data.id,
             assv: 1
           }
-          Sql.insertAssociationRecord(association, (err, association2) => {
+          Sql.insertAssociationRecord(association, (err, res) => {
             console.log('*** AA4 ***');
-            if (!err) console.log('created associative value ' + input.id + " -> " + data.id + " : " + association2.assv);
+            if (!err) console.log('created associative value ' + input.id + " -> " + data.id + " : " + association.assv);
             else              console.log('failed to create assv: ' + input.id + " -> " + data.id + " : " + err); // already exists somehow or errored out
             return callback(astOut);
         });
@@ -123,27 +123,35 @@ const applyAndAdjustAssociativeValue = (data, input, callback) => {
 // (substitution for a lambda combinator)
 const combine = (lastAst) => {
   console.log("*** C ***");
-  console.log(lastAst);
+  console.log("lastAst: " + lastAst);
   if (lastAst != null) console.log("*** C LAST AST *** " + lastAst.data.id);
 //  DataLib.readByRandomValue((input) => {
+  // Get a random free identifier as fresh input to be applied to lastAst (input is second part)
   DataLib.readFreeIdentifierByRandomValue((input) => {
+    console.log("input: " + JSON.stringify(input,null,4));
     if (!input) {
       console.log("*** C0.5 *** ");
       return setTimeout(combine, 1, lastAst);
     }
     console.log("********************* C0 ********************* " + input.type + ","+input.id);
+
     // see if lastAst is usable as an abstraction to apply to the input
     // this selection (lastAst or read-abstraction or input) is probabilistic
     if (Math.random() > 0.5 &&
          lastAst 
         && (lastAst.type == 'abs' || 
            (lastAst.type == 'free' && typeof lastAst.argCount === 'number' && lastAst.argCount > lastAst.args.length))) {
+
+      console.log("*** C LASTAST *** ");
       console.log("*** C1 *** -> " + input.type + " : " + lastAst.type);
       applyAndAdjustAssociativeValue(lastAst, input, (astOut) => {
         setTimeout(combine, 1, astOut);
       });
+
+    // no lastAst or randomly not using it
     } else if (Math.random() > 0.5) {
-        //get a pseudo-random free identifier from diary
+        console.log("*** C FREE *** ");
+        //get a pseudo-random free identifier from diary as replacement for lastAst (first part)
         DataLib.readFreeIdentifierByRandomValue((freeIdentifier) => {
             if (!freeIdentifier) {
               console.log("*** C1.5 *** ");
@@ -155,7 +163,8 @@ const combine = (lastAst) => {
             });
         });
     } else {
-      // get a pseudo-random abstraction from diary
+      console.log("*** C ASSOCIATIVE *** ");
+      // get a pseudo-random abstraction from diary as replacement for lastAst (first part)
       DataLib.readApplicatorByAssociativeValue(input.id, (applicator) => {
         if (!applicator) {
           console.log("*** C1.5 *** ");

@@ -24,8 +24,8 @@ const async = require('async');
 // [START createTable]
 
 var SQL_STRING_ASSOCIATION = 'CREATE TABLE Associations (\n' +
-'    srcid BIGINT UNSIGNED NOT NULL,\n' +
-'    dstid BIGINT UNSIGNED NOT NULL,\n' +
+'    srcid BINARY(12) NOT NULL,\n' +
+'    dstid BINARY(12) NOT NULL,\n' +
 '    assv BIGINT UNSIGNED NOT NULL,\n' +
 '    INDEX (assv),\n' +
 '    INDEX (srcid,dstid),\n' +

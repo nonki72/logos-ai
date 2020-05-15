@@ -8,13 +8,14 @@ const connectOption = {
     useNewUrlParser: true,
     useUnifiedTopology: true,
 }
-
+var _client = null;
 
 
 async function getDb() {
+	if (_client != null) return _client;
 	var url = "mongodb://localhost:27017/";
-  const client = await MongoClient.connect(url, connectOption).catch(err => { console.error(err); });
-	return client;
+  _client = await MongoClient.connect(url, connectOption).catch(err => { console.error(err); });
+	return _client;
 }
 
 //                          ########### READ FUNCTIONS ############
@@ -29,16 +30,15 @@ async function readByEquivalenceClass (id) {
 		'ecid': entity.ecid
 	};
 	var client = await getDb();
-	let res;
+	var res = null;
 	try {
-		const db = await client.db("logos");
-		res = await db.collection('EC').find(query).sort({'size':-1}).limit(1);
+		const db = client.db("logos");
+		let cursor = db.collection('EC').find(query).sort({'size':-1}).limit(1);
+		if (cursor.hasNext()) res = await cursor.next();
   } catch(err) {
   	console.error(err);
-  } finally {
-  	client.close();
   }
-  return cb(res);
+  return cb();
 }
 
 // reads applicator based on probabilistic selection of matching associations
@@ -64,7 +64,10 @@ function readApplicatorByAssociativeValue(sourceId, cb) {
 // may be suitable for using as a lhs to apply to input
 function readApplicatorByRandomValue (cb) {
 	if (Math.random() > 0.5) {
-		return readAbstractionByRandomValue(cb);
+		readAbstractionByRandomValue(function(res) {
+			if (res) return cb(res);
+		  return readFreeIdentifierByRandomValue(cb);
+		});
 	} else {
 		return readFreeIdentifierByRandomValue(cb);
 	}
@@ -75,20 +78,19 @@ function readApplicatorByRandomValue (cb) {
 async function readAbstractionByRandomValue (cb) {
 	const query = {
 		'type': 'abs',
-		'invalid': 'false',
+		'invalid': false,
 		'rand': {$lte: Math.random()}
 	};
 	var client = await getDb();
-	let res;
+	var res = null;
 	try {
-		const db = await client.db("logos");
-		res = await db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
+		const db = client.db("logos");
+		let cursor = db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
+		if (cursor.hasNext()) res = await cursor.next();
   } catch(err) {
   	console.error(err);
-  } finally {
-  	client.close();
   }
-  return cb(res);
+  return cb();
 }
 
 // randomly reads a free fragment
@@ -96,18 +98,16 @@ async function readAbstractionByRandomValue (cb) {
 async function readFreeIdentifierByRandomValue (cb) {
 	const query = {
 		'type': 'free',
-		'invalid': 'false',
 		'rand': {$lte: Math.random()}
 	};
 	var client = await getDb();
-	let res;
+	var res = null;
 	try {
-		const db = await client.db("logos");
-		res = await db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
+		const db = client.db("logos");
+		let cursor = db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
+    if (cursor.hasNext()) res = await cursor.next();
   } catch(err) {
   	console.error(err);
-  } finally {
-  	client.close();
   }
   return cb(res);
 }
@@ -118,14 +118,12 @@ async function readFreeIdentifierByName (name, cb) {
 		'name': name
 	};
 	var client = await getDb();
-	let res;
+	var res = null;
 	try {
-		const db = await client.db("logos");
+		const db = client.db("logos");
 		res = await db.collection('Diary').findOne(query);
   } catch(err) {
   	console.error(err);
-  } finally {
-  	client.close();
   }
   return cb(res);
 }
@@ -136,14 +134,12 @@ async function readFreeIdentifierByFn (fn, cb) {
 		'fn': fn
 	};
 	var client = await getDb();
-	let res;
+	var res = null;
 	try {
-		const db = await client.db("logos");
+		const db = client.db("logos");
 		res = await db.collection('Diary').findOne(query);
   } catch(err) {
   	console.error(err);
-  } finally {
-  	client.close();
   }
   return cb(res);
 }
@@ -151,20 +147,19 @@ async function readFreeIdentifierByFn (fn, cb) {
 // randomly reads a fragment
 async function readByRandomValue (cb) {
 	const query = {
-		'invalid': 'false',
+		'invalid': false,
 		'rand': {$lte: Math.random()}
 	};
 	var client = await getDb();
-	let res;
+	var res = null;
 	try {
-		const db = await client.db("logos");
-		res = await db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
+		const db = client.db("logos");
+		let cursor = db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
+		if (cursor.hasNext()) res = await cursor.next();
   } catch(err) {
   	console.error(err);
-  } finally {
-  	client.close();
   }
-  return cb(res);
+  return cb();
 }
 
 async function readById (id, cb) {
@@ -172,14 +167,12 @@ async function readById (id, cb) {
 		'id': new ObjectID(id)
 	};
 	var client = await getDb();
-	let res;
+	var res = null;
 	try {
-		const db = await client.db("logos");
+		const db = client.db("logos");
 		res = await db.collection('Diary').findOne(query);
   } catch(err) {
   	console.error(err);
-  } finally {
-  	client.close();
   }
   return cb(res);
 }
@@ -189,14 +182,12 @@ async function readClassByName(name, cb) {
 		'name': name
 	};
 	var client = await getDb();
-	let res;
+	var res = null;
 	try {
-		const db = await client.db("logos");
+		const db = client.db("logos");
 		res = await db.collection('Class').findOne(query);
   } catch(err) {
   	console.error(err);
-  } finally {
-  	client.close();
   }
   return cb(res);
 }
@@ -206,14 +197,12 @@ async function readModuleByName(name, cb) {
 		'name': name
 	};
 	var client = await getDb();
-	let res;
+	var res = null;
 	try {
-		const db = await client.db("logos");
+		const db = client.db("logos");
 		res = await db.collection('Module').findOne(query);
   } catch(err) {
   	console.error(err);
-  } finally {
-  	client.close();
   }
   return cb(res);
 }
@@ -223,14 +212,12 @@ async function readModuleByPath(path, cb) {
 		'path': path
 	};
 	var client = await getDb();
-	let res;
+	var res = null;
 	try {
-		const db = await client.db("logos");
+		const db = client.db("logos");
 		res = await db.collection('Module').findOne(query);
   } catch(err) {
   	console.error(err);
-  } finally {
-  	client.close();
   }
   return cb(res);
 }
@@ -248,9 +235,9 @@ async function readOrCreateAbstraction (name, definition2, cb) {
 		'def2': definition2
 	};
 	var client = await getDb();
-	let res;
+	var res = null;
 	try {
-		const db = await client.db("logos");
+		const db = client.db("logos");
 		res = await db.collection('Diary').findOne(query);
 		if (res) {
 			client.close();
@@ -271,12 +258,10 @@ async function readOrCreateAbstraction (name, definition2, cb) {
   };
 
   try {
-		const db = await client.db("logos");
-  	res = await db.collection('Diary').insertOne(data);
+		const db = client.db("logos");
+  	res = db.collection('Diary').insertOne(data);
   } catch (err) {
   	console.error(err);
-  } finally {
-  	client.close();
   }
 
   return cb(data);
@@ -289,9 +274,9 @@ async function readOrCreateApplication (definition1, definition2, cb) {
 		'def2': definition2
 	};
 	var client = await getDb();
-	let res;
+	var res = null;
 	try {
-		const db = await client.db("logos");
+		const db = client.db("logos");
 		res = await db.collection('Diary').findOne(query);
 		if (res) {
 			client.close();
@@ -312,12 +297,10 @@ async function readOrCreateApplication (definition1, definition2, cb) {
   };
 
   try {
-		const db = await client.db("logos");
-  	res = await db.collection('Diary').insertOne(data);
+		const db = client.db("logos");
+  	res = db.collection('Diary').insertOne(data);
   } catch (err) {
   	console.error(err);
-  } finally {
-  	client.close();
   }
 
   return cb(data);
@@ -329,9 +312,9 @@ async function readOrCreateFreeIdentifier ( name, cb ) {
 		'name': name
 	};
 	var client = await getDb();
-	let res;
+	var res = null;
 	try {
-		const db = await client.db("logos");
+		const db = client.db("logos");
 		res = await db.collection('Diary').findOne(query);
 		if (res) {
 			client.close();
@@ -351,26 +334,24 @@ async function readOrCreateFreeIdentifier ( name, cb ) {
   };
 
   try {
-		const db = await client.db("logos");
-  	res = await db.collection('Diary').insertOne(data);
+		const db = client.db("logos");
+  	res = db.collection('Diary').insertOne(data);
   } catch (err) {
   	console.error(err);
-  } finally {
-  	client.close();
   }
 
   return cb(data);
 }
 
-async function readOrCreateFreeIdentifierFunction (name, astid, fn, fntype, fnclass, argnum, argtypes, modules, memoize, dbo, cb) {
+async function readOrCreateFreeIdentifierFunction (name, astid, fn, fntype, fnclass, argnum, argtypes, modules, memoize, cb) {
 	const query = {
 		'type': 'free',
 		'name': name
 	};
 	var client = await getDb();
-	let res;
+	var res = null;
 	try {
-		const db = await client.db("logos");
+		const db = client.db("logos");
 		res = await db.collection('Diary').findOne(query);
 		if (res) {
 			client.close();
@@ -396,12 +377,10 @@ async function readOrCreateFreeIdentifierFunction (name, astid, fn, fntype, fncl
 	  rand: Math.random()
   };
   try {
-		const db = await client.db("logos");
-  	res = await db.collection('Diary').insertOne(data);
+		const db = client.db("logos");
+  	res = db.collection('Diary').insertOne(data);
   } catch (err) {
   	console.error(err);
-  } finally {
-  	client.close();
   }
 
   return cb(data);
@@ -420,9 +399,9 @@ async function readOrCreateSubstitution (subType, location1, location2, cb) {
 		'def2': location2
 	};
 	var client = await getDb();
-	let res;
+	var res = null;
 	try {
-		const db = await client.db("logos");
+		const db = client.db("logos");
 		res = await db.collection('Diary').findOne(query);
 		if (res) {
 			client.close();
@@ -441,18 +420,16 @@ async function readOrCreateSubstitution (subType, location1, location2, cb) {
   	def2: location2
   };
   try {
-		const db = await client.db("logos");
-  	res = await db.collection('Diary').insertOne(data);
+		const db = client.db("logos");
+  	res = db.collection('Diary').insertOne(data);
 
   	// invalidate old app/sub anchored here
   	const queryOld = {
   		location1: location1
   	};
-  	let resOld = await db.collection('Diary').updateOne(queryOld, {$set:{invalid:true}});
+  	var resOld = db.collection('Diary').updateOne(queryOld, {$set:{invalid:true}});
   } catch (err) {
   	console.error(err);
-  } finally {
-  	client.close();
   }
 
   return cb(data);
@@ -463,9 +440,9 @@ async function readOrCreateClass (name, module, cb) {
 		'name': name
 	};
 	var client = await getDb();
-	let res;
+	var res = null;
 	try {
-		const db = await client.db("logos");
+		const db = client.db("logos");
 		res = await db.collection('Class').findOne(query);
 		if (res) {
 			client.close();
@@ -482,12 +459,10 @@ async function readOrCreateClass (name, module, cb) {
   	module: module
   };
   try {
-		const db = await client.db("logos");
-  	res = await db.collection('Class').insertOne(data);
+		const db = client.db("logos");
+  	res = db.collection('Class').insertOne(data);
   } catch (err) {
   	console.error(err);
-  } finally {
-  	client.close();
   }
 
   return cb(data);
@@ -498,9 +473,9 @@ async function readOrCreateModule (name, path, cb) {
 		'name': name
 	};
 	var client = await getDb();
-	let res;
+	var res = null;
 	try {
-		const db = await client.db("logos");
+		const db = client.db("logos");
 		res = await db.collection('Module').findOne(query);
 		if (res) {
 			client.close();
@@ -517,12 +492,10 @@ async function readOrCreateModule (name, path, cb) {
   	path: path
   };
   try {
-		const db = await client.db("logos");
+		const db = client.db("logos");
   	res = await db.collection('Module').insertOne(data);
   } catch (err) {
   	console.error(err);
-  } finally {
-  	client.close();
   }
 
   return cb(data);
@@ -533,14 +506,12 @@ async function update (data, cb) {
 		'id': data.id
 	};
 
-  let res;
+  var res = null;
   try {
-		const db = await client.db("logos");
+		const db = client.db("logos");
   	res = await db.updateOne(query, data);
   } catch (err) {
   	console.error(err);
-  } finally {
-  	client.close();
   }
 
   return cb(res);

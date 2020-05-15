@@ -29,10 +29,17 @@ function handleDisconnect() {
 
 handleDisconnect();
 
+function bin2hex(bin) {
+  return parseInt(bin, 2).toString(16).toUpperCase();
+}
 
 
 function insertAssociationRecord (associationRecord, callback) {
-  pool.query('INSERT INTO Associations SET ?', associationRecord, function (err, result) {
+  var srcid =  associationRecord.srcid;
+  var dstid =  associationRecord.dstid;
+  var assv = associationRecord.assv;
+
+  pool.query('INSERT INTO Associations SET srcid = 0x'+srcid+', dstid = 0x'+dstid+', assv = '+assv, function (err, result) {
       if (err) {
         return callback(err);
       }
@@ -48,13 +55,13 @@ function getRandomAssociationRecord (srcid, callback) {
   pool.query('SELECT dstid, '+
        'CAST((SELECT sum(assv) ' +
        '      FROM Associations AS b2 ' +
-       '     WHERE b2.srcid = ? ' +
+       '     WHERE b2.srcid = 0x'+srcid+' ' +
        '     AND b2.dstid <= Associations.dstid ' +
        '     ) AS FLOAT) / ' +
        '(SELECT sum(assv) FROM Associations) ' +
        'AS CumProb ' +
        'FROM Associations ' +
-       'ORDER BY dstid ', [ srcid ], function (err, results) {
+       'ORDER BY dstid ', function (err, results) {
        if (err) {
          return callback(err);
        }
@@ -78,25 +85,31 @@ function getRandomAssociationRecord (srcid, callback) {
             return callback(err);
           }
 
-          callback(null, results[0].dstid);
+          callback(null, bin2hex(results[0].dstid));
         });
      });
 }
 
 
 function getAssociationRecord(srcid, dstid, callback) {
-  pool.query('SELECT * FROM Associations WHERE srcid = ? AND dstid = ? LIMIT 1', [srcid, dstid], function (err, res) {
+  pool.query('SELECT * FROM Associations WHERE srcid = 0x'+srcid+' AND dstid = 0x'+dstid+' LIMIT 1', function (err, res) {
     if (err) {
       return callback(err);
     }
 
-    return callback(null, res[0]);
+    var record = res[0];
+    if (record) {
+      record.srcid = bin2hex(record.srcid);
+      record.dstid = bin2hex(record.dstid);
+    }
+
+    return callback(null, record);
   });
 }
 
 function updateAssociationRecord(srcid, dstid, assv, callback) {
   var set = {assv: assv};
-  pool.query('UPDATE Associations SET ? WHERE srcid = ? AND dstid = ?', [set, srcid, dstid], function (err, res) {
+  pool.query('UPDATE Associations SET ? WHERE srcid = 0x'+srcid+' AND dstid = 0x'+dstid, [set], function (err, res) {
     if (err) {
       return callback(err);
     }
@@ -106,7 +119,7 @@ function updateAssociationRecord(srcid, dstid, assv, callback) {
 }
 
 function incrementAssociationRecord(srcid, dstid, callback) {
-  pool.query('UPDATE Associations SET assv = assv + 1 WHERE srcid = ? AND dstid = ?', [srcid, dstid], function (err, res) {
+  pool.query('UPDATE Associations SET assv = assv + 1 WHERE srcid = 0x'+srcid+' AND dstid = 0x'+dstid, function (err, res) {
     if (err) {
       return callback(err);
     }
@@ -116,7 +129,7 @@ function incrementAssociationRecord(srcid, dstid, callback) {
 }
 
 function deleteAssociationRecord(srcid, dstid, callback) {
-  pool.query('DELETE FROM Associations WHERE srcid = ? AND dstid = ?', [srcid, dstid], function (err, res) {
+  pool.query('DELETE FROM Associations WHERE srcid = 0x'+srcid+' AND dstid = 0x'+dstid, function (err, res) {
     if (err) {
       return callback(err, false);
     }

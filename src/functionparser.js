@@ -106,6 +106,7 @@ function parseFunction (storedFunction, args, cb) {
 	    	}
 	    	return cb(null); // return ok since we cannot verify promise return type (fnclass)
 	    } else if (typeof result != new String(storedFunction.type)) {
+	    	if (storedFunction.type = "undefined") storedFunction.type = undefined;
 		    return cb(`storedFunction is type '${typeof result}' and not '${storedFunction.type}'` + JSON.stringify(storedFunction));
 		  }
 

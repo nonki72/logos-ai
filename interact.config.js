@@ -4,15 +4,11 @@ module.exports = {
         name: "Logos interact",
         script: "node -- interact.js",
         watch: true,
+        node_args: [
+          "--inspect-brk=7000"
+        ],
         autorestart : false,
         env: {
-          "GCLOUD_PROJECT": "logos-162301",
-          "CLOUD_BUCKET": "logos-162301",
-          "DATASTORE_DATASET":"logos-162301",
-          "DATASTORE_EMULATOR_HOST_PATH":"localhost:8081/datastore",
-          "DATASTORE_EMULATOR_HOST":"localhost:8081",
-          "DATASTORE_HOST":"http://localhost:8081",
-          "DATASTORE_PROJECT_ID":"logos-162301",
           "MYSQL_USER":"logos",
           "MYSQL_PASSWORD":"sparkle8twilight",
           "MYSQL_DATABASE":"logos",
