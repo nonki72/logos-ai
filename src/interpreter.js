@@ -9,34 +9,23 @@ const isApp = node => node instanceof AST.Application || ('data' in node && node
 // determines whether the abstraction (function to call) is accepting one more
 // parameter, and the input given matches the expected type 
 const typecheck = (abstraction, input) => {
-  if (abstraction.type == 'free') {
+  if (isName(abstraction)) {
     // we have a free variable with arbitrary code in .fn
     // or an ast in .astid (don't need to typecheck)
     if (abstraction.fn) {
       if (abstraction.argCount == 0) return false;
       if (abstraction.args) {
         // abstraction already has args. check if does not match 'next' arg
-        var inputType = (input.type == 'free') ? typeof input.fn : input.type;
+        var inputType = input.fntype; // may or may not have fntype
         if (abstraction.argTypes[abstraction.args.length] != inputType) return false;
-      } else if (!('argTypes' in abstraction) || abstraction.argTypes[0] != typeof input) return false;
+      } else if (!('argTypes' in abstraction) || abstraction.argTypes[0] != typeof input.fn) return false;
     }
   }
   return true;
 }
 
-// if astid is referenced in the given free identifier,
-// retrieve it from the database
-const getAstIfNeeded = (entity, cb) => {
-  console.log('### G1 ###');
-  if (entity.type == 'free' && entity.astid) {
-    DataLib.readById(entity.astid, (entity2) => {
-      return cb(entity2)
-    });
-  } else {
-    return cb(entity);
-  }
-}
 
+// application of abstraction and an input
 const apply = (abstraction, input, callback) => {
   console.log('### APPLY 1 ###');
   if (!typecheck(abstraction, input)) {
@@ -45,26 +34,16 @@ const apply = (abstraction, input, callback) => {
     return callback(null, false);
   }
   // create an application of the two entities
-  getAstIfNeeded(abstraction, (abstractionPreAst) => {
-    getAstIfNeeded(input, (inputPreAst) => {
-      console.log('### APPLY 2 ###');
-      var applicationAst = new AST.Application(abstractionPreAst, inputPreAst);
-      return evaluate(applicationAst, (astOut) => {
-        console.log('### APPLY 3 ###');
-        // was able to apply. return changed AST
-        console.log('### APPLY SUCCESSFUL ###');
-        return callback(astOut, true);
-      });
+  console.log('### APPLY 2 ###');
+  DataLib.readOrCreateApplication(abstraction.astid, input.astid, (application) =>{
+    var applicationAst = new AST.Application(application.id, abstraction, abstraction.astid, input, input.astid);
+    return evaluate(applicationAst, (astOut) => {
+      console.log('### APPLY 3 ###');
+      // was able to apply. return changed AST
+      console.log('### APPLY SUCCESSFUL ###');
+      return callback(astOut, true);
     });
   });
-}
-
-const getXfromValue = (v) => {
-  return (v * Math.E) / (1 - v);
-}
-
-const getValueFromX = (x) => {
-  return x / (x + Math.E);
 }
 
 const adjustAssociativeValue = async (srcid, dstid, cb) =>  {
@@ -95,27 +74,17 @@ const adjustAssociativeValue = async (srcid, dstid, cb) =>  {
 const applyAndAdjustAssociativeValue = async (data, input, callback) => {
   console.log('*** AA1 ***');
   apply(data, input, async (astOut, success) => {
-    if (!success) return callback(data); // if param mismatch, discard input and use only the first part next time
-    var association = await Sql.getAssociationRecord(input.id, data.id);
-    if (association != null) {
-      adjustAssociativeValue(input.id, data.id, (written) => {
-        console.log('*** AA2 ***');
-        return callback(astOut);
-      });
-    } else {
+    // if param mismatch, discard input and use only the first part next time
+    if (!success) {
+      console.log('*** AA2 UNSUCCESSFUL ***');
+      return callback(data);
+    } 
 
-      // no association, was pulled straight from Diary, created anew, or has old association
-        var association = {
-          srcid: input.id, 
-          dstid: data.id,
-          assv: 1
-        }
-        var res = await Sql.insertAssociationRecord(association);
-        console.log('*** AA4 ***');
-        if (res) console.log('created associative value ' + input.id + " -> " + data.id + " : " + association.assv);
-        else              console.log('failed to create assv: ' + input.id + " -> " + data.id + " : " + err); // already exists somehow or errored out
-        return callback(astOut);
-    }
+    // successfully applied abstraction to input, got astOut
+    adjustAssociativeValue(data.id, input.id, (written) => {
+      console.log('*** AA2 SUCCESSFUL***');
+      return callback(astOut);
+    });
   });
 }
 
@@ -127,33 +96,30 @@ const applyAndAdjustAssociativeValue = async (data, input, callback) => {
 const combine = async (lastAst) => {
   console.log("*** C ***");
   console.log("lastAst: " + JSON.stringify(lastAst,null,4));
-  if (lastAst != null) console.log("*** C LASTAST *** " + lastAst.id);
+  if (lastAst != null) console.log("*** C LASTAST *** " + lastAst.astid);
 
   // see if lastAst is usable as an abstraction to apply to the input
   // this selection (lastAst or read-abstraction or input) is probabilistic
   if (//Math.random() > 0.5 &&
        lastAst 
       && (//lastAst.type == 'abs' || 
-         (lastAst.type == 'free' && typeof lastAst.argn === 'number'))) {
-    if (!('args' in lastAst)) {
-      lastAst.args = [];
-      lastAst.argCount = 0;
-    }
-    if (lastAst.argn > lastAst.args.length) {
+         (lastAst instanceof AST.Identifier && typeof lastAst.argCount === 'number'))) {
+    if (lastAst.argCount > lastAst.args.length) {
       // need more arg
-      console.log("*** C LASTAST, FREE *** TYPE "+ lastAst.argt[0][0]);
-      DataLib.readFreeIdentifierByTypeAndRandomValue(lastAst.argt[lastAst.argCount][1], (input) => {
+      console.log("*** C LAST:FN, FREE ***   NEXT ARG "+ 
+        lastAst.argTypes[lastAst.argCount][0] + ":" + lastAst.argTypes[lastAst.argCount][1]);
+      DataLib.readFreeIdentifierByTypeAndRandomValue(lastAst.argTypes[lastAst.argCount][1], (input) => {
         if (input == null) {
           setTimeout(combine, 1, lastAst);
           return;
         }
-        console.log("********************* C0 ********************* " + input.type + ","+input.id);
-        console.log("*** C1 *** MATCH -> " + lastAst.type + " : " + input.type);
 
-        lastAst.args.push(input);
+        var inputAst = new AST.Identifier(input);
+        console.log("*** C1 *** MATCH -> FN : " + inputAst.fntype + ", " + inputAst.astid);
+        lastAst.args.push(inputAst);
         lastAst.argCount++;
-        adjustAssociativeValue(lastAst.id, input.id, (written)=>{
-          if (lastAst.args.length == lastAst.argn) {
+        adjustAssociativeValue(lastAst.astid, inputAst.astid, (written)=>{
+          if (lastAst.args.length == lastAst.argCount) {
             // got enough arg
             evaluate(lastAst, (astOut) => {
               setTimeout(combine, 1, astOut);
@@ -172,83 +138,60 @@ const combine = async (lastAst) => {
       });
     }
 
+  // lastAst is not a free identifier that takes args, just an identifier
+  } else if (Math.random() > 0.25 && lastAst && isName(lastAst)) {
+    console.log("*** C LAST:FREE, ASSOCIATIVE *** " + lastAst.fntype);
+    console.log(JSON.stringify(lastAst,null,4));
+    // Get a random free identifier as fresh input to be applied to lastAst (fragment is second part)
+    DataLib.readByAssociativeValue(lastAst.astid, (fragment) => {
+      if (!fragment) {
+        console.log("*** C1 NO FRAGMENT *** ");
+        return setTimeout(combine, 1, lastAst);
+      }
+
+      var fragmentAst = new AST.Identifier(fragment);
+      console.log("*** C2 WITH FRAGMENT *** " + fragmentAst.fntype + ","+fragmentAst.astid);
+      adjustAssociativeValue(lastAst.astid, fragmentAst.astid, (written) => {
+        setTimeout(combine, 1, fragmentAst);
+      });
+    });
+
+  // todo: LAST:ABS
+
   // no lastAst or randomly not using it
-  } else {//if (Math.random() > 0.5) {
-      console.log("*** C FN_TAKE_ARGS, NULL *** ");
+  // maybe get a free identifier function that expects args as input
+  } else if (Math.random() > 0.5) {
+      console.log("*** C FN, NULL *** ");
       //get a pseudo-random free identifier function that takes args from diary as replacement for lastAst (first part)
       DataLib.readRandomFreeIdentifierFnThatTakesArgs((freeIdentifierFn) => {
         if (freeIdentifierFn == null) {
           setTimeout(combine, 1, lastAst);
           return;
         }
-        console.log("********************* C1 ********************* " + freeIdentifierFn.type + ","+freeIdentifierFn.id);
-        setTimeout(combine, 1, freeIdentifierFn);
+        // got free identifier function
+        var freeIdentifierFnAst = new AST.Identifier(freeIdentifierFn);
+        console.log("********************* C1 ********************* " + freeIdentifierFnAst.fntype + ","+freeIdentifierFnAst.astid);
+        setTimeout(combine, 1, freeIdentifierFnAst);
       });
-  } //else {
-/*    console.log("*** C FREE, ASSOCIATIVE *** ");
-    // Get a random free identifier as fresh input to be applied to lastAst (input is second part)
-    DataLib.readFreeIdentifierByRandomValue((freeIdentifier) => {
-      console.log("freeIdentifier: " + JSON.stringify(freeIdentifier,null,4));
-      if (!freeIdentifier) {
-        console.log("*** C1 *** ");
-        return setTimeout(combine, 1, lastAst);
-      }
-      console.log("********************* C2 ********************* " + freeIdentifier.type + ","+freeIdentifier.id);
-      // get a pseudo-random abstraction from diary as replacement for lastAst (first part)
-      DataLib.readByAssociativeValue(freeIdentifier.id, (fragment) => {
-        if (!fragment) {
-          console.log("*** C2 *** ");
-          return setTimeout(combine, 1, lastAst);
-        }
 
-        console.log("********************* C3 ********************* " + fragment.type + ","+fragment.id);
-        console.log("*** C3 *** -> " + freeIdentifier.type + " : " + fragment.type);
-        applyAndAdjustAssociativeValue(freeIdentifier, fragment, (astOut) => {
-          setTimeout(combine, 1, astOut);
-        });
-      });
-    });
-  } //else {// TODO: output a random selection
-*/
-}
-
-// reads the datastore one layer deep
-const getAst = (data, cb) => {
-  if (data.type == 'abs') {
-  console.log('### G2 ###');
-console.log(JSON.stringify(data, null, 2));
-    DataLib.readById(data.def2, (dataBody) => {
-      var ast = new AST.Abstraction(data.name, dataBody);
-      ast.data = data;
-      cb(ast);
-    });
-  } else if (data.type == 'app') {
-  console.log('### G3 ###');
-    DataLib.readById(data.def1, (dataLhs) => {
-      DataLib.readById(data.def2, (dataRhs) => {
-        var ast = new AST.Application(dataLhs, dataRhs);
-        ast.data = data;
-        cb(ast);
-      });
-    });
-  } else if (data.type == 'id') {
-    var ast = new AST.Identifier(data.indx);
-    ast.data = data;
-    cb(ast);
-  } else if (data.type == 'free') {
-    if (data.astid) {
-      DataLib.readById(entity.astid, (entity) => {
-        getAst(entity, cb); // TODO: catch possible infinite recursion
-      });
-    } else {
-      var identifierAst = new AST.Identifier(
-        data.name, data.astid, data.fn, typeof data.fn, data.argCount, data.argTypes);
-      identifierAst.data = data;
-      cb(identifierAst);
-    }
+  // get a free identifier
   } else {
-    console.log('*** GETAST UNKNOWN TYPE: ' + data.type);
+      console.log("*** C FREE, NULL *** ");
+      //get a pseudo-random free identifier function that takes args from diary as replacement for lastAst (first part)
+      DataLib.readRandomFreeIdentifier((freeIdentifier) => {
+        if (freeIdentifier == null) {
+          setTimeout(combine, 1, lastAst);
+          return;
+        }
+        // got free identifier
+        var freeIdentifierAst = new AST.Identifier(freeIdentifier);
+        console.log("********************* C1 ********************* " + freeIdentifierAst.fntype + ","+freeIdentifierAst.astid);
+        setTimeout(combine, 1, freeIdentifier);
+      });
   }
+
+   //else {
+  // TODO: output a random selection
 }
 
 // evaluates the (extended) lambda calculus expression given
@@ -257,9 +200,7 @@ console.log(JSON.stringify(data, null, 2));
 // TODO: make turbo substitutions using EC
 const evaluate = async (ast, cb) => {
     if ('type' in ast) {
-      return getAst(ast, (realAst) => {
-        return evaluate(realAst, cb);
-      })
+      return evaluate(ast, cb);
     }
     if (isApp(ast)) {
       /**
@@ -274,7 +215,7 @@ const evaluate = async (ast, cb) => {
          * abstraction's body
          */
         return substitute(ast.rhs, ast.lhs.body, function(ast2) {
-          DataLib.readOrCreateSubstitution("beta", ast.id, ast2.id, (substitution) => {
+          DataLib.readOrCreateSubstitution("beta", ast.astid, ast2.astid, (substitution) => {
             return evaluate(ast2, cb);
           });
         });
@@ -334,7 +275,7 @@ const evaluate = async (ast, cb) => {
         return cb(ast);        
       }
     } else {
-      console.log('### UNKNOWN TYPE ### ' + typeof ast + ' ' + ast.type);
+      console.log('### UNKNOWN TYPE ### ' + typeof ast);
       return cb(ast);
     }
 };
@@ -390,12 +331,8 @@ const shift = (by, node, cb) => {
     Application(app) {
       aux(app.lhs, from, function(node1){
         aux(app.rhs, from, function(node2) {
-          var applicationAst = new AST.Application(
-            node1,
-            node2
-          );
-          DataLib.readOrCreateApplication(app.lhs.id, app.rhs.id, (application) => {
-            applicationAst.id = application.id;
+          DataLib.readOrCreateApplication(node1.astid, node2.astid, (application) =>{
+            var applicationAst = new AST.Application(application.id, node1, node1.astid, node2, node2.astid);
             return cb2(applicationAst);
           });
         });
@@ -403,30 +340,21 @@ const shift = (by, node, cb) => {
     },
     Abstraction(abs) {
       aux(abs.body, from + 1, function(node1) {
-        var abstractionAst = new AST.Abstraction(
-          abs.param,
-          node1
-        );
-        DataLib.readOrCreateAbstraction(abs.param, abs.body.id, (abstraction) => {
-          abstractionAst.id = abstraction.id;
-          return cb2(abstractionAst);
+        DataLib.readOrCreateAbstraction(abs.param, body.astid, (abstraction) =>{
+          var abstractionAst = new AST.Abstraction(abstraction.id, abs.param, body, body.astid);
+          return cb2(abstractionAst);          
         });
       });
     },
     Identifier(id) {
       if (typeof id.value === 'number') {
-        var identifierAst = new AST.Identifier(
-          id.value + (id.value >= from ? by : 0)
-        );
-        DataLib.readOrCreateIdentifier(id.value, (identifier) => {
-          identifierAst.id = identifier.id;
+        DataLib.readOrCreateFreeIdentifier(id.value + (id.value >= from ? by : 0), (identifier) => {
+          var identifierAst = new AST.Identifier(identifier);
           return cb2(identifierAst);
         });
       } else {
         DataLib.readOrCreateFreeIdentifier(id.value, (identifier) => {
-          var identifierAst = new AST.Identifier(
-            identifier.name, identifier.astid, identifier.fn, typeof identifier.fn, identifier.argCount, identifier.argTypes);
-          identifierAst.id = identifier.id;
+          var identifierAst = new AST.Identifier(identifier);
           return cb2(identifierAst);
         });
       }
@@ -442,12 +370,8 @@ const subst = (value, node, cb) => {
     Application(app) {
       aux(app.lhs, depth, function(node1){
         aux(app.rhs, depth, function(node2) {
-          var applicationAst = new AST.Application(
-            node1,
-            node2
-          );
-          DataLib.readOrCreateApplication(app.lhs.id, app.rhs.id, (application) => {
-            applicationAst.id = application.id;
+          DataLib.readOrCreateApplication(node1.astid, node2.astid, (application) =>{
+            var applicationAst = new AST.Application(application.id, node1, node1.astid, node2, node2.astid);
             return cb2(applicationAst);
           });
         });
@@ -455,23 +379,22 @@ const subst = (value, node, cb) => {
     },
     Abstraction(abs) {
       aux(abs.body, depth + 1, function(node1) {
-        var abstractionAst = new AST.Abstraction(
-          abs.param,
-          node1
-        );
-        DataLib.readOrCreateAbstraction(abs.param, abs.body.id, (abstraction) => {
-          abstractionAst.id = abstraction.id;
+        DataLib.readOrCreateAbstraction(abs.param, node1.astid, (abstraction) => {
+          var abstractionAst = new AST.Abstraction(abstraction.id, abs.param, node1, node1.astid);
           return cb2(abstractionAst);
         });
       });
     },
     Identifier(id) {
-      if (depth === id.value)
-        return shift(depth, value, function(result) {
-          cb2(result);
-        });
-      else
-        return cb2(id);
+      readOrCreateFreeIdentifier(id.value, (identifier) => {
+        var identifierAst = new AST.Identifier(id.value, identifier.id);
+        if (depth === id.value)
+          return shift(depth, value, function(result) {
+            cb2(result);
+          });
+        else
+          return cb2(identifierAst);
+      });
     }
   }));
   aux(node, 0, function(node1) {

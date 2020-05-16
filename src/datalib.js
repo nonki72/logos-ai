@@ -42,40 +42,38 @@ async function readByEquivalenceClass (id) {
   return cb(res);
 }
 
-function readByAssociativeValue(sourceId, cb) {
-	Sql.getRandomAssociationRecord(sourceId, (err, association) => {
-		if (!err && association && association.dstid) {
-			return readById(association.dstid, (entity) => {
-				if (entity) {
-					entity.association = association; // ************************* needed?
-					return cb(entity);
-				}
-			});
-		}
+async function readByAssociativeValue(sourceId, cb) {
+	var association = await Sql.getRandomAssociationRecord(sourceId);
+	if (association && association.dstid) {
+		return readById(association.dstid, (entity) => {
+			if (entity) {
+				entity.association = association; // ************************* needed?
+				return cb(entity);
+			}
+		});
+	}
 
-      // no assv to report, select at random
-			return readFreeIdentifierByRandomValue(cb);
-			//readbyrandomvalue() // todo: also want abs & apps
-	});
+  // no assv to report, select at random
+	return readFreeIdentifierByRandomValue(cb);
+	//readbyrandomvalue() // todo: also want abs & apps
 }
 
 // reads applicator based on probabilistic selection of matching associations
-function readApplicatorByAssociativeValue(sourceId, cb) {
-	Sql.getRandomAssociationRecord(sourceId, (err, association) => {
-		if (!err && association && association.dstid) {
-			console.log("$$$ A1 $$$");
-			return readById(association.dstid, (entity) => {
-				if (entity) {
-					entity.association = association; // ************************* needed?
-					return cb(entity);
-				}
-			});
-		}
+async function readApplicatorByAssociativeValue(sourceId, cb) {
+	var association = await Sql.getRandomAssociationRecord(sourceId);
+	if (association && association.dstid) {
+		console.log("$$$ A1 $$$");
+		return readById(association.dstid, (entity) => {
+			if (entity) {
+				entity.association = association; // ************************* needed?
+				return cb(entity);
+			}
+		});
+	}
 
-      // no assv to report, select at random
-			console.log("$$$ A3 $$$");
-			return readApplicatorByRandomValue(cb);
-	});
+  // no assv to report, select at random
+	console.log("$$$ A3 $$$");
+	return readApplicatorByRandomValue(cb);
 }
 
 // randomly reads an abs or free id fragment
@@ -165,6 +163,23 @@ async function readFreeIdentifierByFn (fn, cb) {
 async function readRandomFreeIdentifierFnThatTakesArgs (cb) {
 	const query = {
 		'argn': {$gte: 1},
+		'rand': {$lte: Math.random()}
+	};
+	var client = await getDb();
+	var res = null;
+	try {
+		const db = client.db("logos");
+		let cursor = db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
+		if (cursor.hasNext()) res = await cursor.next();
+  } catch(err) {
+  	console.error(err);
+  }
+  return cb(res);
+}
+
+async function readRandomFreeIdentifier (cb) {
+	const query = {
+		'fntype': null,
 		'rand': {$lte: Math.random()}
 	};
 	var client = await getDb();
@@ -574,6 +589,7 @@ module.exports = {
 	readByRandomValue: readByRandomValue,
 	readByAssociativeValue: readByAssociativeValue,
 	readFreeIdentifierByTypeAndRandomValue: readFreeIdentifierByTypeAndRandomValue,
+	readRandomFreeIdentifier: readRandomFreeIdentifier,
 	readRandomFreeIdentifierFnThatTakesArgs: readRandomFreeIdentifierFnThatTakesArgs,
 	readById: readById,
 	readClassByName: readClassByName,
