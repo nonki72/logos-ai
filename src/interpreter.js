@@ -69,22 +69,26 @@ const getValueFromX = (x) => {
 
 const adjustAssociativeValue = async (srcid, dstid, cb) =>  {
   var res = await Sql.incrementAssociationRecord(srcid, dstid);
-  if (!res) {
-    var association = {
-      srcid: srcid,
-      dstid: dstid,
-      assv: 1
-    };
-    var res2 = await Sql.insertAssociationRecord(association);
-    if (!res2) {
-      console.log('failed to update assv: ' + srcid + " -> " + dstid + " : " + err2);
-      return cb(false);
-    }
+  if (res) {
+    console.log('incremented associative value ' + srcid + " -> " + dstid);
     return cb(true);
   }
 
-  console.log('incremented associative value ' + srcid + " -> " + dstid);
-  return cb(true);
+  // no existing association
+  var association = {
+    srcid: srcid,
+    dstid: dstid,
+    assv: 1
+  };
+  var res2 = await Sql.insertAssociationRecord(association);
+  if (res2) {
+    console.log('created associative value ' + srcid + " -> " + dstid);
+    return cb(true);
+  }
+
+  // too bad
+  console.log('failed to insert assv: ' + srcid + " -> " + dstid);
+  return cb(false);
 }
 
 // TODO: assv from lastAst -> input
@@ -139,6 +143,10 @@ const combine = async (lastAst) => {
       // need more arg
       console.log("*** C LASTAST, FREE *** TYPE "+ lastAst.argt[0][0]);
       DataLib.readFreeIdentifierByTypeAndRandomValue(lastAst.argt[lastAst.argCount][1], (input) => {
+        if (input == null) {
+          setTimeout(combine, 1, lastAst);
+          return;
+        }
         console.log("********************* C0 ********************* " + input.type + ","+input.id);
         console.log("*** C1 *** MATCH -> " + lastAst.type + " : " + input.type);
 
@@ -169,8 +177,12 @@ const combine = async (lastAst) => {
       console.log("*** C FN_TAKE_ARGS, NULL *** ");
       //get a pseudo-random free identifier function that takes args from diary as replacement for lastAst (first part)
       DataLib.readRandomFreeIdentifierFnThatTakesArgs((freeIdentifierFn) => {
-          console.log("********************* C1 ********************* " + freeIdentifierFn.type + ","+freeIdentifierFn.id);
-          setTimeout(combine, 1, freeIdentifierFn);
+        if (freeIdentifierFn == null) {
+          setTimeout(combine, 1, lastAst);
+          return;
+        }
+        console.log("********************* C1 ********************* " + freeIdentifierFn.type + ","+freeIdentifierFn.id);
+        setTimeout(combine, 1, freeIdentifierFn);
       });
   } //else {
 /*    console.log("*** C FREE, ASSOCIATIVE *** ");

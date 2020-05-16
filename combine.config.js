@@ -3,7 +3,8 @@ module.exports = {
       {
         name: "Logos combinator",
         script: "node -- combine.js",
-        watch: true,
+	node_args: "--async-stack-traces",
+	watch: true,
         autorestart : false,
         env: {
           "MONGO_CONNECTION_STRING":"mongodb://localhost:27017/",

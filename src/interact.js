@@ -1,6 +1,7 @@
 const DataLib = require('./datalib');
 const Sql = require('./sql');
 const FunctionParser = require('./functionparser.js');
+const F = require('./function');
 
 const interact = () => {
       // get input from user prompt, output highest association
@@ -11,7 +12,7 @@ const interact = () => {
                 var storedOutputFunction = FunctionParser.loadStoredFunction(outputFreeIdentifier);
 
                 FunctionParser.parseFunction(storedInputFunction, null, (errIn) => {
-                    FunctionParser.parseFunction(storedOutputFunction, null, (errOut) => {
+                    FunctionParser.parseFunction(storedOutputFunction, ["TESTING OUTPUT"], (errOut) => {
                         if (errIn != null || errOut != null) {
                             console.log(errIn + ", " + errOut);
                             return setTimeout(interact, 1);
@@ -20,23 +21,22 @@ const interact = () => {
         
                             inputResultPromise.then((inputResult) => {
 
-                                DataLib.readFreeIdentifierByFn('"' + inputResult + '"', (namedFreeIdentifier) => {
+                                DataLib.readFreeIdentifierByFn('"' + inputResult + '"', async (namedFreeIdentifier) => {
                                     if (namedFreeIdentifier == null) {
                                         console.log("*** C3 *** -> " + inputResult + " not found");
                                         return setTimeout(interact, 1);
                                     }
                                     console.log(inputResult + " id: " + namedFreeIdentifier.id);
-                                    Sql.getRandomAssociationRecord(namedFreeIdentifier.id, (err, randomAssociationId) => {
-                                        if (err || randomAssociationId == null) {
-                                            console.log("*** C3 *** -> " + inputResult + " no assv found");
+                                    var randomAssociationId = await Sql.getRandomAssociationRecord(namedFreeIdentifier.id);
+                                    if (randomAssociationId == null) {
+                                        console.log("*** C3 *** -> " + inputResult + " no assv found");
+                                        return setTimeout(interact, 1);
+                                    }
+                                    DataLib.readById(randomAssociationId, function(randomAssociation) {
+                                        console.log("****************************");
+                                        console.log(JSON.stringify(randomAssociation,null,4));
+                                        FunctionParser.executeFunction(storedOutputFunction, "OUTPUT:"+randomAssociation, () => {
                                             return setTimeout(interact, 1);
-                                        }
-                                        DataLib.readById(randomAssociationId, function(randomAssociation) {
-                                            console.log("****************************");
-                                            console.log(JSON.stringify(randomAssociation,null,4));
-                                            FunctionParser.executeFunction(storedOutputFunction, "OUTPUT:"+randomAssociation, () => {
-                                                return setTimeout(interact, 1);
-                                            });
                                         });
                                     });
                                 });

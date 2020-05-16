@@ -74,8 +74,9 @@ describe("Sql associative value storage", async function() {
 
         try {
 
-          const getRandomOut = await Sql.getRandomAssociationRecord(association1.srcid);
+          const getRandomOut = await Sql.getRandomAssociationRecord(srcid);
           assert.isString(getRandomOut);
+          console.log("got random by association: " + getRandomOut);
 
           const deleteOut1 = await Sql.deleteAssociationRecord(association1.srcid,association1.dstid);
           assert.ok(deleteOut1);

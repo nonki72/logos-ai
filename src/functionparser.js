@@ -57,7 +57,7 @@ function loadModules (moduleNames, cb) {
 }
 
 function loadStoredFunction(freeIdentifier) {
-	var storedFunction = new F.StoredFunction(freeIdentifier.memo, freeIdentifier.fntype, freeIdentifier.fnclas, freeIdentifier.argt, freeIdentifier.mods, freeIdentifier.fn);
+	var storedFunction = new F.StoredFunction(freeIdentifier.memo, freeIdentifier.fntype, freeIdentifier.fnclas, JSON.parse(freeIdentifier.argt), freeIdentifier.mods, freeIdentifier.fn);
 	return storedFunction; 
 }
 
@@ -74,6 +74,7 @@ function parseFunction (storedFunction, args, cb) {
 		return cb('Must be instance of StoredFunction');
 	}
 
+ var type = new String(storedFunction.type);
 
   loadModules(storedFunction.modules, (err, modulePaths) => {
 		if (err) {
@@ -100,14 +101,14 @@ function parseFunction (storedFunction, args, cb) {
 		    return cb(`${e.constructor.name} error on line ${extractLineNumberFromStack(e.stack)}: ${e.message}` + JSON.stringify(storedFunction), e);
 			}
 
-	    if (storedFunction.type == 'promise') {
+	    if (type == 'promise') {
 	    	if (isPromise(result)) {
 	    		return cb(`storedFunction is of class ${result.constructor.name} and not a promise: ` + JSON.stringify(storedFunction));
 	    	}
 	    	return cb(null); // return ok since we cannot verify promise return type (fnclass)
-	    } else if (typeof result != new String(storedFunction.type)) {
-	    	if (storedFunction.type = "undefined") storedFunction.type = undefined;
-		    return cb(`storedFunction is type '${typeof result}' and not '${storedFunction.type}'` + JSON.stringify(storedFunction));
+	    } else if (typeof result === type) {
+	    	if (type === 'undefined') type = undefined;
+		    return cb(`storedFunction is type '${typeof result}' and not '${type}'` + JSON.stringify(storedFunction));
 		  }
 
 		  if (typeof result === 'object') {
