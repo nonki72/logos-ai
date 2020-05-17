@@ -34,7 +34,7 @@ async function readByEquivalenceClass (id) {
 	var res = null;
 	try {
 		const db = client.db("logos");
-		let cursor = db.collection('EC').find(query).sort({'size':-1}).limit(1);
+		let cursor = await db.collection('EC').find(query).sort({'size':-1}).limit(1);
 		if (cursor.hasNext()) res = await cursor.next();
   } catch(err) {
   	console.error(err);
@@ -65,7 +65,7 @@ async function readApplicatorByAssociativeValue(sourceId, cb) {
 		console.log("$$$ A1 $$$");
 		return readById(associationId, (entity) => {
 			if (entity) {
-				entity.association = association; // ************************* needed?
+				entity.association = associationId; // ************************* needed?
 				return cb(entity);
 			}
 		});
@@ -101,7 +101,7 @@ async function readAbstractionByRandomValue (cb) {
 	var res = null;
 	try {
 		const db = client.db("logos");
-		let cursor = db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
+		let cursor = await db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
 		if (cursor.hasNext()) res = await cursor.next();
   } catch(err) {
   	console.error(err);
@@ -120,7 +120,7 @@ async function readFreeIdentifierByRandomValue (cb) {
 	var res = null;
 	try {
 		const db = client.db("logos");
-		let cursor = db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
+		let cursor = await db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
     if (cursor.hasNext()) res = await cursor.next();
   } catch(err) {
   	console.error(err);
@@ -138,7 +138,7 @@ async function readFreeIdentifierValueByRandomValue (cb) {
 	var res = null;
 	try {
 		const db = client.db("logos");
-		let cursor = db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
+		let cursor = await db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
     if (cursor.hasNext()) res = await cursor.next();
   } catch(err) {
   	console.error(err);
@@ -157,7 +157,7 @@ async function readFreeIdentifierFnByRandomValue (cb) {
 	var res = null;
 	try {
 		const db = client.db("logos");
-		let cursor = db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
+		let cursor = await db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
     if (cursor.hasNext()) res = await cursor.next();
   } catch(err) {
   	console.error(err);
@@ -175,7 +175,7 @@ async function readFreeIdentifierFnThatTakesArgsByRandomValue (cb) {
 	var res = null;
 	try {
 		const db = client.db("logos");
-		let cursor = db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
+		let cursor = await db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
 		if (cursor.hasNext()) res = await cursor.next();
   } catch(err) {
   	console.error(err);
@@ -225,7 +225,7 @@ async function readByRandomValue (cb) {
 	var res = null;
 	try {
 		const db = client.db("logos");
-		let cursor = db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
+		let cursor = await db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
 		if (cursor.hasNext()) res = await cursor.next();
   } catch(err) {
   	console.error(err);
@@ -242,7 +242,7 @@ async function readFreeIdentifierByTypeAndRandomValue (fntype, cb) {
 	var res = null;
 	try {
 		const db = client.db("logos");
-		let cursor = db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
+		let cursor = await db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
 		if (cursor.hasNext()) res = await cursor.next();
   } catch(err) {
   	console.error(err);
@@ -346,7 +346,7 @@ async function readOrCreateAbstraction (name, definition2, cb) {
 
   try {
 		const db = client.db("logos");
-  	res = db.collection('Diary').insertOne(data);
+  	res = await db.collection('Diary').insertOne(data);
   } catch (err) {
   	console.error(err);
   }
@@ -384,7 +384,7 @@ async function readOrCreateApplication (definition1, definition2, cb) {
 
   try {
 		const db = client.db("logos");
-  	res = db.collection('Diary').insertOne(data);
+  	res = await db.collection('Diary').insertOne(data);
   } catch (err) {
   	console.error(err);
   }
@@ -420,7 +420,7 @@ async function readOrCreateFreeIdentifier ( name, cb ) {
 
   try {
 		const db = client.db("logos");
-  	res = db.collection('Diary').insertOne(data);
+  	res = await db.collection('Diary').insertOne(data);
   } catch (err) {
   	console.error(err);
   }
@@ -462,7 +462,7 @@ async function readOrCreateFreeIdentifierFunction (name, astid, fn, fntype, fncl
   };
   try {
 		const db = client.db("logos");
-  	res = db.collection('Diary').insertOne(data);
+  	res = await db.collection('Diary').insertOne(data);
   } catch (err) {
   	console.error(err);
   }
@@ -470,12 +470,15 @@ async function readOrCreateFreeIdentifierFunction (name, astid, fn, fntype, fncl
   return cb(data);
 }
 
-
+// lots of stuff going on here
+// might want to make this a transaction in the future
+// TODO
 async function readOrCreateSubstitution (subType, location1, location2, cb) {
   if (subType == 'beta') {
     // check that action1 lhs is abstraction
   }
 
+  // see if this sub already exists (dont care if its invalid)
 	const query = {
 		'type': 'sub',
 		'styp': subType,
@@ -483,10 +486,10 @@ async function readOrCreateSubstitution (subType, location1, location2, cb) {
 		'def2': location2
 	};
 	var client = await getDb();
-	var res = null;
+  var db;
 	try {
-		const db = client.db("logos");
-		res = await db.collection('Diary').findOne(query);
+		db = client.db("logos");
+		let res = await db.collection('Diary').findOne(query);
 		if (res) {
 			return cb(res);
 		}
@@ -494,25 +497,67 @@ async function readOrCreateSubstitution (subType, location1, location2, cb) {
   	console.error(err);
   }
 
-	// if not found
-  var data = {
-  	id: new ObjectID(),
-  	type: 'sub',
-  	styp: subType,
-  	def1: location1,
-  	def2: location2
-  };
+	// sub does not already exist
   try {
-		const db = client.db("logos");
-  	res = db.collection('Diary').insertOne(data);
+  	// invalidate old sub that subs to this one, if one exists
+		const query = {
+			type: 'sub',
+			invalid: false,
+			def2: location1
+		};
+		let res = await db.collection('Diary').findOne(query);
+		if (res != null) {
+			// does exist, create a new sub as direct replacement and invalidate the old one
+			// (in addition to the sub we were asked to create)
+			//create
+		  var data = {
+		  	id: new ObjectID(),
+		  	invalid: false,
+		  	type: 'sub',
+		  	styp: subType,
+		  	def1: res.def1,
+		  	def2: location2
+		  };
+	  	let res2 = await db.collection('Diary').insertOne(data);
+	  	if (!res2) {
+	  		throw new Error("Failed to create new replacement sub: \n"+JSON.stringify(data,null,4));
+	  	}
 
-  	// invalidate old app/sub anchored here
-  	const queryOld = {
-  		location1: location1
-  	};
-  	var resOld = db.collection('Diary').updateOne(queryOld, {$set:{invalid:true}});
+			//invalidate
+	  	const queryOld = {
+	  		type: res.type,
+	  		def1: res.def1,
+	  		def2: res.def2 // location1
+	  	};
+	  	let res3 = await db.collection('Diary').updateOne(queryOld, {$set:{invalid:true}});
+	  	if (!res3) {
+	  		throw new Error("Failed to invalidate old sub: \n"+JSON.stringify(queryOld,null,4));
+	  	}
+		}
+
+  	// create the new sub
+	  var data2 = {
+	  	id: new ObjectID(),
+	  	invalid: false,
+	  	type: 'sub',
+	  	styp: subType,
+	  	def1: location1,
+	  	def2: location2
+	  };
+  	let res4 = await db.collection('Diary').insertOne(data2);
+  	if (!res4) {
+	  	throw new Error("Failed to create sub: \n"+JSON.stringify(data2,null,4));
+  	}
   } catch (err) {
   	console.error(err);
+  	return cb(null);
+  }
+
+  // add sub data to EC
+  const equid = await Sql.incrementECRecord(location1, location2);
+  if (equid == null) {
+  	console.error("Failed to increment EC for substitution: "+location1+" -> "+location2);
+  	return cb(null);
   }
 
   return cb(data);
@@ -542,7 +587,7 @@ async function readOrCreateClass (name, module, cb) {
   };
   try {
 		const db = client.db("logos");
-  	res = db.collection('Class').insertOne(data);
+  	res = await db.collection('Class').insertOne(data);
   } catch (err) {
   	console.error(err);
   }

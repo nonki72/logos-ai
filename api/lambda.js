@@ -2,7 +2,6 @@
 'use strict';
 
 var express = require('express');
-const async = require('async');
 const execFile = require('child_process').execFile;
 const DataLib = require('../src/datalib');
 const Sql = require('../src/sql');
@@ -134,26 +133,6 @@ router.post('/substitution', (req, res, next) => {
     return res.status(200).json({"substitution":substitution});
   });
 });
-
-/*
-request parameters:
-  sourceid
-  destinationid
-  associativevalue
- */
-router.post('/association', async (req, res, next) => {
-  var association = {
-    srcid: req.body.sourceid,
-    dstid: req.body.destinationid,
-    assv: req.body.associativevalue
-  };
-  var result = await Sql.insertAssociationRecord(association);
-  if (!result) {
-    return next('Could not create association');
-  }
-  return res.status(200).json({"association":association});
-});
-
 
 /**
  * Errors on "/api/function/*" routes.

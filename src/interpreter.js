@@ -48,17 +48,17 @@ const apply = (abstraction, input, callback) => {
 }
 
 const adjustAssociativeValue = async (srcid, dstid, cb) =>  {
-  var res = await Sql.incrementECRecord(srcid, dstid);
-  if (res) {
+  var equid = await Sql.incrementECRecord(srcid, dstid);
+  if (equid) {
     console.log('incremented associative value ' + srcid + " -> " + dstid);
     return cb(true);
   }
 
   // no existing association
-  var equid = await Sql.insertECRecord(srcid);
-  var equid2 = await Sql.insertECRecord(dstid, equid);
+  var equid1 = await Sql.insertECRecord(srcid);
+  var equid2 = await Sql.insertECRecord(dstid, equid1);
 
-  if (equid == null || equid2 == null) {
+  if (equid1 == null || equid2 == null) {
     console.log('failed to insert assv: ' + srcid + " -> " + dstid);
     return cb(false);
   }
@@ -97,7 +97,7 @@ const combine = async (lastAst) => {
 
   // see if lastAst is usable as an abstraction to apply to the input
   // this selection (lastAst or read-abstraction or input) is probabilistic
-  if (//Math.random() > 0.5 &&
+  if (Math.random() > 0.8 &&
        lastAst 
       && (//lastAst.type == 'abs' || 
          (isName(lastAst) && typeof lastAst.argCount === 'number'))) {
@@ -252,24 +252,37 @@ const evaluate = async (ast, cb) => {
       /**
        * `ast` is a named identifier / variable, and maybe a named function
        */
-      if (ast.fn && ast.args.length == ast.argCount) {
-        console.log("### III 1 ###");
-        /**
-         * lhs is a named function that has 0 or more args
-         */
-        // has enough args, execute
-        if (typeof ast.fn == 'string') {
-          var output = FunctionParser.executeFunction(
-            FunctionParser.loadStoredFunction(ast), 
-            ast.args, 
-            (output) => {
-              console.log("!!!!!!!!!!!!!!CODE EXECUTION!!!!!!!!!!!\n"+ast.fn+"\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-              console.log(output);
-              console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-              // substitute the named function with its output
-              return cb(output);
-              // TODO: write substitution ast -> output to Diary
-            });  // <= CODE EXECUTION
+      if (ast.argCount !== null && ast.argCount >= 0) {
+        if (ast.args.length == ast.argCount) {
+          /**
+           * lhs is a named function that has 0 or more args
+           */
+          // has enough args, execute
+          if (typeof ast.fn == 'string') {
+            console.log("### III 1 A ###");
+            var output = FunctionParser.executeFunction(
+              FunctionParser.loadStoredFunction(ast), 
+              ast.args, 
+              (output) => {
+                console.log("!!!!!!!!!!!!!!CODE EXECUTION!!!!!!!!!!!\n"+ast.fn+"\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                console.log(output);
+                console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+                // substitute the named function with its output
+                return cb(output);
+                // TODO: write substitution ast -> output to Diary
+              });  // <= CODE EXECUTION
+          } else {
+            // fn is not code (a string)
+            // it is a virtual function
+            // need to look up substitutions for application of ast to its args
+            //TODO
+            console.log("### III 1 B ###");
+            return cb(ast);
+          }
+        } else {
+          // need more args
+          console.log("### III 1 C ###");
+          return cb(ast);
         }
       } else {
         console.log("### III 2 ###");

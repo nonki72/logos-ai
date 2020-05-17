@@ -74,10 +74,10 @@ async function getRandomECAstId (astid) {
 
     // calculate cumulative probabilities
     var rows = result.fetchAll();
-    console.log('ALL THE ASTIDS FOR EQUID '+JSON.stringify(rows,null,4))
     if (rows == null || rows.length == 0) {
       return null;
     }
+    console.log(rows.length+' ASTIDS FOR EQUID')
     var cumulativeRows = [];
     var cum = 0;
     for (var i=0; i < rows.length; i++) {
@@ -89,7 +89,7 @@ async function getRandomECAstId (astid) {
     // get a random one by probability
     var ran = Math.random();
     var max = cumulativeRows[cumulativeRows.length-1][1];
-    console.log('max: '+max);
+    console.log('MAX: '+max);
     var recordRaw = null;
 
     for(var i = 0; i< cumulativeRows.length; i++) {
@@ -155,50 +155,56 @@ async function updateECRecord(equid, astid, assv) {
 async function incrementECRecord(astid1, astid2) {
   var myDb = await getMyDb();
   try {
+    // find if equivalence class exists for either one of these
     var equid = null;
-    var result = await myDb.sql('SELECT equid FROM EC WHERE astid = 0x'+astid1).execute();
+    var result = await myDb.sql('SELECT equid, astid FROM EC WHERE astid IN (0x'+astid1+', 0x'+astid2+')').execute();
     var rows = result.fetchAll();
     if (rows != null && rows.length > 0) {
-      var equids = rows.reduce(
-        (string, row, i, array) => {
-          string += row[0]
-          if (i+1 < array.length) string += ', ';
-          return string;
-        }, 
-        '('
-      );
-      equids += ")";
-
-      var result2 = await myDb.sql('SELECT equid FROM EC WHERE astid = 0x'+astid2+' AND equid IN '+equids).execute();
-      var recordRaw = result2.fetchOne();
-      if (recordRaw) {
-        equid = recordRaw[0];
-        var incremented = await auxIncrementECRecord(equid, astid2);
-        if (incremented) {
-          return true;
+      // found an equivalence class
+      // ensure records for both astids exist
+      equid = rows[0][0];
+      if (rows.length == 1) {
+        let recordRaw = rows[0];
+        let astidAlreadyExists = recordRaw[1];
+        let astidToEnsure = (astidAlreadyExists == astid2) ? astid1 : astid2;
+        let res = await insertECRecord(astidToEnsure, equid1);
+        if (res == null) {
+          throw new Error("Failed to ensure rows exist for existing EC: "+equid+" and astidToEnsure "+astidToEnsure);
         }
       }
+
+      // actually increment the existing record
+      var incremented = await auxIncrementECRecord(equid, astid2);
+      if (!incremented) {
+        throw new Error("Failed to increment existing EC: "+equid+" and astid2 "+astid2);
+      }
+      return equid;
     }
     
-    var equid1 = await insertECRecord(astid1, equid);
-    var equid2 = await insertECRecord(astid2, equid1);
-    if (equid1 != null && equid2 != null) {
-      return true;
+    // no EC rows found
+    //create 2 new EC records
+    var equid1 = await insertECRecord(astid1, equid); // use equid if one already existed, otherwise null means one will be generated
+    if (equid1 == null) {
+      throw new Error("Failed to insert new EC records for EC "+equid+ " and astid "+astid1);
     }
+    var equid2 = await insertECRecord(astid2, equid1);
+    if (equid2 == null) {
+      throw new Error("Failed to insert new EC records for EC "+equid+ " and astid "+astid2);
+    }
+    return equid1;
   } catch (err) {
     console.error(err);
     return false;
   } finally {
     myDb.close();
   }
-  return false;
 }
 
 async function auxIncrementECRecord(equid, astid) {
   var myDb = await getMyDb();
   try {
     var result = await myDb.sql('UPDATE EC SET assv = assv + 1 WHERE equid = '+equid+' AND astid = 0x'+astid).execute();
-    if (result.getAffectedItemsCount()) {
+    if (result.getAffectedItemsCount() >= 1) {
       console.log("EC record incremented in SQL for equid/astid: " + equid + "/" + astid);
       return true;
     }

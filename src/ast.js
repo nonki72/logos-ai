@@ -46,7 +46,11 @@ class Identifier {
       this.fntype = data.fntype;
       this.fnclas = data.fnclas;
       this.argCount = data.argn;
-      this.argTypes = JSON.parse(data.argt);
+      try {
+        this.argTypes = JSON.parse(data.argt);
+      } catch (err) {
+        console.error('Problem parsing '+data.id+' argTypes "' + data.argt + '", message: '+ err);
+      }
       this.args = [];    
       this.mods = data.mods;
       this.memo = data.memo;

@@ -13,8 +13,6 @@ async function setup() {
 	  console.log("Database logos created!");
 	  await db.createCollection('Diary');
 	  console.log("Collection Diary created!");
-	  await db.createCollection('EC');
-	  console.log("Collection EC created!");
 	  await db.createCollection('Class');
 	  console.log("Collection Class created!");
 	  await db.createCollection('Module');
