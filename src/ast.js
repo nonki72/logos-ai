@@ -45,10 +45,9 @@ class Identifier {
       this.fn = data.fn;
       this.fntype = data.fntype;
       this.fnclas = data.fnclas;
-      this.argCount = data.argc;
-      this.argTypes = data.argt;
+      this.argCount = data.argn;
+      this.argTypes = JSON.parse(data.argt);
       this.args = [];    
-
       this.mods = data.mods;
       this.memo = data.memo;
       this.rand = data.rand;

@@ -1,6 +1,7 @@
 const AST = require('./ast');
 const DataLib = require('./datalib');
 const Sql = require('./sql');
+const FunctionParser = require('./functionparser.js');
 
 const isValue = node => node instanceof AST.Abstraction || ('data' in node && node.data.type == 'abs');
 const isName = node => node instanceof AST.Identifier || ('data' in node && (node.data.type == 'id')); // TODO: add field to free denoting name or value
@@ -47,27 +48,23 @@ const apply = (abstraction, input, callback) => {
 }
 
 const adjustAssociativeValue = async (srcid, dstid, cb) =>  {
-  var res = await Sql.incrementAssociationRecord(srcid, dstid);
+  var res = await Sql.incrementECRecord(srcid, dstid);
   if (res) {
     console.log('incremented associative value ' + srcid + " -> " + dstid);
     return cb(true);
   }
 
   // no existing association
-  var association = {
-    srcid: srcid,
-    dstid: dstid,
-    assv: 1
-  };
-  var res2 = await Sql.insertAssociationRecord(association);
-  if (res2) {
-    console.log('created associative value ' + srcid + " -> " + dstid);
-    return cb(true);
+  var equid = await Sql.insertECRecord(srcid);
+  var equid2 = await Sql.insertECRecord(dstid, equid);
+
+  if (equid == null || equid2 == null) {
+    console.log('failed to insert assv: ' + srcid + " -> " + dstid);
+    return cb(false);
   }
 
-  // too bad
-  console.log('failed to insert assv: ' + srcid + " -> " + dstid);
-  return cb(false);
+  console.log('created associative value ' + srcid + " -> " + dstid);
+  return cb(true);
 }
 
 // TODO: assv from lastAst -> input
@@ -103,12 +100,12 @@ const combine = async (lastAst) => {
   if (//Math.random() > 0.5 &&
        lastAst 
       && (//lastAst.type == 'abs' || 
-         (lastAst instanceof AST.Identifier && typeof lastAst.argCount === 'number'))) {
+         (isName(lastAst) && typeof lastAst.argCount === 'number'))) {
     if (lastAst.argCount > lastAst.args.length) {
       // need more arg
       console.log("*** C LAST:FN, FREE ***   NEXT ARG "+ 
-        lastAst.argTypes[lastAst.argCount][0] + ":" + lastAst.argTypes[lastAst.argCount][1]);
-      DataLib.readFreeIdentifierByTypeAndRandomValue(lastAst.argTypes[lastAst.argCount][1], (input) => {
+        lastAst.argTypes[lastAst.args.length][0] + ":" + lastAst.argTypes[lastAst.args.length][1]);
+      DataLib.readFreeIdentifierByTypeAndRandomValue(lastAst.argTypes[lastAst.args.length][1], (input) => {
         if (input == null) {
           setTimeout(combine, 1, lastAst);
           return;
@@ -117,7 +114,6 @@ const combine = async (lastAst) => {
         var inputAst = new AST.Identifier(input);
         console.log("*** C1 *** MATCH -> FN : " + inputAst.fntype + ", " + inputAst.astid);
         lastAst.args.push(inputAst);
-        lastAst.argCount++;
         adjustAssociativeValue(lastAst.astid, inputAst.astid, (written)=>{
           if (lastAst.args.length == lastAst.argCount) {
             // got enough arg
@@ -139,9 +135,8 @@ const combine = async (lastAst) => {
     }
 
   // lastAst is not a free identifier that takes args, just an identifier
-  } else if (Math.random() > 0.25 && lastAst && isName(lastAst)) {
+  } else if (Math.random() > 0.2 && lastAst && isName(lastAst)) {
     console.log("*** C LAST:FREE, ASSOCIATIVE *** " + lastAst.fntype);
-    console.log(JSON.stringify(lastAst,null,4));
     // Get a random free identifier as fresh input to be applied to lastAst (fragment is second part)
     DataLib.readByAssociativeValue(lastAst.astid, (fragment) => {
       if (!fragment) {
@@ -151,6 +146,8 @@ const combine = async (lastAst) => {
 
       var fragmentAst = new AST.Identifier(fragment);
       console.log("*** C2 WITH FRAGMENT *** " + fragmentAst.fntype + ","+fragmentAst.astid);
+      console.log(JSON.stringify(lastAst,null,4));
+      console.log(JSON.stringify(fragmentAst,null,4));
       adjustAssociativeValue(lastAst.astid, fragmentAst.astid, (written) => {
         setTimeout(combine, 1, fragmentAst);
       });
@@ -160,10 +157,10 @@ const combine = async (lastAst) => {
 
   // no lastAst or randomly not using it
   // maybe get a free identifier function that expects args as input
-  } else if (Math.random() > 0.5) {
+  } else if (false && Math.random() > 0.9) {
       console.log("*** C FN, NULL *** ");
       //get a pseudo-random free identifier function that takes args from diary as replacement for lastAst (first part)
-      DataLib.readRandomFreeIdentifierFnThatTakesArgs((freeIdentifierFn) => {
+      DataLib.readFreeIdentifierFnThatTakesArgsByRandomValue((freeIdentifierFn) => {
         if (freeIdentifierFn == null) {
           setTimeout(combine, 1, lastAst);
           return;
@@ -178,7 +175,7 @@ const combine = async (lastAst) => {
   } else {
       console.log("*** C FREE, NULL *** ");
       //get a pseudo-random free identifier function that takes args from diary as replacement for lastAst (first part)
-      DataLib.readRandomFreeIdentifier((freeIdentifier) => {
+      DataLib.readFreeIdentifierValueByRandomValue((freeIdentifier) => {
         if (freeIdentifier == null) {
           setTimeout(combine, 1, lastAst);
           return;
@@ -186,7 +183,7 @@ const combine = async (lastAst) => {
         // got free identifier
         var freeIdentifierAst = new AST.Identifier(freeIdentifier);
         console.log("********************* C1 ********************* " + freeIdentifierAst.fntype + ","+freeIdentifierAst.astid);
-        setTimeout(combine, 1, freeIdentifier);
+        setTimeout(combine, 1, freeIdentifierAst);
       });
   }
 
@@ -262,13 +259,18 @@ const evaluate = async (ast, cb) => {
          */
         // has enough args, execute
         if (typeof ast.fn == 'string') {
-          ast.fn = eval(ast.fn);  // <= CODE EXECUTION
-          console.log("!!!!!!!!!!!!!!CODE EXECUTION!!!!!!!!!!!\n"+ast.fn+"\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+          var output = FunctionParser.executeFunction(
+            FunctionParser.loadStoredFunction(ast), 
+            ast.args, 
+            (output) => {
+              console.log("!!!!!!!!!!!!!!CODE EXECUTION!!!!!!!!!!!\n"+ast.fn+"\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+              console.log(output);
+              console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+              // substitute the named function with its output
+              return cb(output);
+              // TODO: write substitution ast -> output to Diary
+            });  // <= CODE EXECUTION
         }
-        var output = ast.fn.apply(null, ast.args);  // <= CODE EXECUTION
-        // substitute the named function with its output
-        return cb(output);
-        // TODO: write substitution to Diary
       } else {
         console.log("### III 2 ###");
         // `ast` is an named identifier / variable and not a named funciton
@@ -387,7 +389,7 @@ const subst = (value, node, cb) => {
     },
     Identifier(id) {
       readOrCreateFreeIdentifier(id.value, (identifier) => {
-        var identifierAst = new AST.Identifier(id.value, identifier.id);
+        var identifierAst = new AST.Identifier(identifier);
         if (depth === id.value)
           return shift(depth, value, function(result) {
             cb2(result);

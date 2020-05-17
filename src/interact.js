@@ -27,7 +27,7 @@ const interact = () => {
                                         return setTimeout(interact, 1);
                                     }
                                     console.log(inputResult + " id: " + namedFreeIdentifier.id);
-                                    var randomAssociationId = await Sql.getRandomAssociationRecord(namedFreeIdentifier.id);
+                                    var randomAssociationId = await Sql.getRandomECAstId(namedFreeIdentifier.id);
                                     if (randomAssociationId == null) {
                                         console.log("*** C3 *** -> " + inputResult + " no assv found");
                                         return setTimeout(interact, 1);

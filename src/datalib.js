@@ -43,11 +43,11 @@ async function readByEquivalenceClass (id) {
 }
 
 async function readByAssociativeValue(sourceId, cb) {
-	var association = await Sql.getRandomAssociationRecord(sourceId);
-	if (association && association.dstid) {
-		return readById(association.dstid, (entity) => {
+	var associationId = await Sql.getRandomECAstId(sourceId);
+	if (associationId) {
+		return readById(associationId, (entity) => {
 			if (entity) {
-				entity.association = association; // ************************* needed?
+				entity.association = associationId; // ************************* needed?
 				return cb(entity);
 			}
 		});
@@ -60,10 +60,10 @@ async function readByAssociativeValue(sourceId, cb) {
 
 // reads applicator based on probabilistic selection of matching associations
 async function readApplicatorByAssociativeValue(sourceId, cb) {
-	var association = await Sql.getRandomAssociationRecord(sourceId);
-	if (association && association.dstid) {
+	var associationId = await Sql.getRandomECAstId(sourceId);
+	if (associationId) {
 		console.log("$$$ A1 $$$");
-		return readById(association.dstid, (entity) => {
+		return readById(associationId, (entity) => {
 			if (entity) {
 				entity.association = association; // ************************* needed?
 				return cb(entity);
@@ -128,6 +128,61 @@ async function readFreeIdentifierByRandomValue (cb) {
   return cb(res);
 }
 
+async function readFreeIdentifierValueByRandomValue (cb) {
+	const query = {
+		'type': 'free',
+		'argn': null,
+		'rand': {$lte: Math.random()}
+	};
+	var client = await getDb();
+	var res = null;
+	try {
+		const db = client.db("logos");
+		let cursor = db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
+    if (cursor.hasNext()) res = await cursor.next();
+  } catch(err) {
+  	console.error(err);
+  }
+  return cb(res);
+}
+
+
+async function readFreeIdentifierFnByRandomValue (cb) {
+	const query = {
+		'type': 'free',
+		'argn': {$exists:true},
+		'rand': {$lte: Math.random()}
+	};
+	var client = await getDb();
+	var res = null;
+	try {
+		const db = client.db("logos");
+		let cursor = db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
+    if (cursor.hasNext()) res = await cursor.next();
+  } catch(err) {
+  	console.error(err);
+  }
+  return cb(res);
+}
+
+async function readFreeIdentifierFnThatTakesArgsByRandomValue (cb) {
+	const query = {
+		//'type': 'free', // dont need this
+		'argn': {$gte: 1},
+		'rand': {$lte: Math.random()}
+	};
+	var client = await getDb();
+	var res = null;
+	try {
+		const db = client.db("logos");
+		let cursor = db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
+		if (cursor.hasNext()) res = await cursor.next();
+  } catch(err) {
+  	console.error(err);
+  }
+  return cb(res);
+}
+
 async function readFreeIdentifierByName (name, cb) {
 	const query = {
 		'type': 'free',
@@ -154,40 +209,6 @@ async function readFreeIdentifierByFn (fn, cb) {
 	try {
 		const db = client.db("logos");
 		res = await db.collection('Diary').findOne(query);
-  } catch(err) {
-  	console.error(err);
-  }
-  return cb(res);
-}
-
-async function readRandomFreeIdentifierFnThatTakesArgs (cb) {
-	const query = {
-		'argn': {$gte: 1},
-		'rand': {$lte: Math.random()}
-	};
-	var client = await getDb();
-	var res = null;
-	try {
-		const db = client.db("logos");
-		let cursor = db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
-		if (cursor.hasNext()) res = await cursor.next();
-  } catch(err) {
-  	console.error(err);
-  }
-  return cb(res);
-}
-
-async function readRandomFreeIdentifier (cb) {
-	const query = {
-		'fntype': null,
-		'rand': {$lte: Math.random()}
-	};
-	var client = await getDb();
-	var res = null;
-	try {
-		const db = client.db("logos");
-		let cursor = db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
-		if (cursor.hasNext()) res = await cursor.next();
   } catch(err) {
   	console.error(err);
   }
@@ -584,13 +605,14 @@ module.exports = {
 	readApplicatorByRandomValue: readApplicatorByRandomValue,
 	readAbstractionByRandomValue: readAbstractionByRandomValue,
   readFreeIdentifierByRandomValue: readFreeIdentifierByRandomValue,
+  readFreeIdentifierFnByRandomValue: readFreeIdentifierFnByRandomValue,
+  readFreeIdentifierValueByRandomValue: readFreeIdentifierValueByRandomValue,
+	readFreeIdentifierFnThatTakesArgsByRandomValue: readFreeIdentifierFnThatTakesArgsByRandomValue,
   readFreeIdentifierByName: readFreeIdentifierByName,
   readFreeIdentifierByFn: readFreeIdentifierByFn,
 	readByRandomValue: readByRandomValue,
 	readByAssociativeValue: readByAssociativeValue,
 	readFreeIdentifierByTypeAndRandomValue: readFreeIdentifierByTypeAndRandomValue,
-	readRandomFreeIdentifier: readRandomFreeIdentifier,
-	readRandomFreeIdentifierFnThatTakesArgs: readRandomFreeIdentifierFnThatTakesArgs,
 	readById: readById,
 	readClassByName: readClassByName,
 	readModuleByName: readModuleByName,

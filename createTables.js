@@ -39,21 +39,20 @@ async function getMyDb() {
 
 // [START createTable]
 
-var SQL_STRING_ASSOCIATION = 'CREATE TABLE Associations (\n' +
-'    srcid BINARY(12) NOT NULL,\n' +
-'    dstid BINARY(12) NOT NULL,\n' +
+var SQL_STRING_EC = 'CREATE TABLE EC (\n' +
+'    equid BIGINT NOT NULL AUTO_INCREMENT,\n' +
+'    astid BINARY(12) NOT NULL,\n' +
 '    assv BIGINT UNSIGNED NOT NULL,\n' +
-'    INDEX (assv),\n' +
-'    INDEX (srcid,dstid),\n' +
-'    INDEX (dstid,srcid), \n' +
-'    UNIQUE (srcid, dstid)\n' +
+'    INDEX (equid),\n' +
+'    INDEX (astid), \n' +
+'    INDEX (assv)\n' +
 ');';
 
 
-async function createAssociationsTable () {
+async function createECTable () {
   try {
     var myDb = await getMyDb();
-    return await myDb.sql(SQL_STRING_ASSOCIATION).execute();
+    return await myDb.sql(SQL_STRING_EC).execute();
   } catch (err) {
     console.error(err);
   }
@@ -61,7 +60,7 @@ async function createAssociationsTable () {
 
 // [START main]
 async function main() {
-  var result = await createAssociationsTable();
+  var result = await createECTable();
   if (result) {
     console.log(result.getResults());
   }

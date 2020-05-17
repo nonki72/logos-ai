@@ -19,7 +19,7 @@ const contextClosure = function(str, argTypes, args, modules) {
 		requires += `const ${module.name} = require('${module.path}');
 								`;
 	}
-	
+
 	const CTX = {
 		args: {}
 	};
@@ -57,6 +57,18 @@ function loadModules (moduleNames, cb) {
 }
 
 function loadStoredFunction(freeIdentifier) {
+	if ('argTypes' in freeIdentifier) {
+		// have ast version
+		var storedFunction = new F.StoredFunction(
+			freeIdentifier.memo, 
+			freeIdentifier.fntype, 
+			freeIdentifier.fnclas, 
+			freeIdentifier.argTypes, 
+			freeIdentifier.mods, 
+			freeIdentifier.fn);
+		return storedFunction;
+	}
+	// straight from db
 	var storedFunction = new F.StoredFunction(freeIdentifier.memo, freeIdentifier.fntype, freeIdentifier.fnclas, JSON.parse(freeIdentifier.argt), freeIdentifier.mods, freeIdentifier.fn);
 	return storedFunction; 
 }

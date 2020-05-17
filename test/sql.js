@@ -9,33 +9,30 @@ describe("Sql associative value storage", async function() {
 
     describe("Association create get increment get delete", async function() {
       it("Select a random Association", async function() {
-        let association = {
-            srcid: new ObjectID(),
-            dstid: new ObjectID(),
-            assv: 23
-        };
+        let srcid = new ObjectID();
+        let dstid = new ObjectID();
+        let assv = 23;
 
         try {
-          const deleteOut = await Sql.deleteAssociationRecord(association.srcid,association.dstid);
-          assert.ok(deleteOut);
-        } catch(err) {}; 
+          const equid = await Sql.insertECRecord(srcid);
+          assert.isNumber(equid);
 
-        try {
-          const insertOut = await Sql.insertAssociationRecord(association);
-          assert.equal(insertOut,true);
+          const equid2 = await Sql.insertECRecord(dstid, equid, assv);
+          assert.equal(equid, equid2);
 
-          const getOut = await Sql.getAssociationRecord(association.srcid,association.dstid);
-          assert.equal(getOut.srcid, association.srcid);
-          assert.equal(getOut.dstid, association.dstid);
-          assert.equal(getOut.assv, association.assv);
+          const assvOut = await Sql.getAssociativeValue(srcid, dstid);
+          assert.equal(assv, assvOut);
 
-          const incOut = await Sql.incrementAssociationRecord(association.srcid, association.dstid);
+          const incOut = await Sql.incrementECRecord(srcid, dstid);
           assert.equal(incOut,true);
 
-          const getOut2 = await Sql.getAssociationRecord(association.srcid,association.dstid);
-          assert.equal(getOut2.assv,association.assv+1);
+          const assvOut2 = await Sql.getAssociativeValue(srcid, dstid);
+          assert.equal(assvOut2,assv+1);
 
-          const deleteOut2 = await Sql.deleteAssociationRecord(association.srcid,association.dstid);
+          const deleteOut = await Sql.deleteECRecord(equid, srcid);
+          assert.ok(deleteOut);
+
+          const deleteOut2 = await Sql.deleteECRecord(equid, dstid);
           assert.ok(deleteOut2);
         } catch(err) {
           console.log(err);
@@ -65,24 +62,28 @@ describe("Sql associative value storage", async function() {
             dstid: new ObjectID(),
             assv: 15
         };
-
+        
+        var equid;
         try {
-          const insertOut1 = await Sql.insertAssociationRecord(association1);
-          const insertOut2 = await Sql.insertAssociationRecord(association2);
-          const insertOut3 = await Sql.insertAssociationRecord(association3);
+          equid = await Sql.insertECRecord(association1.srcid);
+          const insertOut1 = await Sql.insertECRecord(association1.dstid, equid, association1.assv);
+          const insertOut2 = await Sql.insertECRecord(association2.dstid, equid, association2.assv);
+          const insertOut3 = await Sql.insertECRecord(association3.dstid, equid, association3.assv);
         } catch(err) {}; 
 
         try {
 
-          const getRandomOut = await Sql.getRandomAssociationRecord(srcid);
+          const getRandomOut = await Sql.getRandomECAstId(srcid);
           assert.isString(getRandomOut);
           console.log("got random by association: " + getRandomOut);
 
-          const deleteOut1 = await Sql.deleteAssociationRecord(association1.srcid,association1.dstid);
+          const deleteOut0 = await Sql.deleteECRecord(equid, association1.srcid);
+          assert.ok(deleteOut0);
+          const deleteOut1 = await Sql.deleteECRecord(equid, association1.dstid);
           assert.ok(deleteOut1);
-          const deleteOut2 = await Sql.deleteAssociationRecord(association2.srcid,association2.dstid);
+          const deleteOut2 = await Sql.deleteECRecord(equid, association2.dstid);
           assert.ok(deleteOut2);
-          const deleteOut3 = await Sql.deleteAssociationRecord(association3.srcid,association3.dstid);
+          const deleteOut3 = await Sql.deleteECRecord(equid, association3.dstid);
           assert.ok(deleteOut3);
         } catch(err) {
           console.log(err);
