@@ -152,6 +152,8 @@ async function updateECRecord(equid, astid, assv) {
   return false;
 }
 
+
+// TODO when an astid is found with rows of differing equids, merge the two equivalence classes together to use one equid
 async function incrementECRecord(astid1, astid2) {
   var myDb = await getMyDb();
   try {
@@ -167,10 +169,11 @@ async function incrementECRecord(astid1, astid2) {
         let recordRaw = rows[0];
         let astidAlreadyExists = recordRaw[1];
         let astidToEnsure = (astidAlreadyExists == astid2) ? astid1 : astid2;
-        let res = await insertECRecord(astidToEnsure, equid1);
+        let res = await insertECRecord(astidToEnsure, equid);
         if (res == null) {
           throw new Error("Failed to ensure rows exist for existing EC: "+equid+" and astidToEnsure "+astidToEnsure);
         }
+        console.log("Created EC "+equid+" for "+astidToEnsure);
       }
 
       // actually increment the existing record
@@ -178,6 +181,7 @@ async function incrementECRecord(astid1, astid2) {
       if (!incremented) {
         throw new Error("Failed to increment existing EC: "+equid+" and astid2 "+astid2);
       }
+      console.log("Incremented EC "+equid+" for "+astid2);
       return equid;
     }
     
@@ -187,10 +191,12 @@ async function incrementECRecord(astid1, astid2) {
     if (equid1 == null) {
       throw new Error("Failed to insert new EC records for EC "+equid+ " and astid "+astid1);
     }
+    console.log("Created EC "+equid1+" for "+astid1);
     var equid2 = await insertECRecord(astid2, equid1);
     if (equid2 == null) {
       throw new Error("Failed to insert new EC records for EC "+equid+ " and astid "+astid2);
     }
+    console.log("Created EC "+equid2+" for "+astid2);
     return equid1;
   } catch (err) {
     console.error(err);

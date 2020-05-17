@@ -5,10 +5,18 @@ class Abstraction {
    * subtree  representing the body of the abstraction.
    */
   constructor(astid, param, body, bodyid) {
-    this.astid = astid;
-    this.param = param;
-    this.body = body;
-    this.bodyid = bodyid;
+    if (typeof astid === 'object') {
+      var data = astid;
+      this.astid = data.id;
+      this.param = data.name;
+      this.body = null;
+      this.bodyid = data.def2;
+    } else {
+      this.astid = astid;
+      this.param = param;
+      this.body = body;
+      this.bodyid = bodyid;
+    }
   }
 
   toString(ctx=[]) {
@@ -21,11 +29,20 @@ class Application {
    * (lhs rhs) - left-hand side and right-hand side of an application.
    */
   constructor(astid, lhs, lhsid, rhs, rhsid) {
-    this.astid = astid;
-    this.lhs = lhs;
-    this.rhs = rhs;
-    this.lhsid = lhsid;
-    this.rhsid = rhsid;
+    if (typeof astid === 'object') {
+      var data = astid;
+      this.astid = data.id;
+      this.lhsid = data.definition1;
+      this.rhsid = data.definition2;
+      this.lhs = null;
+      this.rhs = null;
+    } else {
+      this.astid = astid;
+      this.lhs = lhs;
+      this.rhs = rhs;
+      this.lhsid = lhsid;
+      this.rhsid = rhsid;
+    }
   }
 
   toString(ctx) {
@@ -47,9 +64,11 @@ class Identifier {
       this.fnclas = data.fnclas;
       this.argCount = data.argn;
       try {
-        this.argTypes = JSON.parse(data.argt);
+        if (data.argt == '"undefined"' || data.argt == 'undefined') this.argTypes = undefined;
+        else this.argTypes = JSON.parse(data.argt);
       } catch (err) {
         console.error('Problem parsing '+data.id+' argTypes "' + data.argt + '", message: '+ err);
+        console.error('data: '+JSON.stringify(data,null,4));
       }
       this.args = [];    
       this.mods = data.mods;

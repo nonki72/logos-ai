@@ -3,9 +3,9 @@ const DataLib = require('./datalib');
 const Sql = require('./sql');
 const FunctionParser = require('./functionparser.js');
 
-const isValue = node => node instanceof AST.Abstraction || ('data' in node && node.data.type == 'abs');
-const isName = node => node instanceof AST.Identifier || ('data' in node && (node.data.type == 'id')); // TODO: add field to free denoting name or value
-const isApp = node => node instanceof AST.Application || ('data' in node && node.data.type == 'app');
+const isValue = node => node instanceof AST.Abstraction || (node.type == 'abs');
+const isName = node => node instanceof AST.Identifier || (node.type == 'id' || node.type == 'free'); // TODO: add field to free denoting name or value
+const isApp = node => node instanceof AST.Application || (node.type == 'app');
 
 // determines whether the abstraction (function to call) is accepting one more
 // parameter, and the input given matches the expected type 
@@ -25,6 +25,17 @@ const typecheck = (abstraction, input) => {
   return true;
 }
 
+const castAst = (input) => {
+  if (isName(input)) {
+    return new AST.Identifier(input);
+  } else if (isValue(input)) {
+    return new AST.Abstraction(input);
+  } else if (isApp(input)) {
+    return new AST.Application(input);
+  } else {
+    return null;
+  }
+}
 
 // application of abstraction and an input
 const apply = (abstraction, input, callback) => {
@@ -111,8 +122,13 @@ const combine = async (lastAst) => {
           return;
         }
 
-        var inputAst = new AST.Identifier(input);
-        console.log("*** C1 *** MATCH -> FN : " + inputAst.fntype + ", " + inputAst.astid);
+        var inputAst = castAst(input);
+        if (inputAst == null) {
+          console.error("Unknown AST type: " + JSON.stringify(input,null,4));
+          setTimeout(combine, 1, lastAst);
+          return;
+        }
+        console.log("*** C1 *** MATCH -> FN : " + inputAst.type + ", " + inputAst.astid);
         lastAst.args.push(inputAst);
         adjustAssociativeValue(lastAst.astid, inputAst.astid, (written)=>{
           if (lastAst.args.length == lastAst.argCount) {
@@ -144,8 +160,13 @@ const combine = async (lastAst) => {
         return setTimeout(combine, 1, lastAst);
       }
 
-      var fragmentAst = new AST.Identifier(fragment);
-      console.log("*** C2 WITH FRAGMENT *** " + fragmentAst.fntype + ","+fragmentAst.astid);
+      var fragmentAst = castAst(fragment);
+      if (fragmentAst == null) {
+        console.error("Unknown AST type: " + JSON.stringify(fragment,null,4));
+        setTimeout(combine, 1, lastAst);
+        return;
+      }
+      console.log("*** C2 WITH FRAGMENT *** " + fragmentAst.type + ","+fragmentAst.astid);
       console.log(JSON.stringify(lastAst,null,4));
       console.log(JSON.stringify(fragmentAst,null,4));
       adjustAssociativeValue(lastAst.astid, fragmentAst.astid, (written) => {

@@ -560,7 +560,7 @@ async function readOrCreateSubstitution (subType, location1, location2, cb) {
   	return cb(null);
   }
 
-  return cb(data);
+  return cb(data2);
 }
 
 async function readOrCreateClass (name, module, cb) {
