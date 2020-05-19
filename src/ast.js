@@ -1,10 +1,19 @@
 const DataLib = require('./datalib');
-class Abstraction {
+
+class Fragment {
+  toString(ctx=[]) {
+    return "<Empty Fragment>";
+  }
+}
+
+class Abstraction extends Fragment {
   /**
    * param here is the name of the variable of the abstraction. Body is the
    * subtree  representing the body of the abstraction.
    */
   constructor(astid, param, body, bodyid) {
+    super();
+    this.type = 'abs';
     if (typeof astid === 'object') {
       var data = astid;
       this.astid = data.id;
@@ -24,11 +33,13 @@ class Abstraction {
   }
 }
 
-class Application {
+class Application extends Fragment {
   /**
    * (lhs rhs) - left-hand side and right-hand side of an application.
    */
   constructor(astid, lhs, lhsid, rhs, rhsid) {
+    super();
+    this.type = 'app';
     if (typeof astid === 'object') {
       var data = astid;
       this.astid = data.id;
@@ -50,11 +61,13 @@ class Application {
   }
 }
 
-class Identifier {
+class Identifier extends Fragment {
   /**
    * name is the string matched for this identifier.
    */
-  constructor(value, astid, fn, fntype, fnclas, argCount, argTypes, mods, memo, rand) {
+  constructor(value, astid, fn, fntype, fnclas, argCount, argTypes, mods, memo, rand, type) {
+    super();
+    this.type = 'free';
     if (typeof value === 'object') {
       var data = value;
       this.value = data.name;
@@ -63,13 +76,8 @@ class Identifier {
       this.fntype = data.fntype;
       this.fnclas = data.fnclas;
       this.argCount = data.argn;
-      try {
-        if (data.argt == '"undefined"' || data.argt == 'undefined') this.argTypes = undefined;
-        else this.argTypes = JSON.parse(data.argt);
-      } catch (err) {
-        console.error('Problem parsing '+data.id+' argTypes "' + data.argt + '", message: '+ err);
-        console.error('data: '+JSON.stringify(data,null,4));
-      }
+      if (data.argt == '"undefined"' || data.argt == 'undefined') this.argTypes = undefined;
+      else this.argTypes = data.argt;
       this.args = [];    
       this.mods = data.mods;
       this.memo = data.memo;
@@ -98,6 +106,37 @@ class Identifier {
   }
 }
 
+const isAbstraction = node => node instanceof Abstraction || (node.type == 'abs');
+const isIdentifier = node => node instanceof Identifier || (node.type == 'id' || node.type == 'free'); // TODO: add field to free denoting name or value
+const isApplication = node => node instanceof Application || (node.type == 'app');
+
+const cast = (input) => {
+  if (typeof input == 'string') {
+    DataLib.readById(input, function (fragment) {
+      return castAst(fragment);
+    });
+  } else {
+    return castAst(input);
+  }
+}
+
+const castAst = (input) => {
+  if (isIdentifier(input)) {
+    return new Identifier(input);
+  } else if (isAbstraction(input)) {
+    return new Abstraction(input);
+  } else if (isApplication(input)) {
+    return new Application(input);
+  } else {
+    return null;
+  }
+}
+
+exports.cast = cast;
+exports.isAbstraction = isAbstraction;
+exports.isApplication = isApplication;
+exports.isIdentifier = isIdentifier;
+exports.Fragment = Fragment;
 exports.Abstraction = Abstraction;
 exports.Application = Application;
 exports.Identifier = Identifier;

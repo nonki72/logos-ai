@@ -159,51 +159,117 @@ async function incrementECRecord(astid1, astid2) {
   try {
     // find if equivalence class exists for either one of these
     var equid = null;
-    var result = await myDb.sql('SELECT equid, astid FROM EC WHERE astid IN (0x'+astid1+', 0x'+astid2+')').execute();
-    var rows = result.fetchAll();
-    if (rows != null && rows.length > 0) {
-      // found an equivalence class
-      // ensure records for both astids exist
-      equid = rows[0][0];
-      if (rows.length == 1) {
-        let recordRaw = rows[0];
-        let astidAlreadyExists = recordRaw[1];
-        let astidToEnsure = (astidAlreadyExists == astid2) ? astid1 : astid2;
-        let res = await insertECRecord(astidToEnsure, equid);
-        if (res == null) {
-          throw new Error("Failed to ensure rows exist for existing EC: "+equid+" and astidToEnsure "+astidToEnsure);
-        }
-        console.log("Created EC "+equid+" for "+astidToEnsure);
-      }
+    var result1 = await myDb.sql('SELECT equid, astid FROM EC WHERE astid = 0x'+astid1).execute();
+    var rows1 = result1.fetchAll();
+    var result2 = await myDb.sql('SELECT equid, astid FROM EC WHERE astid = 0x'+astid2).execute();
+    var rows2 = result2.fetchAll();
 
-      // actually increment the existing record
-      var incremented = await auxIncrementECRecord(equid, astid2);
-      if (!incremented) {
-        throw new Error("Failed to increment existing EC: "+equid+" and astid2 "+astid2);
+    // more than one EC row found
+    var rows = rows1.concat(rows2);
+    if (rows != null && rows.length > 1) {
+      // there is more than one row
+      // so there might be multiple equids
+      // since equid+astid are unique sql column pairs
+      // this means there is definately more than one equid (equivalence class)
+      // if there are more than two rows
+      // but since either astid is found in all of these they are actually the same
+      // equivalence class
+      // this is where they get merged, if needed
+      var equidToMergeInto;
+      var highestCount = 0;
+      // get a list of all the unique equids along with their occurance count
+      var equidsWithCounts = rows.reduce((total, row) => {
+        let thisEquid = row[0];
+        let thisCountSoFar;
+        if (!total.includes(thisEquid)) {
+          total.push([thisEquid,1]);
+          thisCountSoFar = 1;
+        } else {
+          let thisEquidIndex = total.indexOf(thisEquid);
+          thisCountSoFar = total[thisEquidIndex][1] + 1;
+          total[thisEquidIndex][1] = thisCountSoFar;
+        }
+        if (thisCountSoFar > highestCount) {
+          highestCount = thisCountSoFar;
+          equidToMergeInto = thisEquid;
+        }
+        return total;
+      }, []);
+      // now get a simple list of all the equids that are not the one we are going to merge into
+      var equidsToMerge = equidsWithCounts.reduce((total, entry) => {
+        let thisEquid = entry[0];
+        let thisCount = entry[1];
+        if (thisCount < highestCount) total.push(thisEquid);
+        return total;
+      }, []);
+      // actually perform the merge by changing all the other equids to the equidToMergeInto
+      if (equidsToMerge.length > 0) {
+        var equidsToMergeString = equidsToMerge.reduce((string, entry, index) => {
+          string += entry;
+          if (index+1 < equidsToMerge.length) string += ', ';
+          return string;
+        }, '(');
+        equidsToMergeString += ')';
+        var res2 = await myDb.sql('UPDATE EC SET equid = '+equidToMergeInto+' WHERE equid IN '+equidsToMergeString).execute();
+        if (res2.getAffectedItemsCount() >= 1) {
+          throw new Error("Failed to merge EC equid "+equidToMergeInto+" for "+equidsToMergeString);
+        }
+        console.log("EC records merged in SQL to equid " + equidToMergeInto + " for " + equidsToMergeString);
       }
-      console.log("Incremented EC "+equid+" for "+astid2);
-      return equid;
+      // ensure records for both astids exist
+      var equidApplied = await ensureBothRecordsExist(equidToMergeInto, astid1, astid2);
+      if (equidApplied == null) return false;
+      // now have many rows for same equid, this is the fixed state
+      // actually increment the existing record
+      var incremented = await auxIncrementECRecord(equidToMergeInto, astid2);
+      if (!incremented) return false;
+      return equidToMergeInto;
     }
+
+    // there is only one row, or no rows
+
+    // select one of these to be the final equid
+    if (rows1 != null && rows1.length > 0) equid = rows1[0][0];
+    else if (rows2 != null && rows2.length > 0) equid = rows2[0][0];
+    // equid might still be null, thats fine one will be generated
     
-    // no EC rows found
-    //create 2 new EC records
-    var equid1 = await insertECRecord(astid1, equid); // use equid if one already existed, otherwise null means one will be generated
-    if (equid1 == null) {
-      throw new Error("Failed to insert new EC records for EC "+equid+ " and astid "+astid1);
-    }
-    console.log("Created EC "+equid1+" for "+astid1);
-    var equid2 = await insertECRecord(astid2, equid1);
-    if (equid2 == null) {
-      throw new Error("Failed to insert new EC records for EC "+equid+ " and astid "+astid2);
-    }
-    console.log("Created EC "+equid2+" for "+astid2);
-    return equid1;
+    // ensure records for both astids exist
+    equid = await ensureBothRecordsExist(equid, astid1, astid2);
+    if (equid == null) return false;
+    // actually increment the existing record
+    var incremented = await auxIncrementECRecord(equid, astid2);
+    if (!incremented) return false;
+    return equid;
   } catch (err) {
     console.error(err);
     return false;
   } finally {
     myDb.close();
   }
+}
+
+
+// make zero, one, or two records using the same equid
+// if equid is null it will be generated
+async function ensureBothRecordsExist(equid, astid1, astid2) {
+  // equid is pass by value, dont need to worry about changing it here
+  try {
+    equid = await insertECRecord(astid1, equid);
+    if (equid == null) {
+      throw new Error("Failed to ensure row exists for existing EC: "+equid+" and astid1 "+astid1);
+    }
+    console.log("Created EC "+equid+" for "+astid1);
+
+    equid = await insertECRecord(astid2, equid);
+    if (equid == null) {
+      throw new Error("Failed to ensure row exists for existing EC: "+equid+" and astid2 "+astid2);
+    }
+    console.log("Created EC "+equid+" for "+astid2);
+  } catch (err) {
+    console.error(err);
+    return null;
+  }
+  return equid;
 }
 
 async function auxIncrementECRecord(equid, astid) {
@@ -214,6 +280,8 @@ async function auxIncrementECRecord(equid, astid) {
       console.log("EC record incremented in SQL for equid/astid: " + equid + "/" + astid);
       return true;
     }
+    throw new Error("Failed to increment existing EC: "+equid+" and astid "+astid);
+    console.error(JSON.stringify(result,null,4));
   } catch (err) {
     console.error(err);
     return false;

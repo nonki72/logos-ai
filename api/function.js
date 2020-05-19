@@ -6,7 +6,7 @@ const async = require('async');
 const DataLib = require('../src/datalib');
 const F = require('../src/function');
 const functionParser = require('../src/functionparser');
-
+const AST = require('../src/ast');
 
 var router = express.Router();
 
@@ -39,7 +39,14 @@ request parameters:
   testargs
  */
 router.post('/:functionName', function createStoredFunction (req, res, next) {
-  var storedFunction = new F.StoredFunction(req.body.memoize, req.body.fntype, req.body.fnclass, JSON.parse(req.body.argtypes), req.body.modules, req.body.fn);
+  var storedFunction = new F.StoredFunction(req.body.memoize, req.body.fntype, req.body.fnclass, req.body.argtypes, req.body.modules, req.body.fn);
+  if (req.body.argtypes != null && req.body.argtypes.length > 0) {
+    for (var i=0; i<req.body.argtypes.length;i++) {
+      if (req.body.argtypes[i][1]=='AST') {
+        req.body.testargs[i] = AST.cast(req.body.testargs[i]);
+      }
+    }
+  }
   functionParser.parseFunction(storedFunction, req.body.testargs, (err) => {
     if (err) {
       var error = {};

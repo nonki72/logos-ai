@@ -45,7 +45,8 @@ var SQL_STRING_EC = 'CREATE TABLE EC (\n' +
 '    assv BIGINT UNSIGNED NOT NULL,\n' +
 '    INDEX (equid),\n' +
 '    INDEX (astid), \n' +
-'    INDEX (assv)\n' +
+'    INDEX (assv),\n' +
+'    UNIQUE (equid, astid)\n' +
 ');';
 
 

@@ -3,14 +3,10 @@ const DataLib = require('./datalib');
 const Sql = require('./sql');
 const FunctionParser = require('./functionparser.js');
 
-const isValue = node => node instanceof AST.Abstraction || (node.type == 'abs');
-const isName = node => node instanceof AST.Identifier || (node.type == 'id' || node.type == 'free'); // TODO: add field to free denoting name or value
-const isApp = node => node instanceof AST.Application || (node.type == 'app');
-
 // determines whether the abstraction (function to call) is accepting one more
 // parameter, and the input given matches the expected type 
 const typecheck = (abstraction, input) => {
-  if (isName(abstraction)) {
+  if (AST.isIdentifier(abstraction)) {
     // we have a free variable with arbitrary code in .fn
     // or an ast in .astid (don't need to typecheck)
     if (abstraction.fn) {
@@ -23,18 +19,6 @@ const typecheck = (abstraction, input) => {
     }
   }
   return true;
-}
-
-const castAst = (input) => {
-  if (isName(input)) {
-    return new AST.Identifier(input);
-  } else if (isValue(input)) {
-    return new AST.Abstraction(input);
-  } else if (isApp(input)) {
-    return new AST.Application(input);
-  } else {
-    return null;
-  }
 }
 
 // application of abstraction and an input
@@ -96,6 +80,12 @@ const applyAndAdjustAssociativeValue = async (data, input, callback) => {
   });
 }
 
+
+
+// TODO: Somehow reverse this so that an input can be applied as a function to lastAst
+
+
+
 // higher level evaluator that combines together all of the 
 // expression fragments in the database into a single set of
 // possible evaluation points by use of associative value to 
@@ -106,15 +96,15 @@ const combine = async (lastAst) => {
   console.log("lastAst: " + JSON.stringify(lastAst,null,4));
   if (lastAst != null) console.log("*** C LASTAST *** " + lastAst.astid);
 
-  // see if lastAst is usable as an abstraction to apply to the input
+  // see if lastAst is usable as an abstraction (function) to apply to the input
   // this selection (lastAst or read-abstraction or input) is probabilistic
   if (Math.random() > 0.8 &&
        lastAst 
       && (//lastAst.type == 'abs' || 
-         (isName(lastAst) && typeof lastAst.argCount === 'number'))) {
+         (AST.isIdentifier(lastAst) && typeof lastAst.argCount === 'number'))) {
     if (lastAst.argCount > lastAst.args.length) {
       // need more arg
-      console.log("*** C LAST:FN, FREE ***   NEXT ARG "+ 
+      console.log("*** C LASTAST:FN/ABS, FREE ***   NEXT ARG "+ 
         lastAst.argTypes[lastAst.args.length][0] + ":" + lastAst.argTypes[lastAst.args.length][1]);
       DataLib.readFreeIdentifierByTypeAndRandomValue(lastAst.argTypes[lastAst.args.length][1], (input) => {
         if (input == null) {
@@ -122,7 +112,7 @@ const combine = async (lastAst) => {
           return;
         }
 
-        var inputAst = castAst(input);
+        var inputAst = AST.cast(input);
         if (inputAst == null) {
           console.error("Unknown AST type: " + JSON.stringify(input,null,4));
           setTimeout(combine, 1, lastAst);
@@ -150,35 +140,52 @@ const combine = async (lastAst) => {
       });
     }
 
-  // lastAst is not a free identifier that takes args, just an identifier
-  } else if (Math.random() > 0.2 && lastAst && isName(lastAst)) {
-    console.log("*** C LAST:FREE, ASSOCIATIVE *** " + lastAst.fntype);
-    // Get a random free identifier as fresh input to be applied to lastAst (fragment is second part)
-    DataLib.readByAssociativeValue(lastAst.astid, (fragment) => {
+  // lastAst is not an abstraction or free identifier function that takes args, just an identifier
+  // find a suitable function or abstraction to apply to it
+  } else if (Math.random() > 0.2 && lastAst && AST.isIdentifier(lastAst)) {
+    console.log("*** C FN, LASTAST *** " + lastAst.fntype);
+    // Get a random function or abstraction to be applied to lastAst (fragment is first part)
+    DataLib.readFreeIdentifierFnThatTakesFirstArgOfTypeByRandomValue(lastAst.fntype, (fragment) => {
       if (!fragment) {
         console.log("*** C1 NO FRAGMENT *** ");
         return setTimeout(combine, 1, lastAst);
       }
 
-      var fragmentAst = castAst(fragment);
+      var fragmentAst = AST.cast(fragment);
       if (fragmentAst == null) {
         console.error("Unknown AST type: " + JSON.stringify(fragment,null,4));
         setTimeout(combine, 1, lastAst);
         return;
       }
+      if (fragment.type != 'free') {
+        console.error("FN Type not supported yet: "+fragment.type);
+        setTimeout(combine, 1, lastAst);
+        return;
+      }
       console.log("*** C2 WITH FRAGMENT *** " + fragmentAst.type + ","+fragmentAst.astid);
-      console.log(JSON.stringify(lastAst,null,4));
       console.log(JSON.stringify(fragmentAst,null,4));
-      adjustAssociativeValue(lastAst.astid, fragmentAst.astid, (written) => {
-        setTimeout(combine, 1, fragmentAst);
+      console.log(JSON.stringify(lastAst,null,4));
+
+      fragmentAst.args.push(lastAst);
+      adjustAssociativeValue(fragmentAst.astid, lastAst.astid, (written)=>{
+        if (fragmentAst.args.length == fragmentAst.argCount) {
+          // got enough arg
+//          applyAndAdjustAssociativeValue(fragmentAst, lastAst, (astOut) => {
+//            setTimeout(combine, 1, astOut);
+//          });
+          evaluate(fragmentAst, (astOut) => {
+            setTimeout(combine, 1, astOut);
+          });
+        } else {
+          // still need more arg
+          setTimeout(combine, 1, fragmentAst);
+        }
       });
     });
 
-  // todo: LAST:ABS
-
   // no lastAst or randomly not using it
-  // maybe get a free identifier function that expects args as input
-  } else if (false && Math.random() > 0.9) {
+  // get a free identifier function that expects args as input
+  } else {
       console.log("*** C FN, NULL *** ");
       //get a pseudo-random free identifier function that takes args from diary as replacement for lastAst (first part)
       DataLib.readFreeIdentifierFnThatTakesArgsByRandomValue((freeIdentifierFn) => {
@@ -191,12 +198,12 @@ const combine = async (lastAst) => {
         console.log("********************* C1 ********************* " + freeIdentifierFnAst.fntype + ","+freeIdentifierFnAst.astid);
         setTimeout(combine, 1, freeIdentifierFnAst);
       });
-
+/*
   // get a free identifier
   } else {
       console.log("*** C FREE, NULL *** ");
       //get a pseudo-random free identifier function that takes args from diary as replacement for lastAst (first part)
-      DataLib.readFreeIdentifierValueByRandomValue((freeIdentifier) => {
+      DataLib.readFreeIdentifierValueByRandomValue(undefined, (freeIdentifier) => {
         if (freeIdentifier == null) {
           setTimeout(combine, 1, lastAst);
           return;
@@ -206,9 +213,8 @@ const combine = async (lastAst) => {
         console.log("********************* C1 ********************* " + freeIdentifierAst.fntype + ","+freeIdentifierAst.astid);
         setTimeout(combine, 1, freeIdentifierAst);
       });
+*/
   }
-
-   //else {
   // TODO: output a random selection
 }
 
@@ -217,14 +223,14 @@ const combine = async (lastAst) => {
 // executing any complete applications of functional (JS) identifiers
 // TODO: make turbo substitutions using EC
 const evaluate = async (ast, cb) => {
-    if ('type' in ast) {
-      return evaluate(ast, cb);
-    }
-    if (isApp(ast)) {
+    // if ('type' in ast) {
+    //   return evaluate(ast, cb);
+    // }
+    if (AST.isApplication(ast)) {
       /**
        * `ast` is an application
        */
-      if (isValue(ast.lhs) && isValue(ast.rhs)) {
+      if (AST.isAbstraction(ast.lhs) && AST.isAbstraction(ast.rhs)) {
         console.log("### I 1 ###");
         /**
          * if both sides of the application are values we can proceed and
@@ -237,13 +243,13 @@ const evaluate = async (ast, cb) => {
             return evaluate(ast2, cb);
           });
         });
-      } else if (isValue(ast.lhs)) {
+      } else if (AST.isAbstraction(ast.lhs)) {
         console.log("### I 2 ###");
         /**
          * We should only evaluate rhs once lhs has been reduced to a value
          */
         return ast.rhs = evaluate(ast.rhs, cb);
-      } else if (isName(ast.lhs) && ast.lhs.fn && ast.lhs.args.length < ast.lhs.argCount) {
+      } else if (AST.isIdentifier(ast.lhs) && ast.lhs.fn && ast.lhs.args.length < ast.lhs.argCount) {
         console.log("### I 3 ###");
         /**
          * lhs is a named function that requires 0 or more args
@@ -262,14 +268,14 @@ const evaluate = async (ast, cb) => {
           return evaluate(ast.lhs, cb);
         });
       }
-    } else if (isValue(ast)) {
+    } else if (AST.isAbstraction(ast)) {
       console.log("### II ###");
       /**
        * * `ast` is a value, and therefore an abstraction. That means we're done
         * reducing it, and this is the result of the current evaluation.
         */
       return cb(ast);
-    } else if (isName(ast)) {
+    } else if (AST.isIdentifier(ast)) {
       /**
        * `ast` is a named identifier / variable, and maybe a named function
        */
@@ -285,9 +291,6 @@ const evaluate = async (ast, cb) => {
               FunctionParser.loadStoredFunction(ast), 
               ast.args, 
               (output) => {
-                console.log("!!!!!!!!!!!!!!CODE EXECUTION!!!!!!!!!!!\n"+ast.fn+"\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-                console.log(output);
-                console.log("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
                 // substitute the named function with its output
                 return cb(output);
                 // TODO: write substitution ast -> output to Diary
@@ -331,7 +334,7 @@ const tryExtractArg = (ast, cb) => {
   } else if (expectedArgType == "ast") {
     console.log("### B ###");
     // if rhs is an identifier with embedded ast expression, use that
-    if (isName(ast.rhs) && ast.rhs.astid) {
+    if (AST.isIdentifier(ast.rhs) && ast.rhs.astid) {
       ast.lhs.args = ast.lhs.args.concat(ast.rhs.astid);
     } else {
       // rhs is itself an ast expression

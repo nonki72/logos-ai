@@ -76,6 +76,50 @@ async function readApplicatorByAssociativeValue(sourceId, cb) {
 	return readApplicatorByRandomValue(cb);
 }
 
+function readByRandomValueAndType (fragment, cb) {
+	switch (typeof fragment) {
+		case AST.Identifier:
+		  if (fragment.argCount != null) {
+		  	// this is a function type free identifier
+		  	// look for something with this fntype (return type)
+		  	readFreeIdentifierFnByRandomValue(fragment.fntype, (freeIdentifierFn) => {
+		  		if (freeIdentifier == null) {
+			  	  readFreeIdentifierFnByRandomValue(undefined, (freeIdentifierFn2) => {
+			  			return cb(freeIdentifierFn2)
+			  		});
+			  	} else {
+			  		return cb(freeIdentifierFn);
+			  	}
+		  	});
+		  } else {
+		  	// this is a value type free identifier
+		  	// look for something with this fntype (value's type)
+			  readFreeIdentifierValueByRandomValue(fragment.fntype, (freeIdentifier) => {
+		  		if (freeIdentifier == null) {
+			  	  readFreeIdentifierValueByRandomValue(undefined, (freeIdentifier2) => {
+			  			return cb(freeIdentifierFn2)
+			  		});
+			  	} else {
+			  		return cb(freeIdentifierFn);
+			  	}
+			  });
+			}
+			break;
+		case AST.Abstraction:
+		  readAbstractionByRandomValue((abstraction) => {
+		  	return cb(abstraction);
+		  });
+		  break;
+		case AST.Application:
+		  readApplicationByRandomValue((application) => {
+		  	return cb(application);
+		  });
+		  break;
+		default:
+			return cb(null);
+	}
+}
+
 // randomly reads an abs or free id fragment
 // may be suitable for using as a lhs to apply to input
 function readApplicatorByRandomValue (cb) {
@@ -128,12 +172,13 @@ async function readFreeIdentifierByRandomValue (cb) {
   return cb(res);
 }
 
-async function readFreeIdentifierValueByRandomValue (cb) {
+async function readFreeIdentifierValueByRandomValue (fntype, cb) {
 	const query = {
 		'type': 'free',
-		'argn': null,
+		'argn': {$exists: false},
 		'rand': {$lte: Math.random()}
 	};
+	if (fntype != undefined) query.fntype = fntype;
 	var client = await getDb();
 	var res = null;
 	try {
@@ -147,12 +192,13 @@ async function readFreeIdentifierValueByRandomValue (cb) {
 }
 
 
-async function readFreeIdentifierFnByRandomValue (cb) {
+async function readFreeIdentifierFnByRandomValue (fntype, cb) {
 	const query = {
 		'type': 'free',
 		'argn': {$exists:true},
 		'rand': {$lte: Math.random()}
 	};
+	if (fntype != undefined) query.fntype = fntype;
 	var client = await getDb();
 	var res = null;
 	try {
@@ -182,6 +228,29 @@ async function readFreeIdentifierFnThatTakesArgsByRandomValue (cb) {
   }
   return cb(res);
 }
+
+
+async function readFreeIdentifierFnThatTakesFirstArgOfTypeByRandomValue (argtype, cb) {
+	const match = {$match:{
+		//'type': 'free', // dont need this
+		//'argn': {$gte: 1}, // or this
+		'argt.0.1': argtype
+	}};
+	const sample = {$sample:{
+		size: 1
+	}};
+	var client = await getDb();
+	var res = null;
+	try {
+		const db = client.db("logos");
+		let cursor = await db.collection('Diary').aggregate([match,sample]);
+		if (cursor.hasNext()) res = await cursor.next();
+  } catch(err) {
+  	console.error(err);
+  }
+  return cb(res);
+}
+
 
 async function readFreeIdentifierByName (name, cb) {
 	const query = {
@@ -251,8 +320,9 @@ async function readFreeIdentifierByTypeAndRandomValue (fntype, cb) {
 }
 
 async function readById (id, cb) {
+	let objId = (id instanceof ObjectID) ? id : new ObjectID(id);
 	const query = {
-		'id': new ObjectID(id)
+		'id': objId
 	};
 	var client = await getDb();
 	var res = null;
@@ -646,13 +716,14 @@ async function update (data, cb) {
 
 module.exports = {
 	readByEquivalenceClass: readByEquivalenceClass,
-	readApplicatorByAssociativeValue: readApplicatorByAssociativeValue,
+	readByRandomValueAndType: readByRandomValueAndType,
 	readApplicatorByRandomValue: readApplicatorByRandomValue,
 	readAbstractionByRandomValue: readAbstractionByRandomValue,
   readFreeIdentifierByRandomValue: readFreeIdentifierByRandomValue,
   readFreeIdentifierFnByRandomValue: readFreeIdentifierFnByRandomValue,
   readFreeIdentifierValueByRandomValue: readFreeIdentifierValueByRandomValue,
 	readFreeIdentifierFnThatTakesArgsByRandomValue: readFreeIdentifierFnThatTakesArgsByRandomValue,
+	readFreeIdentifierFnThatTakesFirstArgOfTypeByRandomValue: readFreeIdentifierFnThatTakesFirstArgOfTypeByRandomValue,
   readFreeIdentifierByName: readFreeIdentifierByName,
   readFreeIdentifierByFn: readFreeIdentifierByFn,
 	readByRandomValue: readByRandomValue,

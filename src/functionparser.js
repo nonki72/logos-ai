@@ -32,7 +32,10 @@ const contextClosure = function(str, argTypes, args, modules) {
 		}
 	}
 
-  return eval(requires + str);            // <=== CODE EXECUTION
+  console.log("!!!!!!!!!!!!!!CODE EXECUTION!!!!!!!!!!!\n"+requires+str+"\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+  const output = eval(requires + str);            // <=== CODE EXECUTION
+  console.log("!!!!!!!!!!!!!!OUTPUT!!!!!!!!!!!\n"+output+"\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+  return output;
 }
 
 // retrieves all the modules given storedFunction's module array
@@ -69,7 +72,7 @@ function loadStoredFunction(freeIdentifier) {
 		return storedFunction;
 	}
 	// straight from db
-	var storedFunction = new F.StoredFunction(freeIdentifier.memo, freeIdentifier.fntype, freeIdentifier.fnclas, JSON.parse(freeIdentifier.argt), freeIdentifier.mods, freeIdentifier.fn);
+	var storedFunction = new F.StoredFunction(freeIdentifier.memo, freeIdentifier.fntype, freeIdentifier.fnclas, freeIdentifier.argt, freeIdentifier.mods, freeIdentifier.fn);
 	return storedFunction; 
 }
 
@@ -171,19 +174,22 @@ function executeFunction(storedFunction, args, cb) {
 }
 
 function checkClass(testObject, className, cb) {
+	if (testObject == null || typeof testObject != 'object') return cb(null);
   DataLib.readClassByName(className, (klass) => {
   	if (klass == null) {
   		return cb(`class name '${className}' is not found in the database`);
   	}
 
-  	DataLib.readModuleByName(klass.module, (module) => {
-    	if (module == null) {
+  	DataLib.readModuleByName(klass.module, (mod) => {
+    	if (mod == null) {
     		return cb(`class '${klass.name}' belongs to module '${klass.module}' which is not found in the database`);
     	}
 
-  		if (!(eval(`const ${module.name} = require(${module.path});
-  	    	        testObject instanceof ' + ${module.name}.${klass.name}`))) {   // <=== CODE EXECUTION
-  			return cb(`object is class '${testObject.constructor.name}' and not '${module.name}.${klass.name}'`);
+// in case this doesnt work because the file is loaded separately from sensei's even though it is the same source file (AST)
+//			if (testObject.constructor.name != klass.name) {
+  		if (!(eval('const '+mod.name+' = require(\''+mod.path+'\');\
+								  testObject instanceof '+mod.name+'.'+klass.name))) {   // <=== CODE EXECUTION
+  			return cb('object is class "'+testObject.constructor.name+'" and not "'+mod.name+'.'+klass.name+'"');
   	  }
 
   	  return cb(null);
@@ -223,7 +229,7 @@ function checkArgs(argTypes, args, cb) {
 	  if (argType == 'promise' && !isPromise(arg)) {
 		  return callback("Arg " + argName+ " `" + arg + "` is not promise");
 		}
-		if (typeof arg != argType) {
+		if (typeof arg != argType && typeof arg != 'object') {
 			return callback("Arg " + argName+ " `" + arg + "` is type `" + typeof arg + "` and not `" + argType + "`");
 		}
     if (argClass) {
