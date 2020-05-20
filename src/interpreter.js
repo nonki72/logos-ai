@@ -104,9 +104,11 @@ const combine = async (lastAst) => {
          (AST.isIdentifier(lastAst) && typeof lastAst.argCount === 'number'))) {
     if (lastAst.argCount > lastAst.args.length) {
       // need more arg
+      const nextArgType = lastAst.argTypes[lastAst.args.length];
       console.log("*** C LASTAST:FN/ABS, FREE ***   NEXT ARG "+ 
-        lastAst.argTypes[lastAst.args.length][0] + ":" + lastAst.argTypes[lastAst.args.length][1]);
-      DataLib.readFreeIdentifierByTypeAndRandomValue(lastAst.argTypes[lastAst.args.length][1], (input) => {
+        nextArgType[0] + ":" + nextArgType[1]);
+      // TODO: support class (nextArgType[2])
+      DataLib.readFreeIdentifierByTypeAndRandomValue(nextArgType[1], (input) => {
         if (input == null) {
           setTimeout(combine, 1, lastAst);
           return;
@@ -119,7 +121,7 @@ const combine = async (lastAst) => {
           return;
         }
         console.log("*** C1 *** MATCH -> FN : " + inputAst.type + ", " + inputAst.astid);
-        lastAst.args.push(inputAst);
+        lastAst.args.push(JSON.parse(inputAst.fn));
         adjustAssociativeValue(lastAst.astid, inputAst.astid, (written)=>{
           if (lastAst.args.length == lastAst.argCount) {
             // got enough arg
@@ -142,10 +144,13 @@ const combine = async (lastAst) => {
 
   // lastAst is not an abstraction or free identifier function that takes args, just an identifier
   // find a suitable function or abstraction to apply to it
-  } else if (Math.random() > 0.2 && lastAst && AST.isIdentifier(lastAst)) {
+
+  // does not work with a lastAst that is a function! 
+  // even if it satisfies the fntype
+  } else if (Math.random() > 0.2 && lastAst && AST.isIdentifier(lastAst) && lastAst.args == null) {
     console.log("*** C FN, LASTAST *** " + lastAst.fntype);
     // Get a random function or abstraction to be applied to lastAst (fragment is first part)
-    DataLib.readFreeIdentifierFnThatTakesFirstArgOfTypeByRandomValue(lastAst.fntype, (fragment) => {
+    DataLib.readFreeIdentifierFnThatTakesFirstArgOfTypeByRandomValue(lastAst.fntype, lastAst.fnclas, (fragment) => {
       if (!fragment) {
         console.log("*** C1 NO FRAGMENT *** ");
         return setTimeout(combine, 1, lastAst);
@@ -166,7 +171,7 @@ const combine = async (lastAst) => {
       console.log(JSON.stringify(fragmentAst,null,4));
       console.log(JSON.stringify(lastAst,null,4));
 
-      fragmentAst.args.push(lastAst);
+      fragmentAst.args.push(JSON.parse(lastAst.fn));
       adjustAssociativeValue(fragmentAst.astid, lastAst.astid, (written)=>{
         if (fragmentAst.args.length == fragmentAst.argCount) {
           // got enough arg
@@ -223,9 +228,9 @@ const combine = async (lastAst) => {
 // executing any complete applications of functional (JS) identifiers
 // TODO: make turbo substitutions using EC
 const evaluate = async (ast, cb) => {
-    // if ('type' in ast) {
-    //   return evaluate(ast, cb);
-    // }
+    if (!AST.isFragment(ast)) {
+      return cb(null);
+    }
     if (AST.isApplication(ast)) {
       /**
        * `ast` is an application

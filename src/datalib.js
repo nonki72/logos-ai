@@ -230,12 +230,18 @@ async function readFreeIdentifierFnThatTakesArgsByRandomValue (cb) {
 }
 
 
-async function readFreeIdentifierFnThatTakesFirstArgOfTypeByRandomValue (argtype, cb) {
-	const match = {$match:{
+async function readFreeIdentifierFnThatTakesFirstArgOfTypeByRandomValue (argtype, clas, cb) {
+	const match = (clas == null) ?
+	{$match:{
 		//'type': 'free', // dont need this
 		//'argn': {$gte: 1}, // or this
 		'argt.0.1': argtype
+	}}
+	:
+	{$match:{
+		'argt.0.2': clas
 	}};
+
 	const sample = {$sample:{
 		size: 1
 	}};
@@ -303,15 +309,20 @@ async function readByRandomValue (cb) {
 }
 
 async function readFreeIdentifierByTypeAndRandomValue (fntype, cb) {
-	const query = {
-		'fntype': fntype,
-		'rand': {$lte: Math.random()}
-	};
+	const match = 
+	{$match:{
+		'argn': null, // do this for now TODO allow function types
+		'fntype': fntype
+	}};
+
+	const sample = {$sample:{
+		size: 1
+	}};
 	var client = await getDb();
 	var res = null;
 	try {
 		const db = client.db("logos");
-		let cursor = await db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
+		let cursor = await db.collection('Diary').aggregate([match,sample]);
 		if (cursor.hasNext()) res = await cursor.next();
   } catch(err) {
   	console.error(err);

@@ -32,7 +32,8 @@ const contextClosure = function(str, argTypes, args, modules) {
 		}
 	}
 
-  console.log("!!!!!!!!!!!!!!CODE EXECUTION!!!!!!!!!!!\n"+requires+str+"\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+  console.log("!!!!!!!!!!!!!!CODE EXECUTION!!!!!!!!!!!\n"+requires+str
+  	+"\n!!!!!!!!!!!CTX!!!!!!!!!!!!!!!\n"+JSON.stringify(CTX,null,4));
   const output = eval(requires + str);            // <=== CODE EXECUTION
   console.log("!!!!!!!!!!!!!!OUTPUT!!!!!!!!!!!\n"+output+"\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
   return output;

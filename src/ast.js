@@ -106,6 +106,7 @@ class Identifier extends Fragment {
   }
 }
 
+const isFragment = node => node instanceof Fragment || typeof node.type == 'string';
 const isAbstraction = node => node instanceof Abstraction || (node.type == 'abs');
 const isIdentifier = node => node instanceof Identifier || (node.type == 'id' || node.type == 'free'); // TODO: add field to free denoting name or value
 const isApplication = node => node instanceof Application || (node.type == 'app');
@@ -133,6 +134,7 @@ const castAst = (input) => {
 }
 
 exports.cast = cast;
+exports.isFragment = isFragment;
 exports.isAbstraction = isAbstraction;
 exports.isApplication = isApplication;
 exports.isIdentifier = isIdentifier;
