@@ -41,7 +41,6 @@ request parameters:
 router.post('/:functionName', function createStoredFunction (req, res, next) {
   var storedFunction = new F.StoredFunction(req.body.memoize, req.body.fntype, req.body.fnclass, req.body.argtypes, req.body.modules, req.body.fn, req.body.promise);
 
-            console.log("????"+JSON.stringify(req.body,null,4))
   if (req.body.argtypes != null && req.body.argtypes.length > 0) {
     for (var i=0; i<req.body.argtypes.length;i++) {
       if (req.body.argtypes[i][1]=='AST') {

@@ -46,7 +46,6 @@ const contextClosure = function(str, argTypes, args, modules, promise, cb) {
   if (promise == true) {
   	output.then(
 	  	(result) => {
-	  		Promise.resolve(result);
 			  console.log(
 			  	   "!!!!!!!!!!!!!!OUTPUT!!!!!!!!!!\n"
 			  	+JSON.stringify(result,null,4)

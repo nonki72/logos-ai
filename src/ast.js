@@ -65,7 +65,7 @@ class Identifier extends Fragment {
   /**
    * name is the string matched for this identifier.
    */
-  constructor(value, astid, fn, fntype, fnclas, argCount, argTypes, mods, memo, rand, type) {
+  constructor(value, astid, fn, fntype, fnclas, argCount, argTypes, mods, memo, rand, type, promise) {
     super();
     this.type = 'free';
     if (typeof value === 'object') {
@@ -82,6 +82,7 @@ class Identifier extends Fragment {
       this.mods = data.mods;
       this.memo = data.memo;
       this.rand = data.rand;
+      this.promise = data.promise;
     } else {
       this.value = value;
       this.astid = astid;
@@ -94,6 +95,7 @@ class Identifier extends Fragment {
       this.mods = mods;
       this.memo = memo;
       this.rand = rand;
+      this.promise = promise
     }
   }
 
