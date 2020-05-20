@@ -71,7 +71,7 @@ request parameters:
  */
 router.post('/application', (req, res, next) => {console.log(req.body);
   DataLib.readOrCreateApplication(req.body.definition1, req.body.definition2, (application) => {
-    if (application == null) {console.log('null');
+    if (application == null) {
       return next('Could not create application');
     }
     console.log(application);

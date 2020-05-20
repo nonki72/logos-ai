@@ -16,7 +16,7 @@ class Abstraction extends Fragment {
     this.type = 'abs';
     if (typeof astid === 'object') {
       var data = astid;
-      this.astid = data.id;
+      this.astid = (data.astid != null) ? data.astid : data.id;
       this.param = data.name;
       this.body = null;
       this.bodyid = data.def2;
@@ -42,9 +42,9 @@ class Application extends Fragment {
     this.type = 'app';
     if (typeof astid === 'object') {
       var data = astid;
-      this.astid = data.id;
-      this.lhsid = data.definition1;
-      this.rhsid = data.definition2;
+      this.astid = (data.astid != null) ? data.astid : data.id;
+      this.lhsid = (data.lhsid != null) ? data.lhsid : data.def1;
+      this.rhsid = (data.rhsid != null) ? data.rhsid : data.def2;
       this.lhs = null;
       this.rhs = null;
     } else {
@@ -71,14 +71,14 @@ class Identifier extends Fragment {
     if (typeof value === 'object') {
       var data = value;
       this.value = data.name;
-      this.astid = data.id;
+      this.astid = (data.astid != null) ? data.astid : data.id;
       this.fn = data.fn;
       this.fntype = data.fntype;
       this.fnclas = data.fnclas;
       this.argCount = data.argn;
       if (data.argt == '"undefined"' || data.argt == 'undefined') this.argTypes = undefined;
       else this.argTypes = data.argt;
-      this.args = [];    
+      this.args = (argCount == null) ? null : [];    
       this.mods = data.mods;
       this.memo = data.memo;
       this.rand = data.rand;

@@ -40,6 +40,8 @@ request parameters:
  */
 router.post('/:functionName', function createStoredFunction (req, res, next) {
   var storedFunction = new F.StoredFunction(req.body.memoize, req.body.fntype, req.body.fnclass, req.body.argtypes, req.body.modules, req.body.fn);
+
+            console.log("????"+JSON.stringify(req.body,null,4))
   if (req.body.argtypes != null && req.body.argtypes.length > 0) {
     for (var i=0; i<req.body.argtypes.length;i++) {
       if (req.body.argtypes[i][1]=='AST') {
@@ -54,7 +56,7 @@ router.post('/:functionName', function createStoredFunction (req, res, next) {
       return next(error);
     }
     DataLib.readOrCreateFreeIdentifierFunction(req.params.functionName, 
-      req.body.astid, req.body.fn, req.body.fntype, req.body.fnclass, req.body.argnum, req.body.argtypes, req.body.modules, req.body.memoize, (freeIdentifier) => {
+      null, req.body.fn, req.body.fntype, req.body.fnclass, req.body.argnum, req.body.argtypes, req.body.modules, req.body.memoize, (freeIdentifier) => {
       if (freeIdentifier == null) {
         return next({message: 'Could not create free identifier function \'' + req.params.functionName});
       }

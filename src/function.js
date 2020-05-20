@@ -16,7 +16,7 @@ class StoredFunction {
    *               CTX.fn(functionName): access named function (free identifier) by name. 
    *                                     invoke with CTX.fn().call() CTX.fn().apply() or use as data
    */
-  constructor(memoize, type, klass, argTypes, modules, functionBody) {
+  constructor(memoize, type, klass, argTypes, modules, functionBody, functionType) {
     this.memoize = memoize;
     this.type = type;
     this.klass = klass;

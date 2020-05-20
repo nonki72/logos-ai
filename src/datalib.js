@@ -421,8 +421,7 @@ async function readOrCreateAbstraction (name, definition2, cb) {
   	type: 'abs',
   	name: name,
   	def2: definition2,
-  	invalid: false,
-    rand: Math.random()
+  	invalid: false
   };
 
   try {
@@ -459,8 +458,7 @@ async function readOrCreateApplication (definition1, definition2, cb) {
   	type: 'app',
   	def1: definition1,
   	def2: definition2,
-  	invalid: false,
-    rand: Math.random()
+  	invalid: false
   };
 
   try {
@@ -495,8 +493,7 @@ async function readOrCreateFreeIdentifier ( name, cb ) {
   	id: new ObjectID(),
   	type: 'free',
   	name: name,
-  	argn: 0,
-    rand: Math.random()
+  	argn: 0
   };
 
   try {
@@ -538,8 +535,7 @@ async function readOrCreateFreeIdentifierFunction (name, astid, fn, fntype, fncl
     argn: argnum,
     argt: argtypes,
     mods: modules,
-    memo: memoize,
-	  rand: Math.random()
+    memo: memoize
   };
   try {
 		const db = client.db("logos");
@@ -579,6 +575,7 @@ async function readOrCreateSubstitution (subType, location1, location2, cb) {
   }
 
 	// sub does not already exist
+	var data2 = null;
   try {
   	// invalidate old sub that subs to this one, if one exists
 		const query = {
@@ -617,7 +614,7 @@ async function readOrCreateSubstitution (subType, location1, location2, cb) {
 		}
 
   	// create the new sub
-	  var data2 = {
+	  data2 = {
 	  	id: new ObjectID(),
 	  	invalid: false,
 	  	type: 'sub',

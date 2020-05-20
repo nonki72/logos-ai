@@ -82,8 +82,6 @@ const applyAndAdjustAssociativeValue = async (data, input, callback) => {
 
 
 
-// TODO: Somehow reverse this so that an input can be applied as a function to lastAst
-
 
 
 // higher level evaluator that combines together all of the 

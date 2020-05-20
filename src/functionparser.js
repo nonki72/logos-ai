@@ -12,7 +12,7 @@ const Diary = require('./diary');
 
 
 // context for evaluating the function body
-const contextClosure = function(str, argTypes, args, modules) {
+const contextClosure = function(str, argTypes, args, modules, type, cb) {
 	var requires = '';
 	for (var i = 0; i < modules.length; i++) {
 		var module = modules[i];
@@ -28,15 +28,37 @@ const contextClosure = function(str, argTypes, args, modules) {
 		for (var i = 0; i < argTypes.length; i++) {
 			var argName = argTypes[i][0];
 			var argType = argTypes[i][1];
+			var argClas = argTypes[i][2];
 			CTX.args[argName] = args[i];
 		}
 	}
 
-  console.log("!!!!!!!!!!!!!!CODE EXECUTION!!!!!!!!!!!\n"+requires+str
-  	+"\n!!!!!!!!!!!CTX!!!!!!!!!!!!!!!\n"+JSON.stringify(CTX,null,4));
-  const output = eval(requires + str);            // <=== CODE EXECUTION
-  console.log("!!!!!!!!!!!!!!OUTPUT!!!!!!!!!!!\n"+output+"\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-  return output;
+  console.log("!!!!!!!!!!!!!!CODE EXECUTION!!!!!!!!!!!\n"
+  	+requires+str
+  	+"\n!!!!!!!!!!!CTX!!!!!!!!!!!!!!!\n"
+  	+JSON.stringify(CTX,null,4)
+  	+"\n!!!!!!!!!!!!!!RUNNING!!!!!!!!!!!!!");
+  var output = eval(requires + str);            // <=== CODE EXECUTION
+
+  if (type == 'promise') {
+  	output.then(
+	  	(result) => {
+			  console.log(
+			  	   "!!!!!!!!!!!!!!OUTPUT!!!!!!!!!!\n"
+			  	+JSON.stringify(result,null,4)
+			  	+"\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+	  		return cb(result)},
+	  	(err)=>{console.error(
+	  		     "!!!!!!!!!!ERROR!!!!!!!!!!\n"
+          +JSON.stringify(err,null,4)
+          +"\n!!!!!!!!!!!!!!!!!!!!!!!!!")})
+  } else {
+	  console.log(
+	  	   "!!!!!!!!!!!!!!OUTPUT!!!!!!!!!!\n"
+	  	+JSON.stringify(output,null,4)
+	  	+"\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+	  return cb(output);
+	}
 }
 
 // retrieves all the modules given storedFunction's module array
@@ -106,9 +128,24 @@ function parseFunction (storedFunction, args, cb) {
 				return cb(null);
 			}
 
-		  var result;
 			try {
-				result = contextClosure.call(null, storedFunction.functionBody, storedFunction.argTypes, args, modulePaths);   // <=== CODE EXECUTION
+				contextClosure.call(null, storedFunction.functionBody, storedFunction.argTypes, args, modulePaths, storedFunction.type, function(result) {
+			    if (typeof result === type) {
+			    	if (type === 'undefined') type = undefined;
+				    return cb(`storedFunction is type '${typeof result}' and not '${type}'` + JSON.stringify(storedFunction));
+				  }
+
+				  if (typeof result === 'object') {
+				  	return checkClass(result, storedFunction.klass, (err3) => {
+				  		if (err3) {
+				  			return cb(err + JSON.stringify(storedFunction));
+				  		}
+				  		return cb(null);
+				  	});
+			    } else {
+			   	  return cb(null);
+			    }
+				});   // <=== CODE EXECUTION
 			} catch (e) {
 		    if (e instanceof SyntaxError) {
 		      return cb(`SyntaxError on line ${e.lineNumber}: ${e.message}` + JSON.stringify(storedFunction), e);
@@ -116,27 +153,6 @@ function parseFunction (storedFunction, args, cb) {
 
 		    return cb(`${e.constructor.name} error on line ${extractLineNumberFromStack(e.stack)}: ${e.message}` + JSON.stringify(storedFunction), e);
 			}
-
-	    if (type == 'promise') {
-	    	if (isPromise(result)) {
-	    		return cb(`storedFunction is of class ${result.constructor.name} and not a promise: ` + JSON.stringify(storedFunction));
-	    	}
-	    	return cb(null); // return ok since we cannot verify promise return type (fnclass)
-	    } else if (typeof result === type) {
-	    	if (type === 'undefined') type = undefined;
-		    return cb(`storedFunction is type '${typeof result}' and not '${type}'` + JSON.stringify(storedFunction));
-		  }
-
-		  if (typeof result === 'object') {
-		  	return checkClass(result, storedFunction.klass, (err3) => {
-		  		if (err3) {
-		  			return cb(err + JSON.stringify(storedFunction));
-		  		}
-		  		return cb(null);
-		  	});
-	    } else {
-	   	  return cb(null);
-	    }
 	  });
   });
 }
@@ -158,10 +174,10 @@ function executeFunction(storedFunction, args, cb) {
   			return cb(null);
   		}
 
-		  var result;
 			try {
-				result = contextClosure.call(null, storedFunction.functionBody, storedFunction.argTypes, args, modulePaths);   // <=== CODE EXECUTION
-				return cb(result);
+				contextClosure.call(null, storedFunction.functionBody, storedFunction.argTypes, args, modulePaths, storedFunction.type, function(result) {
+					return cb(result);
+				});   // <=== CODE EXECUTION
 			} catch (e) {
 		    if (e instanceof SyntaxError) {
 		      console.error(`executeFunction -> SyntaxError on line ${extractLineNumberFromStack(e.stack)}: ${e.message}` + JSON.stringify(storedFunction), e);
