@@ -192,18 +192,23 @@ async function readFreeIdentifierValueByRandomValue (fntype, cb) {
 }
 
 
-async function readFreeIdentifierFnByRandomValue (fntype, cb) {
-	const query = {
+async function readFreeIdentifierFnByRandomValue (fntype, fnclas, cb) {
+	const match =
+	{$match:{
 		'type': 'free',
-		'argn': {$exists:true},
-		'rand': {$lte: Math.random()}
-	};
-	if (fntype != undefined) query.fntype = fntype;
+		'argn': {$type:'number'},
+	}};
+	if (fntype != undefined) match.$match.fntype = fntype;
+	if (fnclas != undefined) match.$match.fnclas = fnclas;
+
+	const sample = {$sample:{
+		size: 1
+	}};
 	var client = await getDb();
 	var res = null;
 	try {
 		const db = client.db("logos");
-		let cursor = await db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
+		let cursor = await db.collection('Diary').aggregate([match,sample]);
     if (cursor.hasNext()) res = await cursor.next();
   } catch(err) {
   	console.error(err);
@@ -212,7 +217,6 @@ async function readFreeIdentifierFnByRandomValue (fntype, cb) {
 }
 
 async function readFreeIdentifierFnThatTakesArgsByRandomValue (cb) {
-
 	const match =
 	{$match:{
 		//'type': 'free', // dont need this
@@ -313,12 +317,13 @@ async function readByRandomValue (cb) {
   return cb(res);
 }
 
-async function readFreeIdentifierByTypeAndRandomValue (fntype, cb) {
+async function readFreeIdentifierByTypeAndRandomValue (fntype, fnclas, cb) {
 	const match = 
 	{$match:{
-		'argn': null, // do this for now TODO allow function types
-		'fntype': fntype
+		'argn': null // do this for now TODO allow function types
 	}};
+	if (fntype != undefined) match.$match.fntype = fntype;
+	if (fnclas != undefined) match.$match.fnclas = fnclas;
 
 	const sample = {$sample:{
 		size: 1
@@ -498,7 +503,7 @@ async function readOrCreateFreeIdentifier ( name, cb ) {
   	id: new ObjectID(),
   	type: 'free',
   	name: name,
-  	argn: 0
+  	argn: null
   };
 
   try {
@@ -511,7 +516,7 @@ async function readOrCreateFreeIdentifier ( name, cb ) {
   return cb(data);
 }
 
-async function readOrCreateFreeIdentifierFunction (name, astid, fn, fntype, fnclass, argnum, argtypes, modules, memoize, cb) {
+async function readOrCreateFreeIdentifierFunction (name, astid, fn, fntype, fnclass, argnum, argtypes, modules, memoize, promise, cb) {
 	const query = {
 		'type': 'free',
 		'name': name
@@ -540,7 +545,8 @@ async function readOrCreateFreeIdentifierFunction (name, astid, fn, fntype, fncl
     argn: argnum,
     argt: argtypes,
     mods: modules,
-    memo: memoize
+    memo: memoize,
+    promise: promise
   };
   try {
 		const db = client.db("logos");

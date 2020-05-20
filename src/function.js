@@ -1,9 +1,8 @@
 class StoredFunction {
   /**
    * memoize: boolean - should return values be stored or not
-   * type: javascript type (or 'promise')
+   * type: javascript type
    * klass: if type=='object' then the name of the class goes here. must exist in Class database
-   *        if type=='promise' then the js type of the eventual value goes here, or the class name if desired (js type 'object' is assumed)
    * argTypes: array of javascript types. 
    *           may be Application, Identifier, Abstraction from ast.js
    * modules: array of 'Module' names which are already stored in the 'Module' database
@@ -16,17 +15,19 @@ class StoredFunction {
    *               CTX.fn(functionName): access named function (free identifier) by name. 
    *                                     invoke with CTX.fn().call() CTX.fn().apply() or use as data
    */
-  constructor(memoize, type, klass, argTypes, modules, functionBody, functionType) {
+  constructor(memoize, type, klass, argTypes, modules, functionBody, promise) {
     this.memoize = memoize;
     this.type = type;
+    if (type === 'undefined') this.type = undefined;
     this.klass = klass;
     this.argTypes = argTypes;
     this.modules = modules;
     this.functionBody = functionBody;
+    this.promise = promise;
   }
 
   toString() {
-    return `(κ ${this.memoize}. ${this.type}. ${this.klass}. ${this.argTypes}. ${this.functionBody})`;
+    return `(κ ${this.memoize}. ${this.type}. ${this.klass}. ${this.argTypes}. ${this.functionBody}. ${this.promise})`;
   }
 }
 

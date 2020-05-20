@@ -96,19 +96,18 @@ const combine = async (lastAst) => {
 
   // see if lastAst is usable as an abstraction (function) to apply to the input
   // this selection (lastAst or read-abstraction or input) is probabilistic
-  if (Math.random() > 0.8 &&
-       lastAst 
+  if (//Math.random() > 0.8 &&
+       lastAst != null && lastAst.fn != null 
       && (//lastAst.type == 'abs' || 
-         (AST.isIdentifier(lastAst) && typeof lastAst.argCount === 'number'))) {
+         (AST.isIdentifier(lastAst) && typeof lastAst.argCount == 'number'))) {
     if (lastAst.argCount > lastAst.args.length) {
       // need more arg
       const nextArgType = lastAst.argTypes[lastAst.args.length];
       console.log("*** C LASTAST:FN/ABS, FREE ***   NEXT ARG "+ 
-        nextArgType[0] + ":" + nextArgType[1]);
-      // TODO: support class (nextArgType[2])
-      DataLib.readFreeIdentifierByTypeAndRandomValue(nextArgType[1], (input) => {
+        nextArgType[0] + ":" + nextArgType[1] + ":" + nextArgType[2]);
+      DataLib.readFreeIdentifierByTypeAndRandomValue(nextArgType[1], nextArgType[2], (input) => {
         if (input == null) {
-          setTimeout(combine, 1, lastAst);
+          setTimeout(combine, 1, null);
           return;
         }
 
@@ -135,6 +134,7 @@ const combine = async (lastAst) => {
       });
     } else {
       // got enough arg
+      console.log("*** C1 *** SELF -> FN " + lastAst.type + ", " + lastAst.astid);
       evaluate(lastAst, (astOut) => {
         setTimeout(combine, 1, astOut);
       });
@@ -145,7 +145,7 @@ const combine = async (lastAst) => {
 
   // does not work with a lastAst that is a function! 
   // even if it satisfies the fntype
-  } else if (Math.random() > 0.2 && lastAst && AST.isIdentifier(lastAst) && lastAst.args == null) {
+  } else if (Math.random() > 0.8 && lastAst && AST.isIdentifier(lastAst) && lastAst.args == null) {
     console.log("*** C FN, LASTAST *** " + lastAst.fntype);
     // Get a random function or abstraction to be applied to lastAst (fragment is first part)
     DataLib.readFreeIdentifierFnThatTakesFirstArgOfTypeByRandomValue(lastAst.fntype, lastAst.fnclas, (fragment) => {
@@ -191,7 +191,7 @@ const combine = async (lastAst) => {
   } else {
       console.log("*** C FN, NULL *** ");
       //get a pseudo-random free identifier function that takes args from diary as replacement for lastAst (first part)
-      DataLib.readFreeIdentifierFnThatTakesArgsByRandomValue((freeIdentifierFn) => {
+      DataLib.readFreeIdentifierFnByRandomValue(undefined, undefined, (freeIdentifierFn) => {
         if (freeIdentifierFn == null) {
           setTimeout(combine, 1, lastAst);
           return;

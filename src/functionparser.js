@@ -4,6 +4,7 @@ const DataLib = require('./datalib');
 const F = require('./function');
 const Q = require('q');
 const Diary = require('./diary');
+const AST = require('./ast');
 
 
 
@@ -12,19 +13,21 @@ const Diary = require('./diary');
 
 
 // context for evaluating the function body
-const contextClosure = function(str, argTypes, args, modules, type, cb) {
+const contextClosure = function(str, argTypes, args, modules, promise, cb) {
 	var requires = '';
-	for (var i = 0; i < modules.length; i++) {
-		var module = modules[i];
-		requires += `const ${module.name} = require('${module.path}');
-								`;
+	if (modules != null) {
+		for (var i = 0; i < modules.length; i++) {
+			var module = modules[i];
+			requires += `const ${module.name} = require('${module.path}');
+									`;
+		}
 	}
 
 	const CTX = {
 		args: {}
 	};
 
-  if (args != null) {
+  if (argTypes != null) {
 		for (var i = 0; i < argTypes.length; i++) {
 			var argName = argTypes[i][0];
 			var argType = argTypes[i][1];
@@ -40,9 +43,10 @@ const contextClosure = function(str, argTypes, args, modules, type, cb) {
   	+"\n!!!!!!!!!!!!!!RUNNING!!!!!!!!!!!!!");
   var output = eval(requires + str);            // <=== CODE EXECUTION
 
-  if (type == 'promise') {
+  if (promise == true) {
   	output.then(
 	  	(result) => {
+	  		Promise.resolve(result);
 			  console.log(
 			  	   "!!!!!!!!!!!!!!OUTPUT!!!!!!!!!!\n"
 			  	+JSON.stringify(result,null,4)
@@ -91,11 +95,19 @@ function loadStoredFunction(freeIdentifier) {
 			freeIdentifier.fnclas, 
 			freeIdentifier.argTypes, 
 			freeIdentifier.mods, 
-			freeIdentifier.fn);
+			freeIdentifier.fn,
+			freeIdentifier.promise);
 		return storedFunction;
 	}
 	// straight from db
-	var storedFunction = new F.StoredFunction(freeIdentifier.memo, freeIdentifier.fntype, freeIdentifier.fnclas, freeIdentifier.argt, freeIdentifier.mods, freeIdentifier.fn);
+	var storedFunction = new F.StoredFunction(
+		freeIdentifier.memo, 
+		freeIdentifier.fntype, 
+		freeIdentifier.fnclas, 
+		freeIdentifier.argt, 
+		freeIdentifier.mods, 
+		freeIdentifier.fn, 
+		freeIdentifier.promise);
 	return storedFunction; 
 }
 
@@ -129,16 +141,15 @@ function parseFunction (storedFunction, args, cb) {
 			}
 
 			try {
-				contextClosure.call(null, storedFunction.functionBody, storedFunction.argTypes, args, modulePaths, storedFunction.type, function(result) {
+				contextClosure.call(null, storedFunction.functionBody, storedFunction.argTypes, args, modulePaths, storedFunction.promise, function(result) {
 			    if (typeof result === type) {
-			    	if (type === 'undefined') type = undefined;
-				    return cb(`storedFunction is type '${typeof result}' and not '${type}'` + JSON.stringify(storedFunction));
+				    return cb(`storedFunction is type '${typeof result}' and not '${type}'` + JSON.stringify(result));
 				  }
 
-				  if (typeof result === 'object') {
+				  if (storedFunction.type == 'object') {
 				  	return checkClass(result, storedFunction.klass, (err3) => {
 				  		if (err3) {
-				  			return cb(err + JSON.stringify(storedFunction));
+				  			return cb("Check class error: " + err3 + JSON.stringify(storedFunction));
 				  		}
 				  		return cb(null);
 				  	});
@@ -175,7 +186,7 @@ function executeFunction(storedFunction, args, cb) {
   		}
 
 			try {
-				contextClosure.call(null, storedFunction.functionBody, storedFunction.argTypes, args, modulePaths, storedFunction.type, function(result) {
+				contextClosure.call(null, storedFunction.functionBody, storedFunction.argTypes, args, modulePaths, storedFunction.promise, function(result) {
 					return cb(result);
 				});   // <=== CODE EXECUTION
 			} catch (e) {
@@ -191,7 +202,7 @@ function executeFunction(storedFunction, args, cb) {
 }
 
 function checkClass(testObject, className, cb) {
-	if (testObject == null || typeof testObject != 'object') return cb(null);
+	if (testObject == null || typeof testObject != 'object' || className == null) return cb(null);
   DataLib.readClassByName(className, (klass) => {
   	if (klass == null) {
   		return cb(`class name '${className}' is not found in the database`);
@@ -201,11 +212,11 @@ function checkClass(testObject, className, cb) {
     	if (mod == null) {
     		return cb(`class '${klass.name}' belongs to module '${klass.module}' which is not found in the database`);
     	}
-
 // in case this doesnt work because the file is loaded separately from sensei's even though it is the same source file (AST)
-//			if (testObject.constructor.name != klass.name) {
-  		if (!(eval('const '+mod.name+' = require(\''+mod.path+'\');\
-								  testObject instanceof '+mod.name+'.'+klass.name))) {   // <=== CODE EXECUTION
+			if ((klass.name != "Fragment" && testObject.constructor.name != klass.name) 
+				|| !AST.isFragment(testObject)) {
+//  		if (!(eval('const '+mod.name+' = require(\''+mod.path+'\');\
+//								  Promise.resolve(testObject) instanceof '+mod.name+'.'+klass.name))) {   // <=== CODE EXECUTION
   			return cb('object is class "'+testObject.constructor.name+'" and not "'+mod.name+'.'+klass.name+'"');
   	  }
 
@@ -243,9 +254,6 @@ function checkArgs(argTypes, args, cb) {
 		var argType = argTypes[i][1];
 		var argClass = (argTypes[i].length > 2) ? argTypes[i][2] : null;
 
-	  if (argType == 'promise' && !isPromise(arg)) {
-		  return callback("Arg " + argName+ " `" + arg + "` is not promise");
-		}
 		if (typeof arg != argType && typeof arg != 'object') {
 			return callback("Arg " + argName+ " `" + arg + "` is type `" + typeof arg + "` and not `" + argType + "`");
 		}
