@@ -78,7 +78,7 @@ class Identifier extends Fragment {
       this.argCount = data.argn;
       if (data.argt == '"undefined"' || data.argt == 'undefined') this.argTypes = undefined;
       else this.argTypes = data.argt;
-      this.args = (argCount == null) ? null : [];    
+      this.args = (this.argCount == null) ? null : [];    
       this.mods = data.mods;
       this.memo = data.memo;
       this.rand = data.rand;

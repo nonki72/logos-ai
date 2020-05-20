@@ -212,16 +212,21 @@ async function readFreeIdentifierFnByRandomValue (fntype, cb) {
 }
 
 async function readFreeIdentifierFnThatTakesArgsByRandomValue (cb) {
-	const query = {
+
+	const match =
+	{$match:{
 		//'type': 'free', // dont need this
-		'argn': {$gte: 1},
-		'rand': {$lte: Math.random()}
-	};
+		'argn': {$gte: 1}
+	}};
+
+	const sample = {$sample:{
+		size: 1
+	}};
 	var client = await getDb();
 	var res = null;
 	try {
 		const db = client.db("logos");
-		let cursor = await db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
+		let cursor = await db.collection('Diary').aggregate([match,sample]);
 		if (cursor.hasNext()) res = await cursor.next();
   } catch(err) {
   	console.error(err);

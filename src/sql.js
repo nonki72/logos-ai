@@ -35,7 +35,7 @@ async function insertECRecord (astid, equid, assv) {
     }
   } catch (err) {
     if ('info' in err && 'code' in err.info && err.info.code === 1062) {
-      console.error("EC record already exists: " +equid + "/" + astid);
+      console.log("EC record already exists: " +equid + "/" + astid);
       return equid;
     }
     console.error(err);
