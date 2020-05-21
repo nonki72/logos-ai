@@ -82,9 +82,9 @@ function readByRandomValueAndType (fragment, cb) {
 		  if (fragment.argCount != null) {
 		  	// this is a function type free identifier
 		  	// look for something with this fntype (return type)
-		  	readFreeIdentifierFnByRandomValue(fragment.fntype, (freeIdentifierFn) => {
+		  	readFreeIdentifierFnByRandomValue(fragment.fntype, fragment.fnclas, (freeIdentifierFn) => {
 		  		if (freeIdentifier == null) {
-			  	  readFreeIdentifierFnByRandomValue(undefined, (freeIdentifierFn2) => {
+			  	  readFreeIdentifierFnByRandomValue(undefined, undefined, (freeIdentifierFn2) => {
 			  			return cb(freeIdentifierFn2)
 			  		});
 			  	} else {
@@ -156,15 +156,19 @@ async function readAbstractionByRandomValue (cb) {
 // randomly reads a free fragment
 // may be suitable for using as a lhs to apply to input
 async function readFreeIdentifierByRandomValue (cb) {
-	const query = {
-		'type': 'free',
-		'rand': {$lte: Math.random()}
-	};
+	const match =
+		{$match:{
+			'type': 'free'
+		}};
+
+	const sample = {$sample:{
+		size: 1
+	}};
 	var client = await getDb();
 	var res = null;
 	try {
 		const db = client.db("logos");
-		let cursor = await db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
+		let cursor = await db.collection('Diary').aggregate([match,sample]);
     if (cursor.hasNext()) res = await cursor.next();
   } catch(err) {
   	console.error(err);
@@ -172,18 +176,28 @@ async function readFreeIdentifierByRandomValue (cb) {
   return cb(res);
 }
 
-async function readFreeIdentifierValueByRandomValue (fntype, cb) {
-	const query = {
-		'type': 'free',
-		'argn': {$exists: false},
-		'rand': {$lte: Math.random()}
-	};
-	if (fntype != undefined) query.fntype = fntype;
+async function readFreeIdentifierValueByRandomValue (fntype, fnclas, cb) {
+	const match =
+		{$match:{
+			'type': 'free',
+			'argn': {$exists: false}
+		}};
+	if (fntype == 'AST') {
+		match.$match.fntype = 'object';
+		match.$match.fnclas = fnclas;
+	} else {
+		if (fntype != undefined) match.$match.fntype = fntype;
+		if (fnclas != undefined) match.$match.fnclas = fnclas;
+	}
+
+	const sample = {$sample:{
+		size: 1
+	}};
 	var client = await getDb();
 	var res = null;
 	try {
 		const db = client.db("logos");
-		let cursor = await db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
+		let cursor = await db.collection('Diary').aggregate([match,sample]);
     if (cursor.hasNext()) res = await cursor.next();
   } catch(err) {
   	console.error(err);
@@ -194,12 +208,17 @@ async function readFreeIdentifierValueByRandomValue (fntype, cb) {
 
 async function readFreeIdentifierFnByRandomValue (fntype, fnclas, cb) {
 	const match =
-	{$match:{
-		'type': 'free',
-		'argn': {$type:'number'},
-	}};
-	if (fntype != undefined) match.$match.fntype = fntype;
-	if (fnclas != undefined) match.$match.fnclas = fnclas;
+		{$match:{
+			'type': 'free',
+			'argn': {$type:'number'}
+		}};
+	if (fntype == 'AST') {
+		match.$match.fntype = 'object';
+		match.$match.fnclas = fnclas;
+	} else {
+		if (fntype != undefined) match.$match.fntype = fntype;
+		if (fnclas != undefined) match.$match.fnclas = fnclas;
+	}
 
 	const sample = {$sample:{
 		size: 1
@@ -219,7 +238,7 @@ async function readFreeIdentifierFnByRandomValue (fntype, fnclas, cb) {
 async function readFreeIdentifierFnThatTakesArgsByRandomValue (cb) {
 	const match =
 	{$match:{
-		//'type': 'free', // dont need this
+		'type': 'free',
 		'argn': {$gte: 1}
 	}};
 
@@ -242,8 +261,8 @@ async function readFreeIdentifierFnThatTakesArgsByRandomValue (cb) {
 async function readFreeIdentifierFnThatTakesFirstArgOfTypeByRandomValue (argtype, clas, cb) {
 	const match = (clas == null) ?
 	{$match:{
-		//'type': 'free', // dont need this
-		//'argn': {$gte: 1}, // or this
+		'type': 'free',
+		'argn': {$gte: 1},
 		'argt.0.1': argtype
 	}}
 	:
@@ -318,12 +337,25 @@ async function readByRandomValue (cb) {
 }
 
 async function readFreeIdentifierByTypeAndRandomValue (fntype, fnclas, cb) {
-	const match = 
-	{$match:{
-		'argn': null // do this for now TODO allow function types
-	}};
-	if (fntype != undefined) match.$match.fntype = fntype;
-	if (fnclas != undefined) match.$match.fnclas = fnclas;
+	var match;
+	if (fntype == 'AST') {
+		match = {$match:
+		{$or: [{type: 'free',
+			      fntype: 'object',
+		        fnclas: fnclas
+		       },
+		       {
+		       	type: (fnclas == 'Abstraction') ? 'abs' : ((fnclas == 'Application') ? 'app' : 'free')
+		       }]}
+		};
+	} else {
+		match =	{$match:{
+				'type': 'free',
+				'argn': {$in:[null,0]} // this function is used to fill args, we would blow the stack if we allowed recursive args
+			}};
+		if (fntype != undefined) match.$match.fntype = fntype;
+		if (fnclas != undefined) match.$match.fnclas = fnclas;
+	}
 
 	const sample = {$sample:{
 		size: 1
@@ -568,7 +600,6 @@ async function readOrCreateSubstitution (subType, location1, location2, cb) {
 
   // see if this sub already exists (dont care if its invalid)
 	const query = {
-		'type': 'sub',
 		'styp': subType,
 		'def1': location1,
 		'def2': location2
@@ -577,7 +608,7 @@ async function readOrCreateSubstitution (subType, location1, location2, cb) {
   var db;
 	try {
 		db = client.db("logos");
-		let res = await db.collection('Diary').findOne(query);
+		let res = await db.collection('Substitution').findOne(query);
 		if (res) {
 			return cb(res);
 		}
@@ -590,11 +621,10 @@ async function readOrCreateSubstitution (subType, location1, location2, cb) {
   try {
   	// invalidate old sub that subs to this one, if one exists
 		const query = {
-			type: 'sub',
 			invalid: false,
 			def2: location1
 		};
-		let res = await db.collection('Diary').findOne(query);
+		let res = await db.collection('Substitution').findOne(query);
 		if (res != null) {
 			// does exist, create a new sub as direct replacement and invalidate the old one
 			// (in addition to the sub we were asked to create)
@@ -602,23 +632,21 @@ async function readOrCreateSubstitution (subType, location1, location2, cb) {
 		  var data = {
 		  	id: new ObjectID(),
 		  	invalid: false,
-		  	type: 'sub',
 		  	styp: subType,
 		  	def1: res.def1,
 		  	def2: location2
 		  };
-	  	let res2 = await db.collection('Diary').insertOne(data);
+	  	let res2 = await db.collection('Substitution').insertOne(data);
 	  	if (!res2) {
 	  		throw new Error("Failed to create new replacement sub: \n"+JSON.stringify(data,null,4));
 	  	}
 
 			//invalidate
 	  	const queryOld = {
-	  		type: res.type,
 	  		def1: res.def1,
 	  		def2: res.def2 // location1
 	  	};
-	  	let res3 = await db.collection('Diary').updateOne(queryOld, {$set:{invalid:true}});
+	  	let res3 = await db.collection('Substitution').updateOne(queryOld, {$set:{invalid:true}});
 	  	if (!res3) {
 	  		throw new Error("Failed to invalidate old sub: \n"+JSON.stringify(queryOld,null,4));
 	  	}
@@ -628,12 +656,11 @@ async function readOrCreateSubstitution (subType, location1, location2, cb) {
 	  data2 = {
 	  	id: new ObjectID(),
 	  	invalid: false,
-	  	type: 'sub',
 	  	styp: subType,
 	  	def1: location1,
 	  	def2: location2
 	  };
-  	let res4 = await db.collection('Diary').insertOne(data2);
+  	let res4 = await db.collection('Substitution').insertOne(data2);
   	if (!res4) {
 	  	throw new Error("Failed to create sub: \n"+JSON.stringify(data2,null,4));
   	}

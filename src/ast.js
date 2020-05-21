@@ -14,6 +14,8 @@ class Abstraction extends Fragment {
   constructor(astid, param, body, bodyid) {
     super();
     this.type = 'abs';
+    this.fntype = 'AST';
+    this.fnclas = 'Abstraction';
     if (typeof astid === 'object') {
       var data = astid;
       this.astid = (data.astid != null) ? data.astid : data.id;
@@ -40,6 +42,8 @@ class Application extends Fragment {
   constructor(astid, lhs, lhsid, rhs, rhsid) {
     super();
     this.type = 'app';
+    this.fntype = 'AST';
+    this.fnclas = 'Application';
     if (typeof astid === 'object') {
       var data = astid;
       this.astid = (data.astid != null) ? data.astid : data.id;
@@ -65,14 +69,14 @@ class Identifier extends Fragment {
   /**
    * name is the string matched for this identifier.
    */
-  constructor(value, astid, fn, fntype, fnclas, argCount, argTypes, mods, memo, rand, type, promise) {
+  constructor(astid, fn, fntype, fnclas, argCount, argTypes, mods, memo, rand, promise) {
     super();
     this.type = 'free';
-    if (typeof value === 'object') {
-      var data = value;
+    if (typeof astid === 'object') {
+      var data = astid;
       this.value = data.name;
       this.astid = (data.astid != null) ? data.astid : data.id;
-      this.fn = data.fn;
+      this.fn = (data.fntype != 'object' && !data.promise) ? tryParseJson(data.fn) : data.fn;
       this.fntype = data.fntype;
       this.fnclas = data.fnclas;
       this.argCount = data.argn;
@@ -84,9 +88,8 @@ class Identifier extends Fragment {
       this.rand = data.rand;
       this.promise = data.promise;
     } else {
-      this.value = value;
       this.astid = astid;
-      this.fn = fn;
+      this.fn = (fntype != 'object' && !promise) ? tryParseJson(fn) : fn;
       this.fntype = fntype;
       this.fnclas = fnclas;
       this.argCount = argCount;
@@ -105,6 +108,14 @@ class Identifier extends Fragment {
     } else {
       return ctx[this.value];
     }
+  }
+}
+
+const tryParseJson = (input) => {
+  try {
+    return JSON.parse(input);
+  } catch (err) {
+    return input;
   }
 }
 

@@ -118,7 +118,9 @@ const combine = async (lastAst) => {
           return;
         }
         console.log("*** C1 *** MATCH -> FN : " + inputAst.type + ", " + inputAst.astid);
-        lastAst.args.push(JSON.parse(inputAst.fn));
+
+        if (lastAst.argTypes[lastAst.args.length][1] == 'AST') lastAst.args.push(inputAst);
+        else lastAst.args.push(inputAst.fn);
         adjustAssociativeValue(lastAst.astid, inputAst.astid, (written)=>{
           if (lastAst.args.length == lastAst.argCount) {
             // got enough arg
@@ -145,7 +147,9 @@ const combine = async (lastAst) => {
 
   // does not work with a lastAst that is a function! 
   // even if it satisfies the fntype
-  } else if (Math.random() > 0.8 && lastAst && AST.isIdentifier(lastAst) && lastAst.args == null) {
+
+  //TODO: allow lastAst to be interpreted as a generic Fragment type in readFreeIdentifier() below
+  } else if (Math.random() > 0.8 && lastAst && lastAst.args == null) {
     console.log("*** C FN, LASTAST *** " + lastAst.fntype);
     // Get a random function or abstraction to be applied to lastAst (fragment is first part)
     DataLib.readFreeIdentifierFnThatTakesFirstArgOfTypeByRandomValue(lastAst.fntype, lastAst.fnclas, (fragment) => {
@@ -169,7 +173,8 @@ const combine = async (lastAst) => {
       console.log(JSON.stringify(fragmentAst,null,4));
       console.log(JSON.stringify(lastAst,null,4));
 
-      fragmentAst.args.push(JSON.parse(lastAst.fn));
+      if (fragmentAst.argTypes[0][1] == 'AST') fragmentAst.args.push(lastAst);
+      else fragmentAst.args.push(lastAst.fn);
       adjustAssociativeValue(fragmentAst.astid, lastAst.astid, (written)=>{
         if (fragmentAst.args.length == fragmentAst.argCount) {
           // got enough arg
@@ -206,7 +211,7 @@ const combine = async (lastAst) => {
   } else {
       console.log("*** C FREE, NULL *** ");
       //get a pseudo-random free identifier function that takes args from diary as replacement for lastAst (first part)
-      DataLib.readFreeIdentifierValueByRandomValue(undefined, (freeIdentifier) => {
+      DataLib.readFreeIdentifierValueByRandomValue(undefined, undefined, (freeIdentifier) => {
         if (freeIdentifier == null) {
           setTimeout(combine, 1, lastAst);
           return;
@@ -295,7 +300,17 @@ const evaluate = async (ast, cb) => {
               ast.args, 
               (output) => {
                 // substitute the named function with its output
-                return cb(output);
+                if (typeof output != 'object') {
+                  // typeof should match ast.fntype
+                  var fixedOutput = (typeof output == 'string') ? '"'+output+'"' : output;
+                  DataLib.readOrCreateFreeIdentifierFunction(output, 
+                    null, fixedOutput, typeof output, null, null, null, null, null, null, (freeIdentifier) => {
+                    var freeIdentifierAst = AST.cast(freeIdentifier);
+                    return cb(freeIdentifierAst);
+                  });
+                } else {
+                  return cb(output);
+                }
                 // TODO: write substitution ast -> output to Diary
               });  // <= CODE EXECUTION
           } else {
