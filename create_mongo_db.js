@@ -11,12 +11,25 @@ async function setup() {
 	try {
 		const db = await client.db('logos');
 	  console.log("Database logos created!");
-	  await db.createCollection('Diary');
+	  var diary = await db.createCollection('Diary');
+	  await diary.createIndex({'type':1,'fntype':1,'fnclas':1});
+	  await diary.createIndex({'type':1,'argn':1,'fntype':1,'fnclas':1});
+	  await diary.createIndex({'type':1,'def1':1,'def2':1});
+	  await diary.createIndex({'type':1,'def2':1});
+	  await diary.createIndex({'type':1,'name':1});
+	  await diary.createIndex({'argt.0.1':1});
+	  await diary.createIndex({'argt.0.2]':1});
 	  console.log("Collection Diary created!");
 	  await db.createCollection('Class');
 	  console.log("Collection Class created!");
 	  await db.createCollection('Module');
 	  console.log("Collection Module created!");
+	  var sub = await db.createCollection('Substitution');
+	  await sub.createIndex({'invalid':1,'styp':1,'def1':1,'def2':1});
+	  await sub.createIndex({'invalid':1,'def2':1});
+	  await sub.createIndex({'styp':1,'def1':1,'def2':1});
+	  await sub.createIndex({'def1':1,'def2':1});
+	  console.log("Collection Substitution created!");
 	} catch (err) {
 		console.error(err);
 	} finally { 

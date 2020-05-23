@@ -125,6 +125,7 @@ const combine = async (lastAst) => {
           if (lastAst.args.length == lastAst.argCount) {
             // got enough arg
             evaluate(lastAst, (astOut) => {
+              if (astOut.id == lastAst.id) return setTimeout(combine, 1, null); // got stuck in a loop
               setTimeout(combine, 1, astOut);
             });
           } else {

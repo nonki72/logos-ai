@@ -261,8 +261,8 @@ async function readFreeIdentifierFnThatTakesArgsByRandomValue (cb) {
 async function readFreeIdentifierFnThatTakesFirstArgOfTypeByRandomValue (argtype, clas, cb) {
 	const match = (clas == null) ?
 	{$match:{
-		'type': 'free',
-		'argn': {$gte: 1},
+//		'type': 'free',
+//		'argn': {$gte: 1},
 		'argt.0.1': argtype
 	}}
 	:
@@ -342,7 +342,7 @@ async function readFreeIdentifierByTypeAndRandomValue (fntype, fnclas, cb) {
 		match = {$match:
 		{$or: [{type: 'free',
 			      fntype: 'object',
-		        fnclas: fnclas
+		        fnclas: (fnclas == 'Fragment') ? {$in:['Fragment','Abstraction','Application','Identifier']} : fnclas
 		       },
 		       {
 		       	type: (fnclas == 'Abstraction') ? 'abs' : ((fnclas == 'Application') ? 'app' : 'free')
@@ -535,7 +535,7 @@ async function readOrCreateFreeIdentifier ( name, cb ) {
   	id: new ObjectID(),
   	type: 'free',
   	name: name,
-  	argn: null
+  	argn: 0
   };
 
   try {
