@@ -1,7 +1,7 @@
 const DataLib = require('./datalib');
 
 class Fragment {
-  toString(ctx=[]) {
+  toString(ctx={}) {
     return "<Empty Fragment>";
   }
 }
@@ -30,8 +30,8 @@ class Abstraction extends Fragment {
     }
   }
 
-  toString(ctx=[]) {
-    return `(λ${this.param}. ${this.body.toString([this.param].concat(ctx))})`;
+  toString(ctx={}) {
+    return `(λ${this.param}. ${this.body.toString([this.param])})`;
   }
 }
 
@@ -60,7 +60,7 @@ class Application extends Fragment {
     }
   }
 
-  toString(ctx) {
+  toString(ctx={}) {
     return `${this.lhs.toString(ctx)} ${this.rhs.toString(ctx)}`;
   }
 }
@@ -69,7 +69,7 @@ class Identifier extends Fragment {
   /**
    * name is the string matched for this identifier.
    */
-  constructor(astid, fn, fntype, fnclas, argCount, argTypes, mods, memo, rand, promise) {
+  constructor(astid, fn, fntype, fnmod, fnclas, argCount, argTypes, mods, memo, rand, promise) {
     super();
     this.type = 'free';
     if (typeof astid === 'object') {
@@ -78,6 +78,7 @@ class Identifier extends Fragment {
       this.astid = (data.astid != null) ? data.astid : data.id;
       this.fn = (data.fntype != 'object' && !data.promise) ? tryParseJson(data.fn) : data.fn;
       this.fntype = data.fntype;
+      this.fnmod = data.fnmod;
       this.fnclas = data.fnclas;
       this.argCount = data.argn;
       if (data.argt == '"undefined"' || data.argt == 'undefined') this.argTypes = undefined;
@@ -91,6 +92,7 @@ class Identifier extends Fragment {
       this.astid = astid;
       this.fn = (fntype != 'object' && !promise) ? tryParseJson(fn) : fn;
       this.fntype = fntype;
+      this.fnmod = fnmod
       this.fnclas = fnclas;
       this.argCount = argCount;
       this.argTypes = argTypes;
@@ -102,12 +104,50 @@ class Identifier extends Fragment {
     }
   }
 
-  toString(ctx) {
-    if (typeof ctx === 'undefined') {
-      return this.value;
+  toString(ctx={}) {
+    return this.value;
+  }
+}
+
+class Substitution {
+
+  constructor(styp, def1, def2, invalid) {
+    if (typeof styp == 'object') {
+      var data = styp;
+      this.subType = data.styp;
+      this.def1 = data.def1;
+      this.def2 = data.def2;
+      this.invalid = (data.invalid != null) ? data.invalid : false;
     } else {
-      return ctx[this.value];
+      this.subType = styp;
+      this.def1 = def1;
+      this.def2 = def2;
+      this.invalid = (invalid != null) ? invalid : false;
     }
+  }
+
+  toString(ctx={}) {
+    if (this.invalid) {
+      return `${this.styp}: ${this.def1} -x-> ${this.def2}`;
+    } else {
+      return `${this.styp}: ${this.def1} --> ${this.def2}`;
+    }
+  }
+}
+
+class AlphaSubstitution extends Substitution {
+  constructor(def1, def2, invalid) {
+    super('alpha', def1, def2, invalid);
+  }
+}
+class BetaSubstitution extends Substitution {
+  constructor(def1, def2, invalid) {
+    super('beta', def1, def2, invalid);
+  }
+}
+class EtaSubstitution extends Substitution {
+  constructor(def1, def2, invalid) {
+    super('eta', def1, def2, invalid);
   }
 }
 
@@ -119,11 +159,28 @@ const tryParseJson = (input) => {
   }
 }
 
-const isFragment = node => node instanceof Fragment || node.constructor.name == "Application" || node.constructor.name == "Abstraction" || node.constructor.name == "Identifier";
+const isFragment = node => isAbstraction(node) || isApplication(node) || isIdentifier(node);
 const isAbstraction = node => node instanceof Abstraction || (node.type == 'abs');
-const isIdentifier = node => node instanceof Identifier || (node.type == 'id' || node.type == 'free'); // TODO: add field to free denoting name or value
+const isIdentifier = node => node instanceof Identifier || (node.type == 'id' || node.type == 'free');
 const isApplication = node => node instanceof Application || (node.type == 'app');
+const isSubstitution = node => isAlphaSubstitution(node) || isBetaSubstitution(node) || isEtaSubstitution(node);
+const isAlphaSubstitution = node => node instanceof AlphaSubstitution || (node.styp == 'alpha');
+const isBetaSubstitution = node => node instanceof BetaSubstitution || (node.styp == 'beta');
+const isEtaSubstitution = node => node instanceof EtaSubstitution || (node.styp == 'eta');
 
+const isA = (clas, data) => {
+  switch (clas) {
+    case 'Fragment': return isFragment(data); break;
+    case 'Abstraction': return isAbstraction(data); break;
+    case 'Application': return isApplication(data); break;
+    case 'Identifier': return isIdentifier(data); break;
+    case 'Substitution': return isSubstitution(data); break;
+    case 'AlphaSubstitution': return isAlphaSubstitution(data); break;
+    case 'BetaSubstitution': return isBetaSubstitution(data); break;
+    case 'EtaSubstitution': return isEtaSubstitution(data); break;
+    default: return null;
+  }
+}
 const cast = (input) => {
   if (typeof input == 'string') {
     DataLib.readById(input, function (fragment) {
@@ -141,17 +198,34 @@ const castAst = (input) => {
     return new Abstraction(input);
   } else if (isApplication(input)) {
     return new Application(input);
+  } else if (isAlphaSubstitution(input)) {
+    return new AlphaSubstitution(input);
+  } else if (isBetaSubstitution(input)) {
+    return new BetaSubstitution(input);
+  } else if (isEtaSubstitution(input)) {
+    return new EtaSubstitution(input);
   } else {
     return null;
   }
 }
 
 exports.cast = cast;
+
+exports.isA = isA;
 exports.isFragment = isFragment;
 exports.isAbstraction = isAbstraction;
 exports.isApplication = isApplication;
 exports.isIdentifier = isIdentifier;
+exports.isSubstitution = isSubstitution;
+exports.isAlphaSubstitution = isSubstitution;
+exports.isBetaSubstitution = isSubstitution;
+exports.isEtaSubstitution = isSubstitution;
+
 exports.Fragment = Fragment;
 exports.Abstraction = Abstraction;
 exports.Application = Application;
 exports.Identifier = Identifier;
+exports.Substitution = Substitution;
+exports.AlphaSubstitution = AlphaSubstitution;
+exports.BetaSubstitution = BetaSubstitution;
+exports.EtaSubstitution = EtaSubstitution;

@@ -149,6 +149,8 @@ const combine = async (lastAst) => {
   // does not work with a lastAst that is a function! 
   // even if it satisfies the fntype
 
+  //TODO: get by associative value
+
   //TODO: allow lastAst to be interpreted as a generic Fragment type in readFreeIdentifier() below
   } else if (Math.random() > 0.8 && lastAst && lastAst.args == null) {
     console.log("*** C FN, LASTAST *** " + lastAst.fntype);
@@ -305,7 +307,7 @@ const evaluate = async (ast, cb) => {
                   // typeof should match ast.fntype
                   var fixedOutput = (typeof output == 'string') ? '"'+output+'"' : output;
                   DataLib.readOrCreateFreeIdentifierFunction(output, 
-                    null, fixedOutput, typeof output, null, null, null, null, null, null, (freeIdentifier) => {
+                    null, fixedOutput, typeof output, null, null, null, null, null, null, null, (freeIdentifier) => {
                     var freeIdentifierAst = AST.cast(freeIdentifier);
                     return cb(freeIdentifierAst);
                   });

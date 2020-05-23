@@ -138,7 +138,6 @@ function readApplicatorByRandomValue (cb) {
 async function readAbstractionByRandomValue (cb) {
 	const query = {
 		'type': 'abs',
-		'invalid': false,
 		'rand': {$lte: Math.random()}
 	};
 	var client = await getDb();
@@ -321,7 +320,6 @@ async function readFreeIdentifierByFn (fn, cb) {
 // randomly reads a fragment
 async function readByRandomValue (cb) {
 	const query = {
-		'invalid': false,
 		'rand': {$lte: Math.random()}
 	};
 	var client = await getDb();
@@ -351,7 +349,7 @@ async function readFreeIdentifierByTypeAndRandomValue (fntype, fnclas, cb) {
 	} else {
 		match =	{$match:{
 				'type': 'free',
-				'argn': {$in:[null,0]} // this function is used to fill args, we would blow the stack if we allowed recursive args
+				'argn': 0 // readFreeIdentifierByTypeAndRandomValue is used to fill args, we would blow the stack if we allowed recursive args
 			}};
 		if (fntype != undefined) match.$match.fntype = fntype;
 		if (fnclas != undefined) match.$match.fnclas = fnclas;
@@ -388,9 +386,10 @@ async function readById (id, cb) {
   return cb(res);
 }
 
-async function readClassByName(name, cb) {
+async function readClassByNameAndModule(name, mod, cb) {
 	const query = {
-		'name': name
+		'name': name,
+		'module': mod
 	};
 	var client = await getDb();
 	var res = null;
@@ -535,7 +534,8 @@ async function readOrCreateFreeIdentifier ( name, cb ) {
   	id: new ObjectID(),
   	type: 'free',
   	name: name,
-  	argn: 0
+  	argn: 0,
+  	promise:false
   };
 
   try {
@@ -548,7 +548,7 @@ async function readOrCreateFreeIdentifier ( name, cb ) {
   return cb(data);
 }
 
-async function readOrCreateFreeIdentifierFunction (name, astid, fn, fntype, fnclass, argnum, argtypes, modules, memoize, promise, cb) {
+async function readOrCreateFreeIdentifierFunction (name, astid, fn, fntype, fnmod, fnclass, argnum, argtypes, modules, memoize, promise, cb) {
 	const query = {
 		'type': 'free',
 		'name': name
@@ -573,6 +573,7 @@ async function readOrCreateFreeIdentifierFunction (name, astid, fn, fntype, fncl
     astid: astid, // location (id)
     fn: fn,
     fntype: fntype,
+    fnmod: fnmod,
     fnclas: fnclass,
     argn: argnum,
     argt: argtypes,
@@ -599,7 +600,7 @@ async function readOrCreateSubstitution (subType, location1, location2, cb) {
   }
 
   // see if this sub already exists (dont care if its invalid)
-	const query = {
+	const query = {  
 		'styp': subType,
 		'def1': location1,
 		'def2': location2
@@ -776,7 +777,7 @@ module.exports = {
 	readByAssociativeValue: readByAssociativeValue,
 	readFreeIdentifierByTypeAndRandomValue: readFreeIdentifierByTypeAndRandomValue,
 	readById: readById,
-	readClassByName: readClassByName,
+	readClassByNameAndModule: readClassByNameAndModule,
 	readModuleByName: readModuleByName,
 	readModuleByPath: readModuleByPath,
 	readOrCreateAbstraction: readOrCreateAbstraction,

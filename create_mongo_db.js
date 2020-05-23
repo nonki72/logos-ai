@@ -19,6 +19,7 @@ async function setup() {
 	  await diary.createIndex({'type':1,'name':1});
 	  await diary.createIndex({'argt.0.1':1});
 	  await diary.createIndex({'argt.0.2]':1});
+	  await diary.createIndex({'id':1},{unique: true});
 	  console.log("Collection Diary created!");
 	  await db.createCollection('Class');
 	  console.log("Collection Class created!");
@@ -29,6 +30,7 @@ async function setup() {
 	  await sub.createIndex({'invalid':1,'def2':1});
 	  await sub.createIndex({'styp':1,'def1':1,'def2':1});
 	  await sub.createIndex({'def1':1,'def2':1});
+	  await sub.createIndex({'id':1},{unique: true});
 	  console.log("Collection Substitution created!");
 	} catch (err) {
 		console.error(err);

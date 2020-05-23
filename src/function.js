@@ -15,10 +15,11 @@ class StoredFunction {
    *               CTX.fn(functionName): access named function (free identifier) by name. 
    *                                     invoke with CTX.fn().call() CTX.fn().apply() or use as data
    */
-  constructor(memoize, type, klass, argTypes, modules, functionBody, promise) {
+  constructor(memoize, type, mod, klass, argTypes, modules, functionBody, promise) {
     this.memoize = memoize;
     this.type = type;
     if (type === 'undefined') this.type = undefined;
+    this.mod = mod;
     this.klass = klass;
     this.argTypes = argTypes;
     this.modules = modules;
@@ -27,7 +28,7 @@ class StoredFunction {
   }
 
   toString() {
-    return `(κ ${this.memoize}. ${this.type}. ${this.klass}. ${this.argTypes}. ${this.functionBody}. ${this.promise})`;
+    return `(κ ${this.memoize}. ${this.type}. ${this.mod}. ${this.klass}. ${this.argTypes}. ${this.functionBody}. ${this.promise})`;
   }
 }
 

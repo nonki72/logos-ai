@@ -31,15 +31,17 @@ request parameters:
   astid
   fn
   fntype
+  fnmod
   fnclass
   argnum (if non null and fntype=identifier then this describes a function and fnclass is the return type)
   argtypes
   modules
   memoize
   testargs
+  promise
  */
 router.post('/:functionName', function createStoredFunction (req, res, next) {
-  var storedFunction = new F.StoredFunction(req.body.memoize, req.body.fntype, req.body.fnclass, req.body.argtypes, req.body.modules, req.body.fn, req.body.promise);
+  var storedFunction = new F.StoredFunction(req.body.memoize, req.body.fntype, req.body.fnmod, req.body.fnclass, req.body.argtypes, req.body.modules, req.body.fn, req.body.promise);
 
   if (req.body.argtypes != null && req.body.argtypes.length > 0) {
     for (var i=0; i<req.body.argtypes.length;i++) {
@@ -55,7 +57,7 @@ router.post('/:functionName', function createStoredFunction (req, res, next) {
       return next(error);
     }
     DataLib.readOrCreateFreeIdentifierFunction(req.params.functionName, 
-      null, req.body.fn, req.body.fntype, req.body.fnclass, req.body.argnum, req.body.argtypes, req.body.modules, req.body.memoize, req.body.promise, (freeIdentifier) => {
+      null, req.body.fn, req.body.fntype, req.body.fnmod, req.body.fnclass, req.body.argnum, req.body.argtypes, req.body.modules, req.body.memoize, req.body.promise, (freeIdentifier) => {
       if (freeIdentifier == null) {
         return next({message: 'Could not create free identifier function \'' + req.params.functionName});
       }

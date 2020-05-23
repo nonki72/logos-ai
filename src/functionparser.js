@@ -90,7 +90,8 @@ function loadStoredFunction(freeIdentifier) {
 		// have ast version
 		var storedFunction = new F.StoredFunction(
 			freeIdentifier.memo, 
-			freeIdentifier.fntype, 
+			freeIdentifier.fntype,
+			freeIdentifier.fnmod, 
 			freeIdentifier.fnclas, 
 			freeIdentifier.argTypes, 
 			freeIdentifier.mods, 
@@ -102,6 +103,7 @@ function loadStoredFunction(freeIdentifier) {
 	var storedFunction = new F.StoredFunction(
 		freeIdentifier.memo, 
 		freeIdentifier.fntype, 
+		freeIdentifier.fnmod,
 		freeIdentifier.fnclas, 
 		freeIdentifier.argt, 
 		freeIdentifier.mods, 
@@ -146,7 +148,7 @@ function parseFunction (storedFunction, args, cb) {
 				  }
 
 				  if (storedFunction.type == 'object') {
-				  	return checkClass(result, storedFunction.klass, (err3) => {
+				  	return checkClass(result, storedFunction.mod, storedFunction.klass, (err3) => {
 				  		if (err3) {
 				  			return cb("Check class error: " + err3 + JSON.stringify(storedFunction));
 				  		}
@@ -200,24 +202,26 @@ function executeFunction(storedFunction, args, cb) {
 	});
 }
 
-function checkClass(testObject, className, cb) {
+function checkClass(testObject, moduleName, className, cb) {
 	if (testObject == null || typeof testObject != 'object' || className == null) return cb(null);
-  DataLib.readClassByName(className, (klass) => {
+  DataLib.readClassByNameAndModule(className, moduleName, (klass) => {
   	if (klass == null) {
-  		return cb(`class name '${className}' is not found in the database`);
+  		return cb(`class  '${moduleName}.${className}' is not found in the database`);
   	}
 
-  	DataLib.readModuleByName(klass.module, (mod) => {
-    	if (mod == null) {
-    		return cb(`class '${klass.name}' belongs to module '${klass.module}' which is not found in the database`);
-    	}
-// in case this doesnt work because the file is loaded separately from sensei's even though it is the same source file (AST)
-			if ((klass.name != "Fragment" && testObject.constructor.name != klass.name) 
-				|| !AST.isFragment(testObject)) {
-//  		if (!(eval('const '+mod.name+' = require(\''+mod.path+'\');\
-//								  Promise.resolve(testObject) instanceof '+mod.name+'.'+klass.name))) {   // <=== CODE EXECUTION
-  			return cb('object is class "'+testObject.constructor.name+'" and not "'+mod.name+'.'+klass.name+'"');
-  	  }
+  	DataLib.readModuleByName(moduleName, (mod) => {
+			if (mod == null) {
+				return cb(`class '${klass.name}' belongs to module '${klass.module}' which is not found in the database`);
+			}
+
+			if (mod.name == "AST") {
+				if (!AST.isA(klass.name, testObject)) {
+			    return cb('object is class "'+testObject.constructor.name+'" and not "'+mod.name+'.'+klass.name+'"');
+			  }
+			}
+		  else if (testObject.constructor.name != klass.name) {
+			  return cb('object is class "'+testObject.constructor.name+'" and not "'+mod.name+'.'+klass.name+'"');
+			}
 
   	  return cb(null);
     });
@@ -250,14 +254,14 @@ function checkArgs(argTypes, args, cb) {
 			return callback("Argtype #" + i + " is not of length >= 2 specifying name and type (& class)" + JSON.stringify(argTypes));
 		}
 		var argName = argTypes[i][0];
-		var argType = argTypes[i][1];
+		var argType = argTypes[i][1]; // type or module
 		var argClass = (argTypes[i].length > 2) ? argTypes[i][2] : null;
 
 		if (typeof arg != argType && typeof arg != 'object') {
 			return callback("Arg " + argName+ " `" + arg + "` is type `" + typeof arg + "` and not `" + argType + "`");
 		}
     if (argClass) {
-		  checkClass(arg, argClass, (err) => {
+		  checkClass(arg, argType, argClass, (err) => {
 		  	return callback(err);
 		  });
     } else {
