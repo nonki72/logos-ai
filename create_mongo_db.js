@@ -17,8 +17,7 @@ async function setup() {
 	  await diary.createIndex({'type':1,'def1':1,'def2':1});
 	  await diary.createIndex({'type':1,'def2':1});
 	  await diary.createIndex({'type':1,'name':1});
-	  await diary.createIndex({'argt.0.1':1});
-	  await diary.createIndex({'argt.0.2]':1});
+	  await diary.createIndex({'argt.0.1':1, 'argt.0.2':1, 'argt.0.3':1});
 	  await diary.createIndex({'id':1},{unique: true});
 	  console.log("Collection Diary created!");
 	  await db.createCollection('Class');

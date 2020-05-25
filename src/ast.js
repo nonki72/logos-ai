@@ -69,14 +69,14 @@ class Identifier extends Fragment {
   /**
    * name is the string matched for this identifier.
    */
-  constructor(astid, fn, fntype, fnmod, fnclas, argCount, argTypes, mods, memo, rand, promise) {
+  constructor(fn, astid, type, fntype, fnmod, fnclas, argCount, argTypes, mods, memo, promise) {
     super();
-    this.type = 'free';
-    if (typeof astid === 'object') {
-      var data = astid;
+    if (isIdentifier(fn)) {
+      var data = fn;
       this.value = data.name;
       this.astid = (data.astid != null) ? data.astid : data.id;
-      this.fn = (data.fntype != 'object' && !data.promise) ? tryParseJson(data.fn) : data.fn;
+      this.fn = data.fn;
+      this.type = data.type;
       this.fntype = data.fntype;
       this.fnmod = data.fnmod;
       this.fnclas = data.fnclas;
@@ -86,11 +86,11 @@ class Identifier extends Fragment {
       this.args = (this.argCount == null) ? null : [];    
       this.mods = data.mods;
       this.memo = data.memo;
-      this.rand = data.rand;
       this.promise = data.promise;
     } else {
       this.astid = astid;
-      this.fn = (fntype != 'object' && !promise) ? tryParseJson(fn) : fn;
+      this.fn = fn;
+      this.type = type;
       this.fntype = fntype;
       this.fnmod = fnmod
       this.fnclas = fnclas;
@@ -99,7 +99,6 @@ class Identifier extends Fragment {
       this.args = [];
       this.mods = mods;
       this.memo = memo;
-      this.rand = rand;
       this.promise = promise
     }
   }
@@ -182,13 +181,7 @@ const isA = (clas, data) => {
   }
 }
 const cast = (input) => {
-  if (typeof input == 'string') {
-    DataLib.readById(input, function (fragment) {
-      return castAst(fragment);
-    });
-  } else {
-    return castAst(input);
-  }
+  return castAst(input);
 }
 
 const castAst = (input) => {
@@ -205,7 +198,14 @@ const castAst = (input) => {
   } else if (isEtaSubstitution(input)) {
     return new EtaSubstitution(input);
   } else {
-    return null;
+    DataLib.readOrCreateFreeIdentifierFunction(null, 
+      null, input, typeof input, null, null, 0, null, null, false, false, (freeIdentifier) => {
+      if (freeIdentifier == null) {
+        console.error('Could not create free identifier from:\n>' + JSON.stringify(input,null,4));
+        return null;
+      }
+      return new Identifier(input); // is not a known class, made a free identifier containing simply typed input (could be an object)
+    });
   }
 }
 

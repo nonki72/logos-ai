@@ -31,7 +31,8 @@ const contextClosure = function(str, argTypes, args, modules, promise, cb) {
 		for (var i = 0; i < argTypes.length; i++) {
 			var argName = argTypes[i][0];
 			var argType = argTypes[i][1];
-			var argClas = argTypes[i][2];
+			var argMod  = argTypes[i][2];
+			var argClas = argTypes[i][3];
 			CTX.args[argName] = args[i];
 		}
 	}
@@ -188,6 +189,7 @@ function executeFunction(storedFunction, args, cb) {
 
 			try {
 				contextClosure.call(null, storedFunction.functionBody, storedFunction.argTypes, args, modulePaths, storedFunction.promise, function(result) {
+					//TODO: check class of output here
 					return cb(result);
 				});   // <=== CODE EXECUTION
 			} catch (e) {
@@ -254,14 +256,15 @@ function checkArgs(argTypes, args, cb) {
 			return callback("Argtype #" + i + " is not of length >= 2 specifying name and type (& class)" + JSON.stringify(argTypes));
 		}
 		var argName = argTypes[i][0];
-		var argType = argTypes[i][1]; // type or module
-		var argClass = (argTypes[i].length > 2) ? argTypes[i][2] : null;
+		var argType = argTypes[i][1]; // type, maybe 'object' if so use argMod & argClas
+		var argMod  = (argTypes[i].length > 2) ? argTypes[i][2] : null;
+		var argClass = (argTypes[i].length > 2) ? argTypes[i][3] : null;
 
 		if (typeof arg != argType && typeof arg != 'object') {
 			return callback("Arg " + argName+ " `" + arg + "` is type `" + typeof arg + "` and not `" + argType + "`");
 		}
     if (argClass) {
-		  checkClass(arg, argType, argClass, (err) => {
+		  checkClass(arg, argMod, argClass, (err) => {
 		  	return callback(err);
 		  });
     } else {
