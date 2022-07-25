@@ -46,6 +46,7 @@ var SQL_STRING_EC = 'CREATE TABLE EC (\n' +
 '    INDEX (equid),\n' +
 '    INDEX (astid), \n' +
 '    INDEX (assv),\n' +
+'    INDEX (equid,astid),\n' +
 '    UNIQUE (equid, astid)\n' +
 ');';
 
