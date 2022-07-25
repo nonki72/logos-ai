@@ -46,6 +46,7 @@ async function insertECRecord (astid, equid, assv) {
   return null;
 }
 
+// TODO: add fields type argn fntype fnmod fnclas
 
 async function getRandomECAstId (astid) {
   var myDb = await getMyDb();
