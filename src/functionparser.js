@@ -31,44 +31,36 @@ const contextClosure = function(str, argTypes, args, modules, promise, cb) {
 		for (var i = 0; i < argTypes.length; i++) {
 			var argName = argTypes[i][0];
 			var argType = argTypes[i][1];
-			var argClas = argTypes[i][2];
 			var argMod  = argTypes[i][2];
 			var argClas = argTypes[i][3];
 			CTX.args[argName] = args[i];
 		}
 	}
 
-  /*
   console.log("!!!!!!!!!!!!!!CODE EXECUTION!!!!!!!!!!!\n"
   	+requires+str
   	+"\n!!!!!!!!!!!CTX!!!!!!!!!!!!!!!\n"
   	+JSON.stringify(CTX,null,4)
   	+"\n!!!!!!!!!!!!!!RUNNING!!!!!!!!!!!!!");
-   */
   var output = eval(requires + str);            // <=== CODE EXECUTION
 
   if (promise == true) {
   	output.then(
 	  	(result) => {
-/*
 			  console.log(
-					 "!!!!!!!!!!!!!!OUTPUT!!!!!!!!!!\n"
-				  +JSON.stringify(result,null,4)
-				  +"\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
- */
+			  	   "!!!!!!!!!!!!!!OUTPUT!!!!!!!!!!\n"
+			  	+JSON.stringify(result,null,4)
+			  	+"\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 	  		return cb(result)},
 	  	(err)=>{console.error(
 	  		     "!!!!!!!!!!ERROR!!!!!!!!!!\n"
           +JSON.stringify(err,null,4)
           +"\n!!!!!!!!!!!!!!!!!!!!!!!!!")})
   } else {
-/*
 	  console.log(
 	  	   "!!!!!!!!!!!!!!OUTPUT!!!!!!!!!!\n"
 	  	+JSON.stringify(output,null,4)
 	  	+"\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-
- */
 	  return cb(output);
 	}
 }
@@ -197,6 +189,7 @@ function executeFunction(storedFunction, args, cb) {
 
 			try {
 				contextClosure.call(null, storedFunction.functionBody, storedFunction.argTypes, args, modulePaths, storedFunction.promise, function(result) {
+					//TODO: check class of output here
 					return cb(result);
 				});   // <=== CODE EXECUTION
 			} catch (e) {
@@ -207,7 +200,7 @@ function executeFunction(storedFunction, args, cb) {
 		    console.error(`executeFunction -> ${e.constructor.name} error on line ${e.lineNumber}: ${e.message}` + JSON.stringify(storedFunction), e);
 		    cb(null);
 			}
-  		});
+  	});
 	});
 }
 
@@ -263,14 +256,15 @@ function checkArgs(argTypes, args, cb) {
 			return callback("Argtype #" + i + " is not of length >= 2 specifying name and type (& class)" + JSON.stringify(argTypes));
 		}
 		var argName = argTypes[i][0];
-		var argType = argTypes[i][1]; // type or module
-		var argClass = (argTypes[i].length > 2) ? argTypes[i][2] : null;
+		var argType = argTypes[i][1]; // type, maybe 'object' if so use argMod & argClas
+		var argMod  = (argTypes[i].length > 2) ? argTypes[i][2] : null;
+		var argClass = (argTypes[i].length > 2) ? argTypes[i][3] : null;
 
 		if (typeof arg != argType && typeof arg != 'object') {
 			return callback("Arg " + argName+ " `" + arg + "` is type `" + typeof arg + "` and not `" + argType + "`");
 		}
     if (argClass) {
-		  checkClass(arg, argType, argClass, (err) => {
+		  checkClass(arg, argMod, argClass, (err) => {
 		  	return callback(err);
 		  });
     } else {

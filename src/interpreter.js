@@ -81,6 +81,24 @@ const applyAndAdjustAssociativeValue = async (data, input, callback) => {
 }
 
 
+const loadAndExecuteFunction = (ast, cb) => {
+  FunctionParser.executeFunction(FunctionParser.loadStoredFunction(ast), ast.args, (output) => {
+    // substitute the named function with its output
+    if (ast.fntype != 'object') {
+      //TODO: typeof should match ast.fntype
+      var fixedOutput = (ast.fntype == 'string') ? '"'+output+'"' : output;
+      DataLib.readOrCreateFreeIdentifierFunction(output, 
+        null, fixedOutput, typeof output, null, null, null, null, null, null, null, (freeIdentifier) => {
+        var freeIdentifierAst = AST.cast(freeIdentifier);
+        return cb(freeIdentifierAst.fn);
+      });
+    } else {
+      // output is an object, may be AST
+      return cb(output); // output is an object as expected
+    }
+    // TODO: write substitution ast -> output to Diary
+  });  // <= CODE EXECUTION
+}
 
 
 
@@ -119,20 +137,29 @@ const combine = async (lastAst) => {
         }
         console.log("*** C1 *** MATCH -> FN : " + inputAst.type + ", " + inputAst.astid);
 
-        if (lastAst.argTypes[lastAst.args.length][1] == 'AST') lastAst.args.push(inputAst);
-        else lastAst.args.push(inputAst.fn);
-        adjustAssociativeValue(lastAst.astid, inputAst.astid, (written)=>{
-          if (lastAst.args.length == lastAst.argCount) {
-            // got enough arg
-            evaluate(lastAst, (astOut) => {
-              if (astOut.id == lastAst.id) return setTimeout(combine, 1, null); // got stuck in a loop
-              setTimeout(combine, 1, astOut);
-            });
-          } else {
-            // still need more arg
-            setTimeout(combine, 1, lastAst);
-          }
-        });
+        // evaluate the string stored at inputAst.fn
+        // it is treated as javascript code
+        // should be the inputAst.fntype/fnclas 
+        loadAndExecuteFunction(inputAst, (output) => {
+          // output is object or regular type
+          lastAst.args.push(output);
+          adjustAssociativeValue(lastAst.astid, inputAst.astid, (written)=>{
+            if (lastAst.args.length == lastAst.argCount) {
+              // got enough arg
+              evaluate(lastAst, (output) => {
+                if (output && 'id' in output && output.id == lastAst.id) return setTimeout(combine, 1, null); // got stuck in a loop
+                if (typeof output == 'object') {
+                  setTimeout(combine, 1, output);
+                } else {
+                  setTimeout(combine, 1, AST.cast(output));
+                }
+              });
+            } else {
+              // still need more arg
+              setTimeout(combine, 1, lastAst);
+            }
+          });
+        });  // <= CODE EXECUTION output or null
 
       });
     } else {
@@ -155,7 +182,7 @@ const combine = async (lastAst) => {
   } else if (Math.random() > 0.8 && lastAst && lastAst.args == null) {
     console.log("*** C FN, LASTAST *** " + lastAst.fntype);
     // Get a random function or abstraction to be applied to lastAst (fragment is first part)
-    DataLib.readFreeIdentifierFnThatTakesFirstArgOfTypeByRandomValue(lastAst.fntype, lastAst.fnclas, (fragment) => {
+    DataLib.readFreeIdentifierFnThatTakesFirstArgOfTypeByRandomValue(lastAst.fntype, lastAst.fnmod, lastAst.fnclas, (fragment) => {
       if (!fragment) {
         console.log("*** C1 NO FRAGMENT *** ");
         return setTimeout(combine, 1, lastAst);
@@ -181,9 +208,6 @@ const combine = async (lastAst) => {
       adjustAssociativeValue(fragmentAst.astid, lastAst.astid, (written)=>{
         if (fragmentAst.args.length == fragmentAst.argCount) {
           // got enough arg
-//          applyAndAdjustAssociativeValue(fragmentAst, lastAst, (astOut) => {
-//            setTimeout(combine, 1, astOut);
-//          });
           evaluate(fragmentAst, (astOut) => {
             setTimeout(combine, 1, astOut);
           });
@@ -298,24 +322,7 @@ const evaluate = async (ast, cb) => {
           // has enough args, execute
           if (typeof ast.fn == 'string') {
             console.log("### III 1 A ###");
-            var output = FunctionParser.executeFunction(
-              FunctionParser.loadStoredFunction(ast), 
-              ast.args, 
-              (output) => {
-                // substitute the named function with its output
-                if (typeof output != 'object') {
-                  // typeof should match ast.fntype
-                  var fixedOutput = (typeof output == 'string') ? '"'+output+'"' : output;
-                  DataLib.readOrCreateFreeIdentifierFunction(output, 
-                    null, fixedOutput, typeof output, null, null, null, null, null, null, null, (freeIdentifier) => {
-                    var freeIdentifierAst = AST.cast(freeIdentifier);
-                    return cb(freeIdentifierAst);
-                  });
-                } else {
-                  return cb(output);
-                }
-                // TODO: write substitution ast -> output to Diary
-              });  // <= CODE EXECUTION
+            return loadAndExecuteFunction(ast, cb);  // <= CODE EXECUTION output result or null
           } else {
             // fn is not code (a string)
             // it is a virtual function

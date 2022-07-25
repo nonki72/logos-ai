@@ -257,8 +257,8 @@ async function readFreeIdentifierFnThatTakesArgsByRandomValue (cb) {
 }
 
 
-async function readFreeIdentifierFnThatTakesFirstArgOfTypeByRandomValue (argtype, clas, cb) {
-	const match = (clas == null) ?
+async function readFreeIdentifierFnThatTakesFirstArgOfTypeByRandomValue (argtype, argmod, argclas, cb) {
+	const match = (argclas == null) ?
 	{$match:{
 //		'type': 'free',
 //		'argn': {$gte: 1},
@@ -266,7 +266,9 @@ async function readFreeIdentifierFnThatTakesFirstArgOfTypeByRandomValue (argtype
 	}}
 	:
 	{$match:{
-		'argt.0.2': clas
+		'argt.0.1': 'object', // expect argtype to be 'object'
+		'argt.0.2': argmod,
+		'argt.0.3': argclas
 	}};
 
 	const sample = {$sample:{
@@ -514,7 +516,7 @@ async function readOrCreateApplication (definition1, definition2, cb) {
 
 async function readOrCreateFreeIdentifier ( name, cb ) {
 	const query = {
-		'type': 'free',
+		'type': 'id',
 		'name': name
 	};
 	var client = await getDb();
@@ -532,7 +534,7 @@ async function readOrCreateFreeIdentifier ( name, cb ) {
 	// if not found
   var data = {
   	id: new ObjectID(),
-  	type: 'free',
+  	type: 'id',
   	name: name,
   	argn: 0,
   	promise:false
