@@ -337,25 +337,41 @@ async function readByRandomValue (cb) {
 }
 
 async function readFreeIdentifierByTypeAndRandomValue (fntype, fnclas, cb) {
-	var match;
+	var match1;
+	var match2;
 	if (fntype == 'AST') {
-		match = {$match:
-		{$or: [{type: 'free',
-			      fntype: 'object',
-		        fnclas: (fnclas == 'Fragment') ? {$in:['Fragment','Abstraction','Application','Identifier']} : fnclas
-		       },
-		       {
-		       	type: (fnclas == 'Abstraction') ? 'abs' : ((fnclas == 'Application') ? 'app' : 'free')
-		       }]}
-		};
-	} else {
-		match =	{$match:{
-				'type': 'free',
-			//	'argn': 0 // readFreeIdentifierByTypeAndRandomValue is used to fill args, we would blow the stack if we allowed recursive args
+		match1 = {$match:{
+				type: 'free',
+				fntype: 'object',
+				fnclas: (fnclas == 'Fragment') ? {$in: ['Fragment', 'Abstraction', 'Application', 'Identifier']} : fnclas
 			}};
-		if (fntype != undefined) match.$match.fntype = fntype;
-		if (fnclas != undefined) match.$match.fnclas = fnclas;
+
+		match2 = {$match:{
+					type: (fnclas == 'Abstraction') ? 'abs' : ((fnclas == 'Application') ? 'app' : 'free')
+				}};
+
+
+	} else {
+		match1 = {$match: {
+				'type': 'free',
+				'argn': 0 // readFreeIdentifierByTypeAndRandomValue is used to fill args, we would blow the stack if we allowed recursive args
+			}};
+		match2 = {$match:{
+					'type': 'free',
+					argn: null
+				}};
+
 	}
+
+		if (fntype != undefined) {
+			match1.$match.fntype = fntype;
+			match2.$match.fntype = fntype;
+		}
+		if (fnclas != undefined) {
+			match1.$match.fnclas = fnclas;
+			match2.$match.fnclas = fnclas;
+		}
+
 
 	const sample = {$sample:{
 		size: 1
@@ -364,8 +380,15 @@ async function readFreeIdentifierByTypeAndRandomValue (fntype, fnclas, cb) {
 	var res = null;
 	try {
 		const db = client.db("logos");
-		let cursor = await db.collection('Diary').aggregate([match,sample]);
-		if (cursor.hasNext()) res = await cursor.next();
+		let cursor = await db.collection('Diary').aggregate([match1,sample]);
+		if (await cursor.hasNext()) {
+			res = await cursor.next()
+		} else {
+			cursor = await db.collection('Diary').aggregate([match2,sample]);
+			if (await cursor.hasNext()) {
+				res = await cursor.next()
+			}
+		}
   } catch(err) {
   	console.error(err);
   }
