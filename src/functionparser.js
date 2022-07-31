@@ -36,31 +36,37 @@ const contextClosure = function(str, argTypes, args, modules, promise, cb) {
 			CTX.args[argName] = args[i];
 		}
 	}
-
+/*
   console.log("!!!!!!!!!!!!!!CODE EXECUTION!!!!!!!!!!!\n"
   	+requires+str
   	+"\n!!!!!!!!!!!CTX!!!!!!!!!!!!!!!\n"
   	+JSON.stringify(CTX,null,4)
   	+"\n!!!!!!!!!!!!!!RUNNING!!!!!!!!!!!!!");
+*/
   var output = eval(requires + str);            // <=== CODE EXECUTION
 
   if (promise == true) {
   	output.then(
 	  	(result) => {
+/*
 			  console.log(
 			  	   "!!!!!!!!!!!!!!OUTPUT!!!!!!!!!!\n"
 			  	+JSON.stringify(result,null,4)
 			  	+"\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+*/
 	  		return cb(result)},
 	  	(err)=>{console.error(
 	  		     "!!!!!!!!!!ERROR!!!!!!!!!!\n"
           +JSON.stringify(err,null,4)
-          +"\n!!!!!!!!!!!!!!!!!!!!!!!!!")})
+          +"\n!!!!!!!!!!!!!!!!!!!!!!!!!");
+		  return cb(null)})
   } else {
+/*
 	  console.log(
 	  	   "!!!!!!!!!!!!!!OUTPUT!!!!!!!!!!\n"
 	  	+JSON.stringify(output,null,4)
 	  	+"\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+*/
 	  return cb(output);
 	}
 }

@@ -351,7 +351,7 @@ async function readFreeIdentifierByTypeAndRandomValue (fntype, fnclas, cb) {
 	} else {
 		match =	{$match:{
 				'type': 'free',
-				'argn': 0 // readFreeIdentifierByTypeAndRandomValue is used to fill args, we would blow the stack if we allowed recursive args
+			//	'argn': 0 // readFreeIdentifierByTypeAndRandomValue is used to fill args, we would blow the stack if we allowed recursive args
 			}};
 		if (fntype != undefined) match.$match.fntype = fntype;
 		if (fnclas != undefined) match.$match.fnclas = fnclas;
