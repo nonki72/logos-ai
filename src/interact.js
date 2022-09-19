@@ -81,6 +81,18 @@ async function interact () {
     console.log(namedFreeIdentifier.fn + " id: " + namedFreeIdentifier.id);
 
     // find a random entry (using custom distribution)
+    async function getRandom() {
+        return new Promise(async (resolve, reject) => {
+            await DataLib.readByRandomValue('free', (random) => {
+                if (random == null) {
+                    return reject(" no random found");
+                }
+                return resolve(random);
+            });
+        });
+    }
+
+    // find a random entry (using custom distribution)
     // by the free identifier's equivalence class (lookup eq class by astid first)
     async function getRandomByEquivalenceClass(namedFreeIdentifier) {
         return new Promise(async (resolve, reject) => {
@@ -93,18 +105,25 @@ async function interact () {
             });
         });
     }
-
+/*
     // use ec (sql) db to find a random-by-associative-value entry
     const randomAssociation = await getRandomByEquivalenceClass(namedFreeIdentifier)
         .catch((reason) => {console.error(reason); return null});
     if (randomAssociation == null) {
         return setTimeout(interact, 0);
     }
+*/
+    const random = await getRandom()
+        .catch((reason) => {console.error(reason); return null});
+    if (random == null) {
+        return setTimeout(interact, 0);
+    }
 
     // output the random associative entry
     console.log("*************ASSOCIA***************");
-    console.log(JSON.stringify(randomAssociation,null,4));
-    await FunctionParser.executeFunction(storedOutputFunction, ["OUTPUT:"+JSON.stringify(randomAssociation,null,4)], () => {
+    //console.log(JSON.stringify(randomAssociation,null,4));
+    console.log(JSON.stringify(random));
+    await FunctionParser.executeFunction(storedOutputFunction, ["OUTPUT:"+JSON.stringify(random,null,4)], () => {
         return;
     });
 

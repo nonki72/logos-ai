@@ -1,5 +1,6 @@
 'use strict';
 var mongo = require('mongodb');
+var spawn = require('child_process').spawn;
 var MongoClient = mongo.MongoClient;
 var ObjectID = mongo.ObjectID;
 const Sql = require('./sql');
@@ -331,19 +332,51 @@ async function readFreeIdentifierByFn (fn, cb) {
 }
 
 // randomly reads a fragment
-async function readByRandomValue (cb) {
-	const query = {
-		'rand': {$lte: Math.random()}
-	};
+async function readByRandomValue (type, cb) {
 	var client = await getDb();
+	const db = client.db("logos");
 	var res = null;
+	let cursor = await db.collection('Diary').aggregate([
+		{
+			$match: {
+				type: type
+			}
+		},
+		{ $sample: { size: 1 } }
+	]);
+	if (await cursor.hasNext()) {
+		res = await cursor.next()
+	}
+/*
 	try {
 		const db = client.db("logos");
-		let cursor = await db.collection('Diary').find(query).sort({'rand':-1}).limit(1);
-		if (cursor.hasNext()) res = await cursor.next();
-  } catch(err) {
-  	console.error(err);
-  }
+
+		var prc = spawn('python3', ['rdrandom.py']);
+		prc.stdout.setEncoding('utf8');
+		prc.stdout.on('data', function (data) {
+			const str = data.toString();
+			const lines = str.split(/(\r?\n)/g);
+			const randString = (lines.join(""));
+			const randFloat = Number.parseFloat(randString);
+			console.log(randFloat);
+			var count = 137093;
+			console.log(count);
+			var rand = function(){return Math.floor( randFloat * count )}
+			const randInt = rand();
+			console.log(randInt);
+			const res = db.collection('Diary').find().limit(-1).skip(randInt).next()
+		});
+
+		prc.on('close', function (code) {
+			// pass
+		});
+
+		const res = await db.collection('Diary').find().limit(1).skip(randInt).next();
+		console.log(res);
+	} catch(err) {
+		console.error(err);
+	}
+ */
   return cb(res);
 }
 
