@@ -1,0 +1,59 @@
+---
+
+S:
+- 
+  - NP
+  - VP
+
+NP:
+-
+  - Pron
+- 
+  - Nom
+
+Nom:
+-
+  - Noun
+-
+  - Noun
+  - Nom
+-
+  - Det
+  - Nom
+-
+  - Adj
+  - Noun
+-
+  - Adv
+  - Noun
+
+VP:
+- 
+  - Verb
+-
+  - Verb
+  - NP
+-
+  - Verb
+  - PP
+-
+  - Verb
+  - CP
+-
+  - Adv
+  - VP
+-
+  - VP
+  - Adv
+
+PP:
+-
+  - Prep
+-
+  - NP
+
+CP:
+-
+  - C
+-
+  - S

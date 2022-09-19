@@ -1,0 +1,607 @@
+a
+aboard
+about
+abt
+above
+abreast
+absent
+across
+after
+against
+along
+aloft
+alongside
+amid
+amidst
+mid
+midst
+among
+amongst
+anti
+apropos
+around
+round
+as
+aslant
+astride
+at
+@
+atop
+ontop
+bar
+barring
+before
+B4
+behind
+below
+beneath
+neath
+beside
+besides
+between
+'tween
+beyond
+but
+by
+chez
+circa
+c
+come
+concerning
+contra
+counting
+cum
+despite
+spite
+down
+during
+effective
+ere
+except
+excepting
+excluding
+failing
+following
+for
+4
+from
+in
+including
+inside
+into
+less
+like
+minus
+modulo
+mod
+near
+nearer
+nearest
+next
+notwithstanding
+of
+o'
+off
+offshore
+on
+onto
+opposite
+out
+outside
+over
+o'er
+pace
+past
+pending
+per
+plus
+post
+pre
+pro
+qua
+re
+regarding
+respecting
+sans
+save
+saving
+short
+since
+sub
+than
+through
+thru
+throughout
+thruout
+till
+times
+to
+t'
+2
+touching
+toward,
+under
+underneath
+unlike
+until
+unto
+up
+upon
+versus
+vs
+via
+vice
+vis-à-vis
+wanting
+with
+w/,
+c̄
+within
+w/i
+without
+'thout
+w/o
+abroad
+adrift
+aft
+afterward
+afterwards
+ahead
+apart
+ashore
+aside
+away
+back
+backward
+backwards
+beforehand
+downhill
+downstage
+downstairs
+downstream
+downward
+downwards
+downwind
+east
+eastward
+eastwards
+forth
+forward
+forwards
+heavenward
+heavenwards
+hence
+henceforth
+here
+hereby
+herein
+hereof
+hereto
+herewith
+home
+homeward
+homewards
+indoors
+inward
+inwards
+leftward
+leftwards
+north
+northeast
+northward
+northwards
+northwest
+now
+onward
+onwards
+outdoors
+outward
+outwards
+overboard
+overhead
+overland
+overseas
+rightward
+rightwards
+seaward
+seawards
+skyward
+skywards
+south
+southeast
+southward
+southwards
+southwest
+then
+thence
+thenceforth
+there
+thereby
+therein
+thereof
+thereto
+therewith
+together
+underfoot
+underground
+uphill
+upstage
+upstairs
+upstream
+upward
+upwards
+upwind
+west
+westward
+westwards
+when
+whence
+where
+whereby
+wherein
+whereto
+wherewith
+after
+although
+as
+at
+because
+before
+beside
+besides
+between
+by
+considering
+despite
+except
+for
+from
+given
+granted
+if
+into
+lest
+like
+notwithstanding
+now
+of
+on
+once
+provided
+providing
+save
+seeing
+since
+so
+supposing
+than
+though
+till
+to
+unless
+until
+upon
+when
+whenever
+where
+whereas
+wherever
+while
+whilst
+with
+without
+ago
+apart
+aside
+aslant
+away
+hence
+notwithstanding
+on
+over
+short
+through
+according to
+across from
+ahead of
+along with
+apart from
+as for
+as from
+as of
+as per
+as regards
+as to
+aside from
+away from
+back to
+because of
+counter to
+except for
+in between
+instead of
+near to
+next to
+opposite of
+out from
+out of
+outside of
+owing to
+pertaining to
+round about
+up against
+up to
+at the behest of
+at the expense of
+at the hands of
+at
+at variance with
+by dint of
+by means of
+by virtue of
+by way of
+for
+for lack of
+for/from want of
+in accordance with
+in addition to
+in case of
+in charge of
+in compliance with
+in conformity with
+in contact with
+in exchange for
+in favor of
+in front of
+in lieu of
+in
+in line with
+in place of
+in point of
+in quest of
+in relation to
+in/with regard to
+in/with respect to
+in return for
+in search of
+in spite of
+in step with
+in touch with
+in terms of
+in the name of
+in view of
+on account of
+on behalf of
+on
+on the part of
+on top of
+with a view to
+with the exception of
+à la
+as soon as
+as well as
+close to
+due to
+far from
+in case
+other than
+per pro
+prior to
+pursuant to
+rather than
+regardless of
+subsequent to
+such as
+abaft
+abating
+abeam
+ablow
+aboon
+abouts
+acrost
+adown
+a-eastell
+afore
+afornent
+afront
+afterhand
+again
+ahind
+ajax
+alength
+alongst
+aloof
+alow
+amell
+amidmost
+anear
+aneath
+anent
+anewst
+anunder
+askant
+asklent
+astern
+athwart
+atour
+atter
+atween
+atwixt
+a-weather
+a-west
+awestell
+ayond, ayont
+bating
+bedown
+be-east
+beforrow
+behither
+ben
+benorth
+besouth
+betwixt
+'twixt
+bewest
+bongre
+bout
+bove
+'cept
+contrair
+contrary
+cross
+dehors
+dot
+durante
+effore
+emong, emonges
+endlong, endlonges, endlongs
+enduring
+ensuing
+even-forth
+ex
+excepted
+extra
+fae
+forby
+fore
+fornent, fornenst
+foregain, foregains, foregainst
+forne
+forout, forouten
+forrow
+forth
+fro
+fromward, fromwards
+froward
+furth
+gain
+gainst
+gainward
+gin
+half-way, halfway
+hent
+inboard
+incontrair
+indurand
+inmid, inmiddes
+inter
+inthrough
+intil, intill
+inwith
+i'th'
+'long
+longs
+longst
+longways
+malgrado
+malgré
+mang
+maugre
+midmost
+mids
+midward
+midway
+'mong
+'mongst
+more
+moreover
+moyening
+natheless, nathless
+nearabout, nearbout
+nearby
+nearhand
+'neath
+nigh, anigh, anighst
+nigh-hand
+nobbut
+non-obstant
+notwithstand
+noughtwithstanding
+offa
+offen
+only
+or
+otherside
+outcept
+outen
+out-over
+outta
+out-taken
+out-taking
+out-through
+outwith
+overcross
+over-right
+overthorter
+overthwart
+overtop
+pan
+pass
+pon
+quoad
+reserved
+reserving
+sauf
+seen
+sen
+senza
+side
+sidelings
+sidelong
+sides
+sin
+sineth
+sith
+sithen
+sithence
+ter
+thorough
+thorter
+thwart
+thwart-over
+tiv
+touchant
+transverse
+traverse
+twel
+ultra
+umbe
+unneath
+upo’
+upside
+upsy, upsees
+uptill
+utouth
+wid
+withinside
+withoutside
+wiv
+ymong
+yond
+yonside
+aground
+bush
+hereat
+herefrom
+hereon
+hither
+thereat
+therefrom
+thereon
+thither
+whereat
+wherefrom
+whereof
+whereon
+whither
+yonder
+but
+withal
+at after
+down on
+ex relatione
+hard by
+inside of
+non obstante
+nigh by
+opposite to

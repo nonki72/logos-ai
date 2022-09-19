@@ -12,10 +12,16 @@ var _client = null;
 
 
 async function getDb() {
-	if (_client != null) return _client;
-	var url = "mongodb://localhost:27017/";
-  _client = await MongoClient.connect(url, connectOption).catch(err => { console.error(err); });
-	return _client;
+	try {
+		if (_client != null) return _client;
+		var url = "mongodb://localhost:27017/";
+		_client = await MongoClient.connect(url, connectOption).catch(err => {
+			console.error(err);
+		});
+		return _client;
+	} catch (error) {
+		console.error(error);
+	}
 }
 
 getDb();
@@ -175,17 +181,19 @@ async function readFreeIdentifierByRandomValue (cb) {
   return cb(res);
 }
 
-async function readFreeIdentifierValueByRandomValue (fntype, fnclas, cb) {
+async function readFreeIdentifierValueByRandomValue (fntype, fnmod, fnclas, cb) {
 	const match =
 		{$match:{
 			'type': 'free',
-			'argn': {$exists: false}
+			'argn': null //{$exists: false}
 		}};
-	if (fntype == 'AST') {
+	if (fnclas != undefined) {
 		match.$match.fntype = 'object';
+		match.$match.fnmod = fnmod;
 		match.$match.fnclas = fnclas;
 	} else {
 		if (fntype != undefined) match.$match.fntype = fntype;
+		if (fnmod != undefined) match.$match.fnmod = fnmod;
 		if (fnclas != undefined) match.$match.fnclas = fnclas;
 	}
 
@@ -197,7 +205,10 @@ async function readFreeIdentifierValueByRandomValue (fntype, fnclas, cb) {
 	try {
 		const db = client.db("logos");
 		let cursor = await db.collection('Diary').aggregate([match,sample]);
-    if (cursor.hasNext()) res = await cursor.next();
+    if (cursor.hasNext()) {
+		const res = await cursor.next();
+		return res;
+	}
   } catch(err) {
   	console.error(err);
   }

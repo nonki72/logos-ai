@@ -1,0 +1,19 @@
+---
+
+Noun: Noun
+Verb: Verb
+Adj: Adjective
+Adv: Adverb
+AdjSat: AdjectiveSatellite
+
+S: Sentence
+NP: NounPhrase
+Nom: Nominal
+VP: VerbPhrase
+PP: PrepositionalPhrase
+CP: ComplimenterPhrase
+
+Det: Determiner
+Pron: Pronoun
+Prep: Preposition
+C: Complementizer
