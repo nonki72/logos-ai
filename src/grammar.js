@@ -76,8 +76,11 @@ async function generatePOSTypeTree(POSTypeDefinitionList) {
             const basicPOSType = basicDictionary[POSTypeDefinitionAbbreviation];
             try {
                 const generatedPOS = await generateBasicPOS(basicPOSType);
+                if (generatedPOSTree.length > 0) generatedPOSTree.push(" ");
                 generatedPOSTree.push(generatedPOS);
             } catch (error) {
+                console.error(error);
+                if (generatedPOSTree.length > 0) generatedPOSTree.push(" ");
                 generatedPOSTree.push('(' + basicPOSType + ')');
             }
         } else if (POSTypeDefinitionAbbreviation in phrasesDictionary) {
@@ -87,8 +90,9 @@ async function generatePOSTypeTree(POSTypeDefinitionList) {
             // VP: VerbPhrase
             // PP: PrepositionalPhrase
             // CP: ComplimenterPhrase
-            const generatedPOSTree = await generatePOSTree(POSTypeDefinitionAbbreviation);
-            generatedPOSTree.push(generatedPOSTree);
+            const generatedPOSTreeTemp = await generatePOSTree(POSTypeDefinitionAbbreviation);
+            if (generatedPOSTree.length > 0) generatedPOSTree.push(" ");
+            generatedPOSTree.push(generatedPOSTreeTemp);
         } else {
             // Det: Determiner
             // Pron: Pronoun
@@ -98,6 +102,7 @@ async function generatePOSTypeTree(POSTypeDefinitionList) {
             const textPOSList = wordsListDictionary[textPOSType];
             const randomIndex = getRandomInt(0, textPOSList.length);
             const generatedPOS = textPOSList[randomIndex];
+            if (generatedPOSTree.length > 0) generatedPOSTree.push(" ");
             generatedPOSTree.push(generatedPOS);
         }
     }
@@ -130,6 +135,8 @@ function getRandomInt(min, max) {
 }
 
 const treeToString = (tree) => {
+    if (tree == undefined) return "(?)";
+    if (!Array.isArray(tree)) return "(?)";
     var string = '';
     for (const element of tree.values()) {
         if (Array.isArray(element)) {
@@ -137,7 +144,8 @@ const treeToString = (tree) => {
         } else if ((typeof element === 'string')) {
             string = string + element;
         } else {
-            throw new Error('element is not string or array (tree): ' + element);
+            console.error('element is not string or array (tree): ' + element);
+            string = string + "(?)";
         }
     }
     return string;
