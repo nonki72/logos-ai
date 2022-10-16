@@ -439,6 +439,21 @@ async function readFreeIdentifierByTypeAndRandomValue (fntype, fnclas, cb) {
   return cb(res);
 }
 
+async function readWordFrequency (word, cb) {
+	const query = {
+		'Word': word
+	};
+	var client = await getDb();
+	var res = null;
+	try {
+		const db = client.db("logos");
+		res = await db.collection('WordFreq').findOne(query);
+	} catch(err) {
+		console.error(err);
+	}
+	return cb(res);
+}
+
 async function readById (id, cb) {
 	let objId = (id instanceof ObjectID) ? id : new ObjectID(id);
 	const query = {
@@ -506,6 +521,32 @@ async function readModuleByPath(path, cb) {
 
 //                     ######### WRITE FUNCTIONS ############
 
+
+async function readOrCreateWordFrequency ( word, freq, cb ) {
+	const query = data;
+	var client = await getDb();
+	var res = null;
+	var data = {_id: new ObjectID(), 'Word': word, 'Frequency': freq};
+	try {
+		const db = client.db("logos");
+		res = await db.collection('WordFreq').findOne(query);
+		if (res) {
+			return cb(res);
+		}
+	} catch(err) {
+		console.error(err);
+	}
+
+	// if not found
+	try {
+		const db = client.db("logos");
+		res = await db.collection('WordFreq').insertOne(data);
+	} catch (err) {
+		console.error(err);
+	}
+
+	return cb(data);
+}
 
 async function readOrCreateAbstraction (name, definition2, cb) {
 	const query = {
@@ -845,10 +886,12 @@ module.exports = {
 	readByRandomValue: readByRandomValue,
 	readByAssociativeValue: readByAssociativeValue,
 	readFreeIdentifierByTypeAndRandomValue: readFreeIdentifierByTypeAndRandomValue,
+	readWordFrequency: readWordFrequency,
 	readById: readById,
 	readClassByNameAndModule: readClassByNameAndModule,
 	readModuleByName: readModuleByName,
 	readModuleByPath: readModuleByPath,
+	readOrCreateWordFrequency: readOrCreateWordFrequency,
 	readOrCreateAbstraction: readOrCreateAbstraction,
 	readOrCreateApplication: readOrCreateApplication,
 	readOrCreateFreeIdentifier: readOrCreateFreeIdentifier,

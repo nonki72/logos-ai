@@ -112,6 +112,39 @@ async function getRandomECAstId (astid) {
   return null;
 }
 
+async function getRandomByWordFreqency (astid) {
+  var myDb = await getMyDb();
+  try {
+    var count = await myDb.sql(
+        'select COUNT(*) from WordFreq'
+    ).execute();
+
+    var limit = count / 10;
+    var random = getRandomInt(0, limit);
+
+    // get a random equid for this astid
+    var res = await myDb.sql(
+        'select astid ' +
+        'from WordFreq ' +
+        'order by assv ' +
+        'limit ' + random + ' ' +
+        'offset ' + random
+    ).execute();
+    var recRaw = res.fetchOne();
+    if (recRaw == null) {
+      console.error('NO ASTID FOUND FOR RANDOM OFFSET: ' + random)
+      return null;
+    }
+    var astid = recRaw[0];
+  } catch (err) {
+    console.error(err);
+    return null;
+  } finally {
+    myDb.close();
+  }
+  return null;
+}
+
 
 async function getAssociativeValue(astid1, astid2) {
   var myDb = await getMyDb();
@@ -307,6 +340,12 @@ async function deleteECRecord(equid, astid) {
     myDb.close();
   }
   return true; // already gone, so .. success (idempotent)
+}
+
+function getRandomInt(min, max) {
+  min = Math.ceil(min);
+  max = Math.floor(max);
+  return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
 module.exports = {

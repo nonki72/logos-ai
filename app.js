@@ -26,6 +26,7 @@ app.use('/api/class', require('./api/class'));
 app.use('/api/module', require('./api/module'));
 app.use('/api/lambda', require('./api/lambda'));
 app.use('/api/ec', require('./api/ec'));
+app.use('/api/frequency', require('./api/frequency'));
 
 // Basic 404 handler
 app.use(function (req, res) {
