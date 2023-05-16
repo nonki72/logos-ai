@@ -32,6 +32,7 @@ router.post('/:wordName', function createWordFrequency (req, res, next) {
             if (word == null) {
                 return next({message: 'Could not create word frequency \'' + req.params.wordName});
             }
+            console.log(req.body);
             return res.status(200).json({"word": word});
         });
 });

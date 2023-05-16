@@ -523,10 +523,9 @@ async function readModuleByPath(path, cb) {
 
 
 async function readOrCreateWordFrequency ( word, freq, cb ) {
-	const query = data;
 	var client = await getDb();
 	var res = null;
-	var data = {_id: new ObjectID(), 'Word': word, 'Frequency': freq};
+	var query = {'Word': word};
 	try {
 		const db = client.db("logos");
 		res = await db.collection('WordFreq').findOne(query);
@@ -539,6 +538,7 @@ async function readOrCreateWordFrequency ( word, freq, cb ) {
 
 	// if not found
 	try {
+		var data = {'Word': word, 'Frequency': freq};
 		const db = client.db("logos");
 		res = await db.collection('WordFreq').insertOne(data);
 	} catch (err) {

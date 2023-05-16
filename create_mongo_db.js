@@ -42,6 +42,7 @@ async function setup() {
 	  } catch {}
 	  try {
 		  var freq = await db.createCollection('WordFreq');
+		  await freq.createIndex({'Word': 1});
 		  await freq.createIndex({'Frequency': 1});
 		  await freq.createIndex({'id': 1}, {unique: true});
 		  console.log("Collection WordFreq created!");
