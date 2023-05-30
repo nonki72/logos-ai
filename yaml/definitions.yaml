@@ -3,7 +3,7 @@
 Noun: Noun
 Verb: Verb
 Adj: Adjective
-Adv: Adverb
+#Adv: Adverb
 AdjSat: AdjectiveSatellite
 
 S: Sentence

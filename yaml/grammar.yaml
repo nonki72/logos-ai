@@ -23,9 +23,9 @@ Nom:
 -
   - Adj
   - Noun
--
-  - Adv
-  - Noun
+#-
+#  - Adv
+#  - Noun
 
 VP:
 - 
@@ -39,12 +39,12 @@ VP:
 -
   - Verb
   - CP
--
-  - Adv
-  - VP
--
-  - VP
-  - Adv
+#-
+#  - Adv
+#  - VP
+#-
+#  - VP
+#  - Adv
 
 PP:
 -

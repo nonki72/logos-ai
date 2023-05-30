@@ -119,6 +119,10 @@ async function generatePOSTree(POSAbbreviation) {
 
 async function generatePOS(POSAbbreviation) {
     const generatedPOSTree = await generatePOSTree(POSAbbreviation);
+    console.log(JSON.stringify(generatedPOSTree));
+    if (generatedPOSTree === undefined) {
+        console.error("Couldn't generate a: " + POSAbbreviation);
+    }
     const generatedPOS = treeToString(generatedPOSTree);
     return generatedPOS;
 }

@@ -441,7 +441,22 @@ async function readFreeIdentifierByTypeAndRandomValue (fntype, fnclas, cb) {
 
 async function readWordFrequency (word, cb) {
 	const query = {
-		'Word': word
+		'word': word
+	};
+	var client = await getDb();
+	var res = null;
+	try {
+		const db = client.db("logos");
+		res = await db.collection('WordFreq').findOne(query);
+	} catch(err) {
+		console.error(err);
+	}
+	return cb(res);
+}
+
+async function readWordFrequencyAtLeast (float, cb) {
+	const query = {
+		'frequency': {$gte: float}
 	};
 	var client = await getDb();
 	var res = null;
@@ -525,7 +540,7 @@ async function readModuleByPath(path, cb) {
 async function readOrCreateWordFrequency ( word, freq, cb ) {
 	var client = await getDb();
 	var res = null;
-	var query = {'Word': word};
+	var query = {'word': word};
 	try {
 		const db = client.db("logos");
 		res = await db.collection('WordFreq').findOne(query);
@@ -538,7 +553,7 @@ async function readOrCreateWordFrequency ( word, freq, cb ) {
 
 	// if not found
 	try {
-		var data = {'Word': word, 'Frequency': freq};
+		var data = {'word': word, 'frequency': freq};
 		const db = client.db("logos");
 		res = await db.collection('WordFreq').insertOne(data);
 	} catch (err) {
@@ -887,6 +902,7 @@ module.exports = {
 	readByAssociativeValue: readByAssociativeValue,
 	readFreeIdentifierByTypeAndRandomValue: readFreeIdentifierByTypeAndRandomValue,
 	readWordFrequency: readWordFrequency,
+	readWordFrequencyAtLeast: readWordFrequencyAtLeast,
 	readById: readById,
 	readClassByNameAndModule: readClassByNameAndModule,
 	readModuleByName: readModuleByName,

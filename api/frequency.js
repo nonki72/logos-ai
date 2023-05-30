@@ -23,6 +23,21 @@ router.get('/:wordName', function get (req, res, next) {
 });
 
 
+/**
+ * GET /api/frequency/atleast
+ *
+ * Retrieve a entity that is at least a frequency.
+ */
+router.get('/atleast/:frequency', function get (req, res, next) {
+    DataLib.readWordFrequencyAtLeast(req.params.frequency, (word) => {
+        if (word == null) {
+            return res.status(404).json({"message":"Word could not be found with frequency at least: " + req.params.frequency});
+        }
+        return res.status(200).json({"word": word});
+    });
+});
+
+
 /*
 request parameters:
   freq
