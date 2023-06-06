@@ -81,9 +81,9 @@ async function interact () {
     console.log(namedFreeIdentifier.fn + " id: " + namedFreeIdentifier.id);
 
     // find a random entry (using custom distribution)
-    async function getRandom() {
+    async function getRandom(sourceId) {
         return new Promise(async (resolve, reject) => {
-            await DataLib.readByRandomValue('free', (random) => {
+            await DataLib.readByAssociativeValue(sourceId, (random) => {
                 if (random == null) {
                     return reject(" no random found");
                 }
@@ -113,7 +113,7 @@ async function interact () {
         return setTimeout(interact, 0);
     }
 */
-    const random = await getRandom()
+    const random = await getRandom(namedFreeIdentifier.id)
         .catch((reason) => {console.error(reason); return null});
     if (random == null) {
         return setTimeout(interact, 0);
