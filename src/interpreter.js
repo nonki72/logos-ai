@@ -3,6 +3,8 @@ const DataLib = require('./datalib');
 const Sql = require('./sql');
 const FunctionParser = require('./functionparser.js');
 
+var headless = false;
+
 // determines whether the abstraction (function to call) is accepting one more
 // parameter, and the input given matches the expected type 
 const typecheck = (abstraction, input) => {
@@ -82,6 +84,13 @@ const applyAndAdjustAssociativeValue = async (data, input, callback) => {
 
 
 const loadAndExecuteFunction = (ast, cb) => {
+
+  if (headless && ast.value == "readlineInputLine") {
+    console.error("Skipping readlineInputLine...");
+    setTimeout(cb, 1, null);
+    return;
+  }
+
   FunctionParser.executeFunction(FunctionParser.loadStoredFunction(ast), ast.args, (output) => {
     // substitute the named function with its output
     if (ast.fntype != 'object') {
@@ -481,3 +490,4 @@ const substitute = (value, node, cb) => {
 
 exports.evaluate = evaluate;
 exports.combine = combine;
+exports.setHeadless = () => {headless = true};
