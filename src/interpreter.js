@@ -132,15 +132,17 @@ const combine = async (lastAst) => {
       const nextArgType = lastAst.argTypes[lastAst.args.length];
       console.log("*** C LASTAST:FN/ABS, FREE ***   NEXT ARG "+ 
         nextArgType[0] + ":" + nextArgType[1] + ":" + nextArgType[2]);
-      DataLib.readFreeIdentifierByTypeAndRandomValue(nextArgType[1], nextArgType[2], (input) => {
-        if (input == null) {
+      const nextArgFntype = nextArgType[1];
+      const nextArgFnclas = nextArgType[2];
+      DataLib.readFreeIdentifierByTypeAndRandomValue(nextArgFntype, nextArgFnclas, (input) => {
+        if (input == null || input == undefined) {
           setTimeout(combine, 1, null);
           return;
         }
 
         var inputAst = AST.cast(input);
-        if (inputAst == null) {
-          console.error("Unknown AST type: " + JSON.stringify(input,null,4));
+        if (inputAst == null || inputAst.fn == null) {
+          console.error("Unknown AST: " + JSON.stringify(input,null,4));
           setTimeout(combine, 1, lastAst);
           return;
         }
@@ -233,13 +235,17 @@ const combine = async (lastAst) => {
       console.log("*** C FN, NULL *** ");
       //get a pseudo-random free identifier function that takes args from diary as replacement for lastAst (first part)
       DataLib.readFreeIdentifierFnByRandomValue(undefined, undefined, (freeIdentifierFn) => {
-        if (freeIdentifierFn == null) {
+        if (freeIdentifierFn == null || freeIdentifierFn == undefined) {
           setTimeout(combine, 1, lastAst);
           return;
         }
         // got free identifier function
         var freeIdentifierFnAst = new AST.Identifier(freeIdentifierFn);
         console.log("********************* C1 ********************* " + freeIdentifierFnAst.fntype + ","+freeIdentifierFnAst.astid);
+        if (!freeIdentifierFn.fntype || freeIdentifierFn.fn == null || freeIdentifierFn.fn == undefined) {
+          setTimeout(combine, 1, lastAst);
+          return;
+        }
         setTimeout(combine, 1, freeIdentifierFnAst);
       });
 /*

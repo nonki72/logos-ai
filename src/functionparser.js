@@ -55,11 +55,18 @@ const contextClosure = function(str, argTypes, args, modules, promise, cb) {
 			  	+"\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 */
 	  		return cb(result)},
-	  	(err)=>{console.error(
-	  		     "!!!!!!!!!!ERROR!!!!!!!!!!\n"
-          +JSON.stringify(err,null,4)
-          +"\n!!!!!!!!!!!!!!!!!!!!!!!!!");
-		  return cb(null)})
+	  	(err)=>{
+			console.error(
+	  		     "!!!!!!!!!!EVAL ERROR!!!!!!!!!!\n"
+			+JSON.stringify(err,null,4)
+			+"\n!!!!!!!!!!!!!!!!!!!!!!!!!");
+
+		  	console.error(
+				 "!!!!!!!!!!!!!!EVAL'D CODE!!!!!!!!!!\n"
+			  +JSON.stringify(requires+str,null,4)
+			  +"\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+		  	
+			  return cb(null)})
   } else {
 /*
 	  console.log(

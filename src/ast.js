@@ -135,18 +135,18 @@ class Substitution {
 }
 
 class AlphaSubstitution extends Substitution {
-  constructor(def1, def2, invalid) {
-    super('alpha', def1, def2, invalid);
+  constructor(obj) {
+    super('alpha', obj.def1, obj.def2, obj.invalid);
   }
 }
 class BetaSubstitution extends Substitution {
-  constructor(def1, def2, invalid) {
-    super('beta', def1, def2, invalid);
+  constructor(obj) {
+    super('beta', obj.def1, obj.def2, obj.invalid);
   }
 }
 class EtaSubstitution extends Substitution {
-  constructor(def1, def2, invalid) {
-    super('eta', def1, def2, invalid);
+  constructor(obj) {
+    super('eta', obj.def1, obj.def2, obj.invalid);
   }
 }
 

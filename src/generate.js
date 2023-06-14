@@ -8,16 +8,40 @@ const twitterConfig = require('../keys/twitter.json');
 const client = new TwitterApi(twitterConfig);
 const rwClient = client.readWrite
 
-async function generateTweet() {
-    const generatedSentence = await Grammar.generateSentence();
+function sleep(ms) {
+    return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+    });
+}
 
-    try {
-        await rwClient.v2.tweet(generatedSentence);
-    } catch (e) {
-        console.error(e);
+async function generateTweet() {
+    // get tweet code from database (not hard coded i/o here, rely on sensei)
+    async function getFreeIdentifierByName (name) {
+        return new Promise((resolve, reject) => {
+            DataLib.readFreeIdentifierByName(name, (freeIdentifier) => {
+                if (freeIdentifier == null) {
+                    return reject("couldn't retrieve "+name+" from database");
+                }
+                return resolve(freeIdentifier);
+            });
+        });
     }
 
-    console.log("generated tweet: '" + generatedSentence + "'");
+    // use above code to read from database and convert to DAO objects
+    const tweetFreeIdentifier = await getFreeIdentifierByName("twitterTweet")
+        .catch((reason) => {console.error(reason); return null;});
+    if (tweetFreeIdentifier == null) {
+        return setTimeout(interact, 0);
+    }
+    const storedTweetFunction = FunctionParser.loadStoredFunction(tweetFreeIdentifier);
+
+    const generatedSentence = await Grammar.generateSentence();
+
+    FunctionParser.executeFunction(storedTweetFunction, [generatedSentence], async (tweetResult) => {
+        console.log("generated tweet: '" + generatedSentence + "'");
+    });
+
+    await sleep(5000);
 }
 
 exports.generateTweet = generateTweet;
