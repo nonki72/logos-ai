@@ -11,25 +11,27 @@ NP:
 - 
   - Nom
 
+#https://www.thoughtco.com/nominal-in-grammar-1691431
 Nom:
 -
-  - Noun
--
-  - Noun
-  - Nom
+  - Det
+  - VP
+  - NP
 -
   - Det
-  - Nom
+  - AP
+  - NP
 -
-  - Adj
-  - Noun
-#-
-#  - Adv
-#  - Noun
+  - Det
+  - Prep
+  - NP
 
 VP:
 - 
   - Verb
+#-
+#  - Adv
+#  - Verb
 -
   - Verb
   - NP
@@ -46,10 +48,10 @@ VP:
 #  - VP
 #  - Adv
 
+#https://www.britannica.com/dictionary/eb/qa/All-About-Prepositional-Phrases
 PP:
 -
   - Prep
--
   - NP
 
 CP:
@@ -57,3 +59,10 @@ CP:
   - C
 -
   - S
+
+AP:
+-
+  - Adj
+-
+  - Adj
+  - Adj

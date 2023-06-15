@@ -6,3 +6,5 @@ Nom: Nominal
 VP: VerbPhrase
 PP: PrepositionalPhrase
 CP: ComplimenterPhrase
+AP: AdjectivePhrase
+DP: DeterminerPhrase

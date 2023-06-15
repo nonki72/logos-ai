@@ -68,11 +68,7 @@ async function generatePOSTypeTree(POSTypeDefinitionList) {
     for (const POSTypeDefinitionAbbreviationIndex in POSTypeDefinitionList) {
         const POSTypeDefinitionAbbreviation = POSTypeDefinitionList[POSTypeDefinitionAbbreviationIndex];
         if (POSTypeDefinitionAbbreviation in basicDictionary) {
-            // Noun: Noun
-            // Verb: Verb
-            // Adj: Adjective
-            // Adv: Adverb
-            // AdjSat: AdjectiveSatellite
+            // see basic.yaml
             const basicPOSType = basicDictionary[POSTypeDefinitionAbbreviation];
             try {
                 const generatedPOS = await generateBasicPOS(basicPOSType);
@@ -84,20 +80,12 @@ async function generatePOSTypeTree(POSTypeDefinitionList) {
                 generatedPOSTree.push('(' + basicPOSType + ')');
             }
         } else if (POSTypeDefinitionAbbreviation in phrasesDictionary) {
-            // S: Sentence
-            // NP: NounPhrase
-            // Nom: Nominal
-            // VP: VerbPhrase
-            // PP: PrepositionalPhrase
-            // CP: ComplimenterPhrase
+            // see phrases.yaml
             const generatedPOSTreeTemp = await generatePOSTree(POSTypeDefinitionAbbreviation);
             if (generatedPOSTree.length > 0) generatedPOSTree.push(" ");
             generatedPOSTree.push(generatedPOSTreeTemp);
         } else {
-            // Det: Determiner
-            // Pron: Pronoun
-            // Prep: Preposition
-            // C: Complementizer
+            // see words.yaml
             const textPOSType = wordsDictionary[POSTypeDefinitionAbbreviation];
             const textPOSList = wordsListDictionary[textPOSType];
             const randomIndex = getRandomInt(0, textPOSList.length);
