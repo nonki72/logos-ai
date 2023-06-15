@@ -35,10 +35,12 @@ async function generateTweet() {
     }
     const storedTweetFunction = FunctionParser.loadStoredFunction(tweetFreeIdentifier);
 
-    const generatedSentence = await Grammar.generateSentence();
+    const generatedSentenceTree = await Grammar.generateSentence();
+    const generatedSentence = Grammar.treeToString(generatedSentenceTree);
+    console.log("generated tweet: " + generatedSentenceTree);
 
     FunctionParser.executeFunction(storedTweetFunction, [generatedSentence], async (tweetResult) => {
-        console.log("generated tweet: '" + generatedSentence + "'");
+        console.log("tweeted: '" + generatedSentence + "'");
     });
 
     await sleep(5000);

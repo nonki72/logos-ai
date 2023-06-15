@@ -139,8 +139,9 @@ function getRandomInt(min, max) {
 }
 
 const treeToString = (tree) => {
-    if (tree == undefined) return "(?)";
-    if (!Array.isArray(tree)) return "(?)";
+    if (!tree) return "(?)";
+    if (typeof tree == 'string') return tree;
+    if (!Array.isArray(tree)) return "(" + typeof tree + ")";
     var string = '';
     for (const element of tree.values()) {
         if (Array.isArray(element)) {
@@ -148,7 +149,7 @@ const treeToString = (tree) => {
         } else if ((typeof element === 'string')) {
             string = string + element;
         } else {
-            console.error('element is not string or array (tree): ' + element);
+            // element is not string or array (ie, tree)
             string = string + "(?)";
         }
     }
