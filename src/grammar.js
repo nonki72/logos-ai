@@ -46,15 +46,33 @@ function loadTextFileList(filePath) {
 
 // GENERATE FUCTIONS
 
+// look up in the frequency database first
+// check the diary (wordnet) for that word
+// make sure its the expected type (POS, part of speech)
+// if its not recusively call until one is found...
+// TODO: MERGE THESE DATABASES FIRST (IN SENSEI)
 async function generateBasicPOS(pos) {
     const promise = new Promise(async function (resolve, reject) {
         try {
-            const randomPOS = await DataLib.readFreeIdentifierValueByRandomValue('object', 'Grammar', pos);
-            if (randomPOS == null) {
-                return reject("No random POS found! pos: '" + pos + "'");
-            }
-            const word = randomPOS.fn.replace(/^\"/, '').replace(/\"$/, '');
-            return resolve(word);
+            const randomMinimumFrequency = Math.random()/100.0;
+            DataLib.readWordFrequencyAtLeast(randomMinimumFrequency, async (wordByFreqencyObj) => {
+                if (wordByFreqencyObj == null) {
+                    return reject("No word by frequency found! frequency >= '" + randomMinimumFrequency + "'");
+                }
+                const wordByFreqency = wordByFreqencyObj.word;
+//                const randomPOS = await DataLib.readFreeIdentifierValueByRandomValue('object', 'Grammar', pos);
+                DataLib.readFreeIdentifierByFn('"'+wordByFreqency+'"', (randomPOS) => {
+                    var word;
+                    if (randomPOS == null) {
+                        console.log("No wordnet entry found! word: '" + wordByFreqency + "', pos: '" + pos + "'");
+                        word = generateBasicPOS(pos);
+//                        return reject("No wordnet entry found! word: '" + wordByFreqency + "', pos: '" + pos + "'");
+                    } else {
+                        word = randomPOS.fn.replace(/^\"/, '').replace(/\"$/, '');
+                    }
+                    return resolve(word);
+                });
+            });
         } catch (error) {
             return reject(error);
         }
