@@ -1,3 +1,4 @@
+const Promise = require("bluebird");
 const AST = require('./ast');
 const DataLib = require('./datalib');
 const Sql = require('./sql');
@@ -83,11 +84,11 @@ const applyAndAdjustAssociativeValue = async (data, input, callback) => {
 }
 
 
-const loadAndExecuteFunction = (ast, cb) => {
+const loadAndExecuteFunction = (ast, fallback, cb) => {
 
   if (headless && ast.value == "readlineInputLine") {
     console.error("Skipping readlineInputLine...");
-    setTimeout(cb, 1, null);
+    setTimeout(fallback, 1, null);
     return;
   }
 
@@ -132,9 +133,10 @@ const combine = async (lastAst) => {
       const nextArgType = lastAst.argTypes[lastAst.args.length];
       console.log("*** C LASTAST:FN/ABS, FREE ***   NEXT ARG "+ 
         nextArgType[0] + ":" + nextArgType[1] + ":" + nextArgType[2]);
-      const nextArgFntype = nextArgType[1];
-      const nextArgFnclas = nextArgType[2];
-      DataLib.readFreeIdentifierByTypeAndRandomValue(nextArgFntype, nextArgFnclas, (input) => {
+      var nextArgFnType = nextArgType[1];
+      var nextArgFnMod = nextArgType[2];
+      var nextArgFnClas = nextArgType[3];
+      DataLib.readFreeIdentifierByTypeAndRandomValue(nextArgFnType, nextArgFnMod, nextArgFnClas, async (input) => {
         if (input == null || input == undefined) {
           setTimeout(combine, 1, null);
           return;
@@ -146,31 +148,41 @@ const combine = async (lastAst) => {
           setTimeout(combine, 1, lastAst);
           return;
         }
-        console.log("*** C1 *** MATCH -> FN : " + inputAst.type + ", " + inputAst.astid);
 
-        // evaluate the string stored at inputAst.fn
-        // it is treated as javascript code
-        // should be the inputAst.fntype/fnclas 
-        loadAndExecuteFunction(inputAst, (output) => {
-          // output is object or regular type
-          lastAst.args.push(output);
-          adjustAssociativeValue(lastAst.astid, inputAst.astid, (written)=>{
-            if (lastAst.args.length == lastAst.argCount) {
-              // got enough arg
-              evaluate(lastAst, (output) => {
-                if (output && 'id' in output && output.id == lastAst.id) return setTimeout(combine, 1, null); // got stuck in a loop
-                if (typeof output == 'object') {
-                  setTimeout(combine, 1, output);
-                } else {
-                  setTimeout(combine, 1, AST.cast(output));
-                }
-              });
-            } else {
-              // still need more arg
-              setTimeout(combine, 1, lastAst);
-            }
-          });
-        });  // <= CODE EXECUTION output or null
+        var output = null;
+        // is this a JS function?
+        if (inputAst.args != null && inputAst.args >= 0) {
+          console.log("*** C1 *** MATCH -> FN : " + inputAst.type + ", " + inputAst.astid);
+
+          // evaluate the string stored at inputAst.fn
+          // it is treated as javascript code
+          // should be the inputAst.fntype/fnclas 
+          output = await Promise.promisify(loadAndExecuteFunction(inputAst, combine));  // <= CODE EXECUTION output or null (could return promise)
+
+        } else {
+          // not a JS function
+          output = inputAst;
+        }
+
+        // output is object or regular type
+        if (output.fntype == 'object' && output.fnmod != 'Grammar') lastAst.args.push(output);
+        else lastAst.args.push(output.fn);
+        adjustAssociativeValue(lastAst.astid, inputAst.astid, (written)=>{
+          if (lastAst.args.length == lastAst.argCount) {
+            // got enough arg
+            evaluate(lastAst, (output) => {
+              if (output && Array.isArray(output) && 'id' in output && output.id == lastAst.id) return setTimeout(combine, 1, null); // got stuck in a loop
+              if (typeof output == 'object') {
+                setTimeout(combine, 1, output);
+              } else {
+                setTimeout(combine, 1, AST.cast(output));
+              }
+            });
+          } else {
+            // still need more arg
+            setTimeout(combine, 1, lastAst);
+          }
+        });
 
       });
     } else {
@@ -337,7 +349,7 @@ const evaluate = async (ast, cb) => {
           // has enough args, execute
           if (typeof ast.fn == 'string') {
             console.log("### III 1 A ###");
-            return loadAndExecuteFunction(ast, cb);  // <= CODE EXECUTION output result or null
+            return await loadAndExecuteFunction(ast, combine, cb);  // <= CODE EXECUTION output result or null
           } else {
             // fn is not code (a string)
             // it is a virtual function

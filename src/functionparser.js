@@ -36,14 +36,17 @@ const contextClosure = function(str, argTypes, args, modules, promise, cb) {
 			CTX.args[argName] = args[i];
 		}
 	}
-/*
+
   console.log("!!!!!!!!!!!!!!CODE EXECUTION!!!!!!!!!!!\n"
   	+requires+str
   	+"\n!!!!!!!!!!!CTX!!!!!!!!!!!!!!!\n"
   	+JSON.stringify(CTX,null,4)
   	+"\n!!!!!!!!!!!!!!RUNNING!!!!!!!!!!!!!");
-*/
+
   var output = eval(requires + str);            // <=== CODE EXECUTION
+
+  console.log("!!!!!!!!!!!!!!OUTPUT!!!!!!!!!!!\n"
+  	+output);
 
   if (promise == true) {
   	output.then(
@@ -60,13 +63,9 @@ const contextClosure = function(str, argTypes, args, modules, promise, cb) {
 	  		     "!!!!!!!!!!EVAL ERROR!!!!!!!!!!\n"
 			+JSON.stringify(err,null,4)
 			+"\n!!!!!!!!!!!!!!!!!!!!!!!!!");
-
-		  	console.error(
-				 "!!!!!!!!!!!!!!EVAL'D CODE!!!!!!!!!!\n"
-			  +JSON.stringify(requires+str,null,4)
-			  +"\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 		  	
-			  return cb(null)})
+			  return cb(null)}
+	);
   } else {
 /*
 	  console.log(
@@ -195,7 +194,7 @@ function executeFunction(storedFunction, args, cb) {
   		return cb(null);
   	}
   	checkArgs(storedFunction.argTypes, args, (err2) => {
-  		if (err) {
+  		if (err2) {
   			console.error("ExecuteFunction args error: " + err2  + JSON.stringify(storedFunction));
   			return cb(null);
   		}

@@ -14,7 +14,8 @@ class Abstraction extends Fragment {
   constructor(astid, param, body, bodyid) {
     super();
     this.type = 'abs';
-    this.fntype = 'AST';
+    this.fntype = 'object';
+    this.fnmod = "AST";
     this.fnclas = 'Abstraction';
     if (typeof astid === 'object') {
       var data = astid;
@@ -42,7 +43,8 @@ class Application extends Fragment {
   constructor(astid, lhs, lhsid, rhs, rhsid) {
     super();
     this.type = 'app';
-    this.fntype = 'AST';
+    this.fntype = 'object';
+    this.fnmod = "AST";
     this.fnclas = 'Application';
     if (typeof astid === 'object') {
       var data = astid;
