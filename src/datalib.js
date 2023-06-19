@@ -380,10 +380,10 @@ async function readByRandomValue (type, cb) {
   return cb(res);
 }
 
-async function readFreeIdentifierByTypeAndRandomValue (fntype, fnclas, cb) {
+async function readFreeIdentifierByTypeAndRandomValue (fntype, fnmod, fnclas, cb) {
 	var match1;
 	var match2;
-	if (fntype == 'AST') {
+	if (fnclas == 'AST') {
 		match1 = {$match:{
 				type: 'free',
 				fntype: 'object',
@@ -391,31 +391,40 @@ async function readFreeIdentifierByTypeAndRandomValue (fntype, fnclas, cb) {
 			}};
 
 		match2 = {$match:{
-					type: (fnclas == 'Abstraction') ? 'abs' : ((fnclas == 'Application') ? 'app' : 'free')
-				}};
-
-
+				type: (fnclas == 'Abstraction') ? 'abs' : ((fnclas == 'Application') ? 'app' : 'free')
+			}};
+	} else if (fntype == 'string' && Math.random() > 0.2) {
+		match1 = {$match:{
+				fntype: 'object',
+				fnmod: 'Grammar'
+			}};
+		match2 = {$match:{
+				fntype: 'string'
+			}};
 	} else {
 		match1 = {$match: {
 				'type': 'free',
 				'argn': 0 // readFreeIdentifierByTypeAndRandomValue is used to fill args, we would blow the stack if we allowed recursive args
 			}};
 		match2 = {$match:{
-					'type': 'free',
-					argn: null
-				}};
-
-	}
+				'type': 'free',
+				argn: null
+			}};
 
 		if (fntype != undefined) {
 			match1.$match.fntype = fntype;
 			match2.$match.fntype = fntype;
+		}
+		if (fnmod != undefined) {
+			match1.$match.fnmod = fnmod;
+			match2.$match.fnmod = fnmod;
 		}
 		if (fnclas != undefined) {
 			match1.$match.fnclas = fnclas;
 			match2.$match.fnclas = fnclas;
 		}
 
+	}
 
 	const sample = {$sample:{
 		size: 1
