@@ -54,18 +54,18 @@ function loadTextFileList(filePath) {
 async function generateBasicPOS(pos) {
     const promise = new Promise(async function (resolve, reject) {
         try {
-            const randomMinimumFrequency = Math.random()/100.0;
+            const randomMinimumFrequency = Math.random()/10000.0;
             DataLib.readWordFrequencyAtLeast(randomMinimumFrequency, async (wordByFreqencyObj) => {
                 if (wordByFreqencyObj == null) {
                     return reject("No word by frequency found! frequency >= '" + randomMinimumFrequency + "'");
                 }
                 const wordByFreqency = wordByFreqencyObj.word;
 //                const randomPOS = await DataLib.readFreeIdentifierValueByRandomValue('object', 'Grammar', pos);
-                DataLib.readFreeIdentifierByFn('"'+wordByFreqency+'"', (randomPOS) => {
+                DataLib.readFreeIdentifierByFn('"'+wordByFreqency+'"', async (randomPOS) => {
                     var word;
                     if (randomPOS == null) {
                         console.log("No wordnet entry found! word: '" + wordByFreqency + "', pos: '" + pos + "'");
-                        word = generateBasicPOS(pos);
+                        word = await generateBasicPOS(pos);
 //                        return reject("No wordnet entry found! word: '" + wordByFreqency + "', pos: '" + pos + "'");
                     } else {
                         word = randomPOS.fn.replace(/^\"/, '').replace(/\"$/, '');
