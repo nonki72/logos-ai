@@ -1,6 +1,6 @@
 'use strict';
 var mongo = require('mongodb');
-var spawn = require('child_process').spawn;
+const mongoConfig = require('../keys/mongo.json');
 var MongoClient = mongo.MongoClient;
 var ObjectID = mongo.ObjectID;
 const Sql = require('./sql');
@@ -15,7 +15,7 @@ var _client = null;
 async function getDb() {
 	try {
 		if (_client != null) return _client;
-		var url = "mongodb://localhost:27017/";
+		var url = mongoConfig.url;
 		_client = await MongoClient.connect(url, connectOption).catch(err => {
 			console.error(err);
 		});
@@ -457,6 +457,20 @@ async function readWordFrequency (word, cb) {
 	try {
 		const db = client.db("logos");
 		res = await db.collection('WordFreq').findOne(query);
+	} catch(err) {
+		console.error(err);
+	}
+	return cb(res);
+}
+
+async function readWordFrequencyAll (cb) {
+	const query = {
+	};
+	var client = await getDb();
+	var res = null;
+	try {
+		const db = client.db("logos");
+		res = await db.collection('WordFreq').find(query);
 	} catch(err) {
 		console.error(err);
 	}

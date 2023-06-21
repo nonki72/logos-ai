@@ -1,5 +1,6 @@
 var MongoClient = require('mongodb').MongoClient;
-var url = "mongodb://localhost:27017/";
+const mongoConfig = require('./keys/mongo.json');
+var url = mongoConfig.url;
 
 const connectOption = {
     useNewUrlParser: true,

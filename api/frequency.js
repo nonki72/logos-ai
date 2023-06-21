@@ -16,9 +16,23 @@ var router = express.Router();
 router.get('/:wordName', function get (req, res, next) {
     DataLib.readWordFrequency(req.params.wordName, (word) => {
         if (word == null) {
-            return res.status(404).json({"message":"Word could not be found: " + req.params.wordName});
+            return res.status(404).json({"message":"Word frequency could not be found: " + req.params.wordName});
         }
         return res.status(200).json({"word": word});
+    });
+});
+
+/**
+ * GET /api/frequency/all
+ *
+ * Retrieve all entities.
+ */
+router.get('/:wordName', function get (req, res, next) {
+    DataLib.readWordFrequencyAll((words) => {
+        if (words == null) {
+            return res.status(404).json({"message":"Words could not be found in wordfreq db"});
+        }
+        return res.status(200).json({"words": words.cursor()});
     });
 });
 

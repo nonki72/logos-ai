@@ -2,4 +2,4 @@ node_modules
 *.log
 *.config.json
 env.sh
-keys/twitter.json
+keys/*.json
