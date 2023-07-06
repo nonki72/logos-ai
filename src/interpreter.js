@@ -157,7 +157,10 @@ const combine = async (lastAst) => {
           // evaluate the string stored at inputAst.fn
           // it is treated as javascript code
           // should be the inputAst.fntype/fnclas 
-          output = await Promise.promisify(loadAndExecuteFunction(inputAst, combine));  // <= CODE EXECUTION output or null (could return promise)
+          var res = loadAndExecuteFunction(inputAst, combine);  // <= CODE EXECUTION output or null (could return promise)
+          var output = res;
+          if (output == undefined) return setTimeout(combine, 1, null);
+          if (typeof output == 'function') output = await Promise.promisify(output);
 
         } else {
           // not a JS function
