@@ -46,19 +46,28 @@ async function insertECRecord (astid, equid, assv) {
   return null;
 }
 
-// TODO: add fields type argn fntype fnmod fnclas
+// TODO: add fields type argn fnmod
 
-async function getRandomECAstId (astid) {
+async function getRandomECAstId (astid, fntype, fnclas) {
   var myDb = await getMyDb();
   try {
     // get a random equid for this astid
-    var res = await myDb.sql(
+    var query =
       'select equid ' +
       'from EC ' +
-      'where astid=0x' + astid + ' ' +
-      'order by rand() ' +
-      'limit 1'
-    ).execute();
+      'where astid=0x' + astid + ' ';
+      
+      if (fntype != null) {
+        query = query + 'and fntype=' + fntype + ' ';
+      }
+      if (fnclas != null) {
+        query = query + 'and fnclas=' + fnclas + ' ';
+      }
+
+      query = query + 'order by rand() ' +
+      'limit 1';
+      
+    var res = await myDb.sql(query).execute();
     var recRaw = res.fetchOne();
     if (recRaw == null) {
       console.log('NO EQUIDS FOUND FOR ASTID '+astid)
@@ -349,6 +358,7 @@ function getRandomInt(min, max) {
 }
 
 module.exports = {
+  bin2hex: bin2hex,
   insertECRecord: insertECRecord,
   getRandomECAstId: getRandomECAstId,
   getAssociativeValue: getAssociativeValue,
