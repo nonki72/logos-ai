@@ -91,6 +91,11 @@ const loadAndExecuteFunction = (ast, fallback, cb) => {
     setTimeout(fallback, 1, null);
     return;
   }
+  if (headless && ast.value == "twitterTweet") {
+    console.error("Skipping twitterTweet...");
+    setTimeout(fallback, 1, null);
+    return;
+  }
 
   FunctionParser.executeFunction(FunctionParser.loadStoredFunction(ast), ast.args, (output) => {
     // substitute the named function with its output

@@ -76,7 +76,7 @@ async function interact () {
 
     // get the input from prompt
     async function getFreeIdentifierByInput() {
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             FunctionParser.executeFunction(storedInputFunction, null, async (inputResult) => {
 
                 // check if a sentence, need to select topic!
@@ -86,18 +86,35 @@ async function interact () {
                 if (inputSplit.length > 1) {
                     debugger;
                     // use NLP Cloud to find key words
-                    var keyWordsArray = await FunctionParser.executeFunction(keyWordFinderFunction, [inputSplit]);
+
+
+
+
+                    async function executeFunctionAsync (fn, args) {
+                        return new Promise((resolve, reject) => {
+                            try {
+                                FunctionParser.executeFunction(fn, args, (result) => {
+                                    return resolve(result);
+                                });
+                            } catch (e) {
+                                return reject(e);
+                            }
+                        });
+                     }
+
+
+                    var keyWordsArray = await executeFunctionAsync(keyWordFinderFunction, [inputResult]);
                     // select a key word (topic) at random
                     debugger;
                     console.log("KEYWORDSARRAY:"+keyWordsArray);
-                    word = await FunctionParser.executeFunction(storedSelectFunction, [keyWordsArray]);
+                    word = await executeFunctionAsync(storedSelectFunction, [keyWordsArray]);
                     debugger;
                 }
 debugger;
                 // find the matching entry in the database (like a wordnet word)
                 await DataLib.readFreeIdentifierByFn('"' + word + '"', (namedFreeIdentifier) => {
                     if (namedFreeIdentifier == null) {
-                        return reject(inputResult + " not found");
+                        return reject(word + " not found");
                     }
                     return resolve(namedFreeIdentifier);
                 });

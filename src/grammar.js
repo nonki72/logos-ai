@@ -54,7 +54,7 @@ function loadTextFileList(filePath) {
 async function generateBasicPOS(pos) {
     const promise = new Promise(async function (resolve, reject) {
         try {
-            const randomMinimumFrequency = Math.random()/10000.0;
+            const randomMinimumFrequency = Math.random()/100.0;
             DataLib.readWordFrequencyAtLeast(randomMinimumFrequency, async (wordByFreqencyObj) => {
                 if (wordByFreqencyObj == null) {
                     return reject("No word by frequency found! frequency >= '" + randomMinimumFrequency + "'");

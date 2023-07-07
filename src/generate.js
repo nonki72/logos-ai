@@ -33,15 +33,15 @@ async function generateTweet() {
     if (tweetFreeIdentifier == null) {
         return setTimeout(interact, 0);
     }
-    const storedTweetFunction = FunctionParser.loadStoredFunction(tweetFreeIdentifier);
+//    const storedTweetFunction = FunctionParser.loadStoredFunction(tweetFreeIdentifier);
 
     const generatedSentenceTree = await Grammar.generateSentence();
     const generatedSentence = Grammar.treeToString(generatedSentenceTree);
     console.log("generated tweet: " + generatedSentenceTree);
 
-    FunctionParser.executeFunction(storedTweetFunction, [generatedSentence], async (tweetResult) => {
-        console.log("tweeted: '" + generatedSentence + "'");
-    });
+//    FunctionParser.executeFunction(storedTweetFunction, [generatedSentence], async (tweetResult) => {
+//        console.log("tweeted: '" + generatedSentence + "'");
+//    });
 
     await sleep(5000);
 }
