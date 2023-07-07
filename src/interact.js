@@ -17,22 +17,39 @@ async function interact () {
             });
         });
      }
-
+     
      // use above code to read from database and convert to DAO objects
     const inputFreeIdentifier = await getFreeIdentifierByName("readlineInputLine")
-        .catch((reason) => {console.error(reason); return null;});
+        .catch((reason) => {throw Error(reason)});
     if (inputFreeIdentifier == null) {
         return setTimeout(interact, 0);
     }
     const storedInputFunction = FunctionParser.loadStoredFunction(inputFreeIdentifier);
 
     const outputFreeIdentifier = await getFreeIdentifierByName("readlineOutputLine")
-        .catch((reason) => {console.error(reason); return null});
+        .catch((reason) => {throw Error(reason)});
     if (outputFreeIdentifier == null) {
         return setTimeout(interact, 0);
     }
     const storedOutputFunction = FunctionParser.loadStoredFunction(outputFreeIdentifier);
 
+
+
+    const selectTopicIdentifier = await getFreeIdentifierByName("SelectTopic")
+        .catch((reason) => {throw Error(reason)});
+    if (selectTopicIdentifier == null) {
+        return setTimeout(interact, 0);
+    }
+    const storedSelectFunction = FunctionParser.loadStoredFunction(selectTopicIdentifier);
+
+    const keyWordFinderIdentifier = await getFreeIdentifierByName("KeyWordFinder")
+        .catch((reason) => {throw Error(reason)});
+    if (keyWordFinderIdentifier == null) {
+        return setTimeout(interact, 0);
+    }
+    const keyWordFinderFunction = FunctionParser.loadStoredFunction(keyWordFinderIdentifier);
+
+    
     // vv not required below
 /*
     // fail-safe check the loaded function DAOs
@@ -61,8 +78,24 @@ async function interact () {
     async function getFreeIdentifierByInput() {
         return new Promise((resolve, reject) => {
             FunctionParser.executeFunction(storedInputFunction, null, async (inputResult) => {
+
+                // check if a sentence, need to select topic!
+
+                inputSplit = inputResult.split(" ");
+                var word = inputResult;
+                if (inputSplit.length > 1) {
+                    debugger;
+                    // use NLP Cloud to find key words
+                    var keyWordsArray = await FunctionParser.executeFunction(keyWordFinderFunction, [inputSplit]);
+                    // select a key word (topic) at random
+                    debugger;
+                    console.log("KEYWORDSARRAY:"+keyWordsArray);
+                    word = await FunctionParser.executeFunction(storedSelectFunction, [keyWordsArray]);
+                    debugger;
+                }
+debugger;
                 // find the matching entry in the database (like a wordnet word)
-                await DataLib.readFreeIdentifierByFn('"' + inputResult + '"', (namedFreeIdentifier) => {
+                await DataLib.readFreeIdentifierByFn('"' + word + '"', (namedFreeIdentifier) => {
                     if (namedFreeIdentifier == null) {
                         return reject(inputResult + " not found");
                     }
@@ -79,7 +112,7 @@ async function interact () {
         return setTimeout(interact, 0);
     }
     console.log(namedFreeIdentifier.fn + " id: " + namedFreeIdentifier.id);
-
+debugger;
     // find a random entry (using custom distribution)
     async function getRandom(sourceId) {
         return new Promise(async (resolve, reject) => {
@@ -91,7 +124,7 @@ async function interact () {
             });
         });
     }
-
+debugger;
     var namedFreeIdentifierId = namedFreeIdentifier.id;
     if (namedFreeIdentifierId.length != 32) {
         // is a mongo ObjectId

@@ -217,7 +217,8 @@ function executeFunction(storedFunction, args, cb) {
 }
 
 function checkClass(testObject, moduleName, className, cb) {
-	if (testObject == null || typeof testObject != 'object' || className == null) return cb(null);
+  if (testObject == null || typeof testObject != 'object' || className == null) return cb(null);
+  if (!moduleName || moduleName == 'undefined') moduleName = 'JS';
   DataLib.readClassByNameAndModule(className, moduleName, (klass) => {
   	if (klass == null) {
   		return cb(`class  '${moduleName}.${className}' is not found in the database`);
@@ -249,8 +250,8 @@ function checkClass(testObject, moduleName, className, cb) {
 function checkArgs(argTypes, args, cb) {
 	if (!Array.isArray(argTypes)) {
 		if (!Array.isArray(args)) {
-		  return cb(null);
-	  }
+			return cb(null);
+		}
 		if (args.length > 0) {
 			return cb("More args than argTypes");
 		}
