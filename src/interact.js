@@ -83,7 +83,7 @@ async function interact () {
     // find a random entry (using custom distribution)
     async function getRandom(sourceId) {
         return new Promise(async (resolve, reject) => {
-            await DataLib.readByAssociativeValue(sourceId, 'object', 'Grammar', (random) => {
+            await DataLib.readByAssociativeValue(sourceId, (random) => {
                 if (random == null) {
                     return reject(" no random found");
                 }
@@ -98,34 +98,25 @@ async function interact () {
         namedFreeIdentifierId = namedFreeIdentifierId.toString();
     }
 
-    // find a random entry (using custom distribution)
-    // by the free identifier's equivalence class (lookup eq class by astid first)
-    async function getRandomByEquivalenceClass(namedFreeIdentifierId) {
-        return new Promise(async (resolve, reject) => {
-            const randomAssociationId = await Sql.getRandomECAstId(namedFreeIdentifierId);
-            if (randomAssociationId == null) {
-                return reject(namedFreeIdentifier.fn + " no assv found");
-            }
-            await DataLib.readById(randomAssociationId, (randomAssociation) => {
-                return resolve(randomAssociation);
-            });
-        });
-    }
-/*
-    // use ec (sql) db to find a random-by-associative-value entry
-    const randomAssociation = await getRandomByEquivalenceClass(namedFreeIdentifier)
+    var randomAssociation = await getRandom(namedFreeIdentifierId)
         .catch((reason) => {console.error(reason); return null});
-    if (randomAssociation == null) {
+    if (randomAssociation == null || randomAssociation.fnmod != 'Grammar') {
+        var i = 0;
+        while (i < 50 && (randomAssociation == null || randomAssociation.fnmod != 'Grammar')) {
+            // nothing found, get a completely random word
+            randomAssociation = await getRandom(namedFreeIdentifierId)
+              .catch((reason) => {console.error(reason); return null});
+            i++;
+        }
+    }
+
+    console.log("randomassociation:"+JSON.stringify(randomAssociation," ",4));
+
+
+    if (randomAssociation == null  || randomAssociation.fnmod != 'Grammar') {
+        console.error("Couldn't find any word!");
         return setTimeout(interact, 0);
     }
-*/
-    var randomAssociation = await getRandom(namedFreeIdentifier.id)
-        .catch((reason) => {console.error(reason); return null});
-    if (randomAssociation == null || randomAssociation.fnclas != 'Grammar') {
-        // nothing found, get a completely random word
-        randomAssociation = await getRandomByEquivalenceClass(namedFreeIdentifierId);
-    }
-    console.log("randomassociation:"+JSON.stringify(randomAssociation," ",4));
 
     var random = JSON.stringify(randomAssociation.fn,null,4);
 

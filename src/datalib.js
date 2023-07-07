@@ -49,7 +49,7 @@ async function readByEquivalenceClass (id) {
   return cb(res);
 }
 
-async function readByAssociativeValue(sourceId, fntype, fnclas, cb) {
+async function readByAssociativeValue(sourceId, cb) {
 	var associationId = await Sql.getRandomECAstId(sourceId);
 	if (associationId) {
 		return readById(associationId, (entity) => {

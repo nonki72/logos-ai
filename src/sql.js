@@ -46,25 +46,17 @@ async function insertECRecord (astid, equid, assv) {
   return null;
 }
 
-// TODO: add fields type argn fnmod
+// TODO: add fields type argn fnmod fntype fnclas
 
-async function getRandomECAstId (astid, fntype, fnclas) {
+async function getRandomECAstId (astid) {
   var myDb = await getMyDb();
   try {
     // get a random equid for this astid
     var query =
       'select equid ' +
       'from EC ' +
-      'where astid=0x' + astid + ' ';
-      
-      if (fntype != null) {
-        query = query + 'and fntype=' + fntype + ' ';
-      }
-      if (fnclas != null) {
-        query = query + 'and fnclas=' + fnclas + ' ';
-      }
-
-      query = query + 'order by rand() ' +
+      'where astid=0x' + astid + ' ' +
+      'order by rand() ' +
       'limit 1';
       
     var res = await myDb.sql(query).execute();
