@@ -7,6 +7,7 @@ const  {TwitterApi} =  require('twitter-api-v2');
 const twitterConfig = require('../keys/twitter.json');
 const client = new TwitterApi(twitterConfig);
 const rwClient = client.readWrite
+const yesno = require('yesno'); 
 
 function sleep(ms) {
     return new Promise((resolve) => {
@@ -33,17 +34,22 @@ async function generateTweet() {
     if (tweetFreeIdentifier == null) {
         return setTimeout(interact, 0);
     }
-//    const storedTweetFunction = FunctionParser.loadStoredFunction(tweetFreeIdentifier);
+   const storedTweetFunction = FunctionParser.loadStoredFunction(tweetFreeIdentifier);
 
     const generatedSentenceTree = await Grammar.generateSentence();
     const generatedSentence = Grammar.treeToString(generatedSentenceTree);
     console.log("generated tweet: " + generatedSentenceTree);
 
-//    FunctionParser.executeFunction(storedTweetFunction, [generatedSentence], async (tweetResult) => {
-//        console.log("tweeted: '" + generatedSentence + "'");
-//    });
 
-    await sleep(5000);
+    const ok = await yesno({
+        question: 'Would you like to tweet this?'
+    });
+
+    if (ok) {
+        var tweetResult = await FunctionParser.executeFunction(storedTweetFunction, [generatedSentence]);
+        console.log("tweeted: '" + generatedSentence + "'");
+    }
+
 }
 
 exports.generateTweet = generateTweet;
