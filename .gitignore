@@ -1,5 +1,5 @@
 node_modules
 *.log
-*.config.json
-env.sh
+./*.config.json
+./env.sh
 keys/*.json
