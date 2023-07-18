@@ -144,6 +144,10 @@ async function interact (inputResult,  outputFunction) {
         console.log("totallyrandomassociation:"+JSON.stringify(randomAssociation," ",4));
     }
 
+    if (randomAssociation == null) {
+        return await outputFunction("Totally failed.");
+    }
+
     var random = JSON.stringify(randomAssociation.fn,null,4);
 
     // output the random associative entry
