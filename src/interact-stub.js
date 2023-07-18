@@ -1,7 +1,7 @@
-const DataLib = require('./datalib');
-const Sql = require('./sql');
-const FunctionParser = require('./functionparser');
-const F = require('./function');
+import DataLib from '../node_modules/logos-ai/src/datalib';
+import Sql from '../node_modules/logos-ai/src/sql';
+import FunctionParser from '../node_modules/logos-ai/src/functionparser.js';
+import F from '../node_modules/logos-ai/src/function';
 
 // get input from user prompt, output highest association
 async function interact (inputResult,  outputFunction) {
