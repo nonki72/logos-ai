@@ -7,7 +7,9 @@ const Sql = require('./sql');
 
 const connectOption = {
     useNewUrlParser: true,
-    useUnifiedTopology: true
+    useUnifiedTopology: true,
+	connectTimeoutMS: 50000,
+	serverSelectionTimeoutMS: 50000
 }
 var _client = null;
 
