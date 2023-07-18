@@ -60,7 +60,7 @@ async function interact (inputResult,  outputFunction) {
                             return reject(e);
                         }
                     });
-                    }
+                }
 
 
                 var keyWordsArray = await executeFunctionAsync(keyWordFinderFunction, [inputResult]);
@@ -129,8 +129,19 @@ async function interact (inputResult,  outputFunction) {
 
 
     if (randomAssociation == null  || randomAssociation.fnmod != 'Grammar') {
-        console.error("Couldn't find any word!");
-        await outputFunction("Nothing");
+        async function getTotallyRandomAssociation () {
+            return new Promise((resolve, reject) => {
+                try {
+                    DataLib.readFreeIdentifierByTypeAndRandomValue('free', 'Grammar', null, (ass) => {
+                        return resolve(ass);
+                    });
+                } catch (e) {
+                    return reject(e);
+                }
+            });
+        }
+        randomAssociation = await getTotallyRandomAssociation();
+        console.log("totallyrandomassociation:"+JSON.stringify(randomAssociation," ",4));
     }
 
     var random = JSON.stringify(randomAssociation.fn,null,4);
