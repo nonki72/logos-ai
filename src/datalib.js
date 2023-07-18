@@ -908,35 +908,32 @@ async function update (data, cb) {
   return cb(res);
 }
 
-
-module.exports = {
-	readByEquivalenceClass: readByEquivalenceClass,
-	readByRandomValueAndType: readByRandomValueAndType,
-	readApplicatorByRandomValue: readApplicatorByRandomValue,
-	readAbstractionByRandomValue: readAbstractionByRandomValue,
- 	readFreeIdentifierByRandomValue: readFreeIdentifierByRandomValue,
- 	readFreeIdentifierFnByRandomValue: readFreeIdentifierFnByRandomValue,
- 	readFreeIdentifierValueByRandomValue: readFreeIdentifierValueByRandomValue,
-	readFreeIdentifierFnThatTakesArgsByRandomValue: readFreeIdentifierFnThatTakesArgsByRandomValue,
-	readFreeIdentifierFnThatTakesFirstArgOfTypeByRandomValue: readFreeIdentifierFnThatTakesFirstArgOfTypeByRandomValue,
-	readFreeIdentifierByName: readFreeIdentifierByName,
-	readFreeIdentifierByFn: readFreeIdentifierByFn,
-	readByRandomValue: readByRandomValue,
-	readByAssociativeValue: readByAssociativeValue,
-	readFreeIdentifierByTypeAndRandomValue: readFreeIdentifierByTypeAndRandomValue,
-	readWordFrequency: readWordFrequency,
-	readWordFrequencyAtLeast: readWordFrequencyAtLeast,
-	readById: readById,
-	readClassByNameAndModule: readClassByNameAndModule,
-	readModuleByName: readModuleByName,
-	readModuleByPath: readModuleByPath,
-	readOrCreateWordFrequency: readOrCreateWordFrequency,
-	readOrCreateAbstraction: readOrCreateAbstraction,
-	readOrCreateApplication: readOrCreateApplication,
-	readOrCreateFreeIdentifier: readOrCreateFreeIdentifier,
-	readOrCreateFreeIdentifierFunction: readOrCreateFreeIdentifierFunction,
-	readOrCreateSubstitution: readOrCreateSubstitution,
-	readOrCreateClass: readOrCreateClass,
-	readOrCreateModule: readOrCreateModule,
-	update: update,
-};
+exports.readByEquivalenceClass = readByEquivalenceClass;
+exports.readByRandomValueAndType = readByRandomValueAndType;
+exports.readApplicatorByRandomValue = readApplicatorByRandomValue;
+exports.readAbstractionByRandomValue = readAbstractionByRandomValue;
+exports.readFreeIdentifierByRandomValue = readFreeIdentifierByRandomValue;
+exports.readFreeIdentifierFnByRandomValue = readFreeIdentifierFnByRandomValue;
+exports.readFreeIdentifierValueByRandomValue = readFreeIdentifierValueByRandomValue;
+exports.readFreeIdentifierFnThatTakesArgsByRandomValue = readFreeIdentifierFnThatTakesArgsByRandomValue;
+exports.readFreeIdentifierFnThatTakesFirstArgOfTypeByRandomValue = readFreeIdentifierFnThatTakesFirstArgOfTypeByRandomValue;
+exports.readFreeIdentifierByName = readFreeIdentifierByName;
+exports.readFreeIdentifierByFn = readFreeIdentifierByFn;
+exports.readByRandomValue = readByRandomValue;
+exports.readByAssociativeValue = readByAssociativeValue;
+exports.readFreeIdentifierByTypeAndRandomValue = readFreeIdentifierByTypeAndRandomValue;
+exports.readWordFrequency = readWordFrequency;
+exports.readWordFrequencyAtLeast = readWordFrequencyAtLeast;
+exports.readById = readById;
+exports.readClassByNameAndModule = readClassByNameAndModule;
+exports.readModuleByName = readModuleByName;
+exports.readModuleByPath = readModuleByPath;
+exports.readOrCreateWordFrequency = readOrCreateWordFrequency;
+exports.readOrCreateAbstraction = readOrCreateAbstraction;
+exports.readOrCreateApplication = readOrCreateApplication;
+exports.readOrCreateFreeIdentifier = readOrCreateFreeIdentifier;
+exports.readOrCreateFreeIdentifierFunction = readOrCreateFreeIdentifierFunction;
+exports.readOrCreateSubstitution = readOrCreateSubstitution;
+exports.readOrCreateClass = readOrCreateClass;
+exports.readOrCreateModule = readOrCreateModule;
+exports.update = update;

@@ -1,10 +1,10 @@
-const DataLib = require('./datalib');
-const Sql = require('./sql');
-const FunctionParser = require('./functionparser.js');
-const F = require('./function');
+import DataLib from '../node_modules/logos-ai/src/datalib';
+import Sql from '../node_modules/logos-ai/src/sql';
+import FunctionParser from '../node_modules/logos-ai/src/functionparser.js';
+import F from '../node_modules/logos-ai/src/function';
 
 // get input from user prompt, output highest association
-async function interact () {
+async function interact (inputFunction,  outputFunction) {
 
      // get readline code from database (not hard coded i/o here, rely on sensei)
      async function getFreeIdentifierByName (name) {
@@ -18,22 +18,6 @@ async function interact () {
         });
      }
      
-     // use above code to read from database and convert to DAO objects
-    const inputFreeIdentifier = await getFreeIdentifierByName("readlineInputLine")
-        .catch((reason) => {throw Error(reason)});
-    if (inputFreeIdentifier == null) {
-        return setTimeout(interact, 0);
-    }
-    const storedInputFunction = FunctionParser.loadStoredFunction(inputFreeIdentifier);
-
-    const outputFreeIdentifier = await getFreeIdentifierByName("readlineOutputLine")
-        .catch((reason) => {throw Error(reason)});
-    if (outputFreeIdentifier == null) {
-        return setTimeout(interact, 0);
-    }
-    const storedOutputFunction = FunctionParser.loadStoredFunction(outputFreeIdentifier);
-
-
 
     const selectTopicIdentifier = await getFreeIdentifierByName("SelectTopic")
         .catch((reason) => {throw Error(reason)});
@@ -50,38 +34,16 @@ async function interact () {
     const keyWordFinderFunction = FunctionParser.loadStoredFunction(keyWordFinderIdentifier);
 
     
-    // vv not required below
-/*
-    // fail-safe check the loaded function DAOs
-    async function parseIoFunctions () {
-        return new Promise((resolve, reject) => {
-            FunctionParser.parseFunction(storedInputFunction, null, (errIn) => {
-                if (errIn != null) {
-                    return reject(errIn);
-                }
-                FunctionParser.parseFunction(storedOutputFunction, ["TESTING OUTPUT"], (errOut) => {
-                    if (errOut != null) {
-                        return reject(errOut);
-                    }
-                    resolve();
-                });
-            });
-        });
-    }
-
-    await parseIoFunctions();
-*/
-    // ^^ not required above
-
 
     // get the input from prompt
     async function getFreeIdentifierByInput() {
         return new Promise(async (resolve, reject) => {
-            FunctionParser.executeFunction(storedInputFunction, null, async (inputResult) => {
+            inputFunction(async (inputResult) => {
 
                 // check if a sentence, need to select topic!
 
-                inputSplit = inputResult.split(" ");
+                console.log("Got input: " + inputResult);
+                const inputSplit = inputResult.split(" ");
                 var word = inputResult;
                 if (inputSplit.length > 1) {
                     debugger;
@@ -177,15 +139,14 @@ debugger;
     var random = JSON.stringify(randomAssociation.fn,null,4);
 
     // output the random associative entry
-    console.log("*************ASSOCIA***************");
     //console.log(JSON.stringify(randomAssociation,null,4));
-    console.log(JSON.stringify(random));
-    // await FunctionParser.executeFunction(storedOutputFunction, ["OUTPUT:"+random], () => {
-    //     return;
-    // });
+    await outputFunction(JSON.stringify(random));
+
 
 
     return setTimeout(interact, 0);
 }
 
-exports.interact = interact;
+module.exports = {
+    interact: interact
+}

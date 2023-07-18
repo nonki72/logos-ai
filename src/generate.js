@@ -8,6 +8,7 @@ const twitterConfig = require('../keys/twitter.json');
 const client = new TwitterApi(twitterConfig);
 const rwClient = client.readWrite
 const yesno = require('yesno'); 
+const { Configuration, OpenAIApi } = require("openai");
 
 function sleep(ms) {
     return new Promise((resolve) => {
@@ -38,17 +39,38 @@ async function generateTweet() {
 
     const generatedSentenceTree = await Grammar.generateSentence();
     const generatedSentence = Grammar.treeToString(generatedSentenceTree);
-    console.log("generated tweet: " + generatedSentenceTree);
+    console.log("generated tweet tree: " + generatedSentenceTree);
 
+    const configuration = new Configuration({
+    apiKey: process.env.OPENAI_API_KEY,
+    });
+    const openai = new OpenAIApi(configuration);
+
+    const response = await openai.createCompletion({
+        model: "text-davinci-003",
+        prompt: generatedSentence,
+        temperature: 1,
+        max_tokens: 60,
+        top_p: 1.0,
+        frequency_penalty: 0.0,         
+        presence_penalty: 1,
+    });
+
+    var tweet = response.data.choices[0].text;
+    console.log("generated tweet: " + tweet);
 
     const ok = await yesno({
         question: 'Would you like to tweet this?'
     });
 
     if (ok) {
-        var tweetResult = await FunctionParser.executeFunction(storedTweetFunction, [generatedSentence]);
-        console.log("tweeted: '" + generatedSentence + "'");
+	FunctionParser.executeFunction(storedTweetFunction, [tweet], async (tweetResult) => {
+            console.log("tweeted: '" + tweet + "'");
+        });
+
+        await sleep(5000);
     }
+
 
 }
 
