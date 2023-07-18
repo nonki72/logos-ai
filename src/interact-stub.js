@@ -115,24 +115,14 @@ async function interact (inputResult,  outputFunction) {
 
     var randomAssociation = await getRandom(namedFreeIdentifierId)
         .catch((reason) => {console.error(reason); return null});
-    if (randomAssociation == null || randomAssociation.fnmod != 'Grammar') {
-        var i = 0;
-        while (i < 50 && (randomAssociation == null || randomAssociation.fnmod != 'Grammar')) {
-            // nothing found, get a completely random word
-            randomAssociation = await getRandom(namedFreeIdentifierId)
-              .catch((reason) => {console.error(reason); return null});
-            i++;
-        }
-    }
-
     console.log("randomassociation:"+JSON.stringify(randomAssociation," ",4));
 
-
-    if (randomAssociation == null  || randomAssociation.fnmod != 'Grammar') {
+    if (randomAssociation == null || randomAssociation.fnmod != 'Grammar') {
+        // nothing found, get a completely random word
         async function getTotallyRandomAssociation () {
             return new Promise(async (resolve, reject) => {
                 try {
-                    await DataLib.readFreeIdentifierByTypeAndRandomValue('free', 'Grammar', null, (ass) => {
+                    await DataLib.readFreeIdentifierByTypeAndRandomValue('string', null, null, (ass) => {
                         return resolve(ass);
                     });
                 } catch (e) {
