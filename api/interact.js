@@ -14,6 +14,9 @@ var router = express.Router();
  * Retrieve a entity.
  */
 router.get('/', function get (req, res, next) {
+    if (req.query.input == null || req.query.input == '') {
+        return res.status(400).json({"message":"No input query parameter"});
+    }
     InteractStub.interact(req.query.input, (output) => {
         if (output == null) {
             return res.status(404).json({"message":"No output for input: " + req.query.input});
