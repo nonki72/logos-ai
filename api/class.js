@@ -12,8 +12,8 @@ var router = express.Router();
  *
  * Retrieve a entity.
  */
-router.get('/', function get (req, res, next) {
-  DataLib.readClassByNameAndModule(req.query.className, req.query.moduleName, (klass) => {
+router.get('/:className', function get (req, res, next) {
+  DataLib.readClassByName(req.params.className, (klass) => {
     if (klass == null) {
       return res.status(404).json({"message":"Class could not be found"});
     }
@@ -25,10 +25,10 @@ router.get('/', function get (req, res, next) {
 request parameters:
   module
  */
-router.post('/', function createClass (req, res, next) {
-  DataLib.readOrCreateClass(req.query.className, req.body.module, (klass) => {
+router.post('/:className', function createClass (req, res, next) {
+  DataLib.readOrCreateClass(req.params.className, req.body.module, (klass) => {
     if (klass == null) {
-      return next('Could not create class \'' + req.query.className + '\' already exists');
+      return next('Could not create class \'' + req.params.className + '\' already exists');
     }
     return res.status(200).json({"class":klass});
   });

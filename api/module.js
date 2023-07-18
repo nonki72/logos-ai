@@ -11,8 +11,8 @@ var router = express.Router();
  *
  * Retrieve a entity.
  */
-router.get('/', function get (req, res, next) {
-  DataLib.readModuleByName(req.query.moduleName, (module) => {
+router.get('/:moduleName', function get (req, res, next) {
+  DataLib.readModuleByName(req.params.moduleName, (module) => {
     if (module == null) {
       return res.status(404).json({"message":"Module could not be found"});
     }
@@ -24,8 +24,8 @@ router.get('/', function get (req, res, next) {
 request parameters:
   path
  */
-router.post('/', function createModule (req, res, next) {
-  DataLib.readOrCreateModule(req.query.moduleName, req.body.path, (module) => {
+router.post('/:moduleName', function createModule (req, res, next) {
+  DataLib.readOrCreateModule(req.params.moduleName, req.body.path, (module) => {
     if (module == null) {
       return next('Could not create module \'' + req.params.moduleName);
     }

@@ -16,8 +16,8 @@ var router = express.Router();
  *
  * Retrieve a entity.
  */
-router.get('/', function get (req, res, next) {
-  DataLib.readFreeIdentifierByName(req.query.functionName, (storedFunction) => {
+router.get('/:functionName', function get (req, res, next) {
+  DataLib.readFreeIdentifierByName(req.params.functionName, (storedFunction) => {
     if (storedFunction == null) {
       return res.status(404).json({"message":"Stored Function could not be found"});
     }
@@ -40,7 +40,7 @@ request parameters:
   testargs
   promise
  */
-router.post('/', function createStoredFunction (req, res, next) {
+router.post('/:functionName', function createStoredFunction (req, res, next) {
   var storedFunction = new F.StoredFunction(req.body.memoize, req.body.fntype, req.body.fnmod, req.body.fnclass, req.body.argtypes, req.body.modules, req.body.fn, req.body.promise);
 
   if (req.body.argtypes != null && req.body.argtypes.length > 0) {
@@ -56,10 +56,10 @@ router.post('/', function createStoredFunction (req, res, next) {
       error.message = err + " ... " + JSON.stringify(req.body);
       return next(error);
     }
-    DataLib.readOrCreateFreeIdentifierFunction(req.query.functionName, 
+    DataLib.readOrCreateFreeIdentifierFunction(req.params.functionName, 
       null, req.body.fn, req.body.fntype, req.body.fnmod, req.body.fnclass, req.body.argnum, req.body.argtypes, req.body.modules, req.body.memoize, req.body.promise, (freeIdentifier) => {
       if (freeIdentifier == null) {
-        return next({message: 'Could not create free identifier function \'' + req.query.functionName});
+        return next({message: 'Could not create free identifier function \'' + req.params.functionName});
       }
       return res.status(200).json({"storedfunction":freeIdentifier});
     });

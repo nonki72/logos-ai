@@ -4,7 +4,7 @@ import FunctionParser from '../node_modules/logos-ai/src/functionparser.js';
 import F from '../node_modules/logos-ai/src/function';
 
 // get input from user prompt, output highest association
-async function interact (inputResult,  outputFunction) {
+async function interact (inputFunction,  outputFunction) {
 
      // get readline code from database (not hard coded i/o here, rely on sensei)
      async function getFreeIdentifierByName (name) {
@@ -38,52 +38,54 @@ async function interact (inputResult,  outputFunction) {
     // get the input from prompt
     async function getFreeIdentifierByInput() {
         return new Promise(async (resolve, reject) => {
+            inputFunction(async (inputResult) => {
 
-            // check if a sentence, need to select topic!
+                // check if a sentence, need to select topic!
 
-            console.log("Got input: " + inputResult);
-            const inputSplit = inputResult.split(" ");
-            var word = inputResult;
-            if (inputSplit.length > 1) {
-                debugger;
-                // use NLP Cloud to find key words
-
-
-
-
-                async function executeFunctionAsync (fn, args) {
-                    return new Promise((resolve, reject) => {
-                        try {
-                            FunctionParser.executeFunction(fn, args, (result) => {
-                                return resolve(result);
-                            });
-                        } catch (e) {
-                            return reject(e);
-                        }
-                    });
-                    }
+                console.log("Got input: " + inputResult);
+                const inputSplit = inputResult.split(" ");
+                var word = inputResult;
+                if (inputSplit.length > 1) {
+                    debugger;
+                    // use NLP Cloud to find key words
 
 
-                var keyWordsArray = await executeFunctionAsync(keyWordFinderFunction, [inputResult]);
-                // select a key word (topic) at random
 
-                console.log("KEYWORDSARRAY:"+keyWordsArray);
-                word = await executeFunctionAsync(storedSelectFunction, [keyWordsArray]);
-            }
 
-            // find the matching entry in the database (like a wordnet word)
-            await DataLib.readFreeIdentifierByFn('"' + word + '"', async (namedFreeIdentifier) => {
-                if (namedFreeIdentifier == null) {
-                    await DataLib.readByRandomValue('free', (randomFreeIdentifier) => {
-                        if (randomFreeIdentifier == null) {
-                            return reject(word + " not found, no random found");
-                        }
-                        return resolve(randomFreeIdentifier);
+                    async function executeFunctionAsync (fn, args) {
+                        return new Promise((resolve, reject) => {
+                            try {
+                                FunctionParser.executeFunction(fn, args, (result) => {
+                                    return resolve(result);
+                                });
+                            } catch (e) {
+                                return reject(e);
+                            }
+                        });
+                     }
 
-                    });
-                } else {
-                    return resolve(namedFreeIdentifier);
+
+                    var keyWordsArray = await executeFunctionAsync(keyWordFinderFunction, [inputResult]);
+                    // select a key word (topic) at random
+
+                    console.log("KEYWORDSARRAY:"+keyWordsArray);
+                    word = await executeFunctionAsync(storedSelectFunction, [keyWordsArray]);
                 }
+
+                // find the matching entry in the database (like a wordnet word)
+                await DataLib.readFreeIdentifierByFn('"' + word + '"', async (namedFreeIdentifier) => {
+                    if (namedFreeIdentifier == null) {
+                        await DataLib.readByRandomValue('free', (randomFreeIdentifier) => {
+                            if (randomFreeIdentifier == null) {
+                                return reject(word + " not found, no random found");
+                            }
+                            return resolve(randomFreeIdentifier);
+
+                        });
+                    } else {
+                        return resolve(namedFreeIdentifier);
+                    }
+                });
             });
         });
     }
@@ -142,6 +144,7 @@ debugger;
 
 
 
+    return setTimeout(interact, 0);
 }
 
 module.exports = {

@@ -13,13 +13,10 @@ var router = express.Router();
  *
  * Retrieve a entity.
  */
-router.get('/', function get (req, res, next) {
-    if (req.query.input == null || req.query.input == '') {
-        return res.status(400).json({"message":'Empty input parameter'});
-    }
-    InteractStub.interact(req.query.input, (output) => {
+router.get('/:input', function get (req, res, next) {
+    InteractStub.interact(req.params.input, (output) => {
         if (output == null) {
-            return res.status(404).json({"message":"No output for input: " + req.query.input});
+            return res.status(404).json({"message":"No output for input: " + req.params.input});
         }
         return res.status(200).json({"output": output});
     });

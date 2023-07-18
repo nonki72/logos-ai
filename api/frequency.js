@@ -13,10 +13,10 @@ var router = express.Router();
  *
  * Retrieve a entity.
  */
-router.get('/', function get (req, res, next) {
-    DataLib.readWordFrequency(req.query.wordName, (word) => {
+router.get('/:wordName', function get (req, res, next) {
+    DataLib.readWordFrequency(req.params.wordName, (word) => {
         if (word == null) {
-            return res.status(404).json({"message":"Word frequency could not be found: " + req.query.wordName});
+            return res.status(404).json({"message":"Word frequency could not be found: " + req.params.wordName});
         }
         return res.status(200).json({"word": word});
     });
@@ -27,7 +27,7 @@ router.get('/', function get (req, res, next) {
  *
  * Retrieve all entities.
  */
-router.get('/', function get (req, res, next) {
+router.get('/:wordName', function get (req, res, next) {
     DataLib.readWordFrequencyAll((words) => {
         if (words == null) {
             return res.status(404).json({"message":"Words could not be found in wordfreq db"});
@@ -42,10 +42,10 @@ router.get('/', function get (req, res, next) {
  *
  * Retrieve a entity that is at least a frequency.
  */
-router.get('/atleast/', function get (req, res, next) {
-    DataLib.readWordFrequencyAtLeast(req.query.frequency, (word) => {
+router.get('/atleast/:frequency', function get (req, res, next) {
+    DataLib.readWordFrequencyAtLeast(req.params.frequency, (word) => {
         if (word == null) {
-            return res.status(404).json({"message":"Word could not be found with frequency at least: " + req.query.frequency});
+            return res.status(404).json({"message":"Word could not be found with frequency at least: " + req.params.frequency});
         }
         return res.status(200).json({"word": word});
     });
@@ -56,10 +56,10 @@ router.get('/atleast/', function get (req, res, next) {
 request parameters:
   freq
  */
-router.post('/', function createWordFrequency (req, res, next) {
-    DataLib.readOrCreateWordFrequency(req.query.wordName, req.body.freq, (word) => {
+router.post('/:wordName', function createWordFrequency (req, res, next) {
+    DataLib.readOrCreateWordFrequency(req.params.wordName, req.body.freq, (word) => {
             if (word == null) {
-                return next({message: 'Could not create word frequency \'' + req.query.wordName});
+                return next({message: 'Could not create word frequency \'' + req.params.wordName});
             }
             console.log(req.body);
             return res.status(200).json({"word": word});
