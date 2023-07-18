@@ -36,7 +36,7 @@ async function interact (inputResult,  outputFunction) {
     
 
     // get the input from prompt
-    async function getFreeIdentifierByInput() {
+    async function getFreeIdentifierByInput(inputResult) {
         return new Promise(async (resolve, reject) => {
             // check if a sentence, need to select topic!
 
@@ -88,7 +88,7 @@ async function interact (inputResult,  outputFunction) {
     }
 
     // read from input prompt and lookup the matching free identifier by name
-    const namedFreeIdentifier = await getFreeIdentifierByInput()
+    const namedFreeIdentifier = await getFreeIdentifierByInput(inputResult)
         .catch((reason) => {console.error(reason); return null});
     if (namedFreeIdentifier == null) {
         return setTimeout(interact, 0);
