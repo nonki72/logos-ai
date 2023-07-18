@@ -130,9 +130,9 @@ async function interact (inputResult,  outputFunction) {
 
     if (randomAssociation == null  || randomAssociation.fnmod != 'Grammar') {
         async function getTotallyRandomAssociation () {
-            return new Promise((resolve, reject) => {
+            return new Promise(async (resolve, reject) => {
                 try {
-                    DataLib.readFreeIdentifierByTypeAndRandomValue('free', 'Grammar', null, (ass) => {
+                    await DataLib.readFreeIdentifierByTypeAndRandomValue('free', 'Grammar', null, (ass) => {
                         return resolve(ass);
                     });
                 } catch (e) {
