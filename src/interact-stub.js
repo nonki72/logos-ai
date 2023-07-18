@@ -94,7 +94,7 @@ async function interact (inputResult,  outputFunction) {
         return setTimeout(interact, 0);
     }
     console.log(namedFreeIdentifier.fn + " id: " + namedFreeIdentifier.id);
-debugger;
+
     // find a random entry (using custom distribution)
     async function getRandom(sourceId) {
         return new Promise(async (resolve, reject) => {
@@ -106,7 +106,7 @@ debugger;
             });
         });
     }
-debugger;
+
     var namedFreeIdentifierId = namedFreeIdentifier.id;
     if (namedFreeIdentifierId.length != 32) {
         // is a mongo ObjectId
@@ -130,7 +130,7 @@ debugger;
 
     if (randomAssociation == null  || randomAssociation.fnmod != 'Grammar') {
         console.error("Couldn't find any word!");
-        return setTimeout(interact, 0);
+        await outputFunction("Nothing");
     }
 
     var random = JSON.stringify(randomAssociation.fn,null,4);
