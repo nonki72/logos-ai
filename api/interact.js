@@ -20,8 +20,9 @@ router.get('/', function get (req, res, next) {
     InteractStub.interact(req.query.input, (output) => {
         if (output == null) {
             return res.status(404).json({"message":"No output for input: " + req.query.input});
+        } else {
+            return res.status(200).json({"output": output});
         }
-        return res.status(200).json({"output": output});
     });
 });
 
