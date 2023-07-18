@@ -5,6 +5,13 @@ var express = require('express');
 var bodyParser = require('body-parser');
 
 var app = express();
+const cors = require('cors');
+
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  headers: ['Content-Type', 'Authorization']
+})); 
 
 // Automatically parse request body as JSON
 app.use(bodyParser.urlencoded({
