@@ -2,6 +2,7 @@ const DataLib = require('./datalib');
 const Sql = require('./sql');
 const FunctionParser = require('./functionparser.js');
 const F = require('./function');
+const util = require('util');
 
 // get input from user prompt, output highest association
 async function interact (inputResult,  outputFunction) {
@@ -96,47 +97,60 @@ async function interact (inputResult,  outputFunction) {
     console.log(namedFreeIdentifier.fn + " id: " + namedFreeIdentifier.id);
 
     // find a random entry (using custom distribution)
-    async function getRandom(sourceId) {
-        return new Promise(async (resolve, reject) => {
-            await DataLib.readByAssociativeValue(sourceId, (random) => {
-                if (random == null) {
-                    return reject(" no random found");
-                }
-                return resolve(random);
-            });
-        });
-    }
-
     var namedFreeIdentifierId = namedFreeIdentifier.id;
     if (namedFreeIdentifierId.length != 32) {
         // is a mongo ObjectId
         namedFreeIdentifierId = namedFreeIdentifierId.toString();
     }
 
-    var randomAssociation = await getRandom(namedFreeIdentifierId)
-        .catch((reason) => {console.error(reason); return null});
-    console.log("randomassociation:"+JSON.stringify(randomAssociation," ",4));
+    // try to find a "random" associative entry (by PDF probablity distribution funciton)
+    
+    var randomAssociation = {};
+    for (i=0;i<50;i++) { // try 50 times for associative value
+        console.log("i:"+i);
+        if (i < 49) {
+            const readByAssociativeValuePromise = new Promise((resolve, reject) => {
+                DataLib.readByAssociativeValue(namedFreeIdentifierId, (randomFreeIdentifier) => {
+                    if (randomFreeIdentifier == null) {
+                        reject('Something failed');
+                    } else {
+                        resolve(randomFreeIdentifier);
+                    }
+                });
+              });
 
-    if (randomAssociation == null || randomAssociation.fnmod != 'Grammar') {
-        // nothing found, get a completely random word
-        async function getTotallyRandomAssociation () {
-            return new Promise(async (resolve, reject) => {
-                try {
-                    await DataLib.readFreeIdentifierByTypeAndRandomValue('string', null, null, (ass) => {
-                        return resolve(ass);
-                    });
-                } catch (e) {
-                    return reject(e);
+            try {
+                randomAssociation = await readByAssociativeValuePromise;
+                if (randomAssociation.fntype != 'object' || randomAssociation.fnmod != 'Grammar') {
+                    randomAssociation = null; // no functions, only words wanted here
+                } else {
+                    break;
                 }
-            });
-        }
-        randomAssociation = await getTotallyRandomAssociation();
-        console.log("totallyrandomassociation:"+JSON.stringify(randomAssociation," ",4));
-    }
+            } catch (error) {
+                console.error(error.message); // "Something went wrong!"
+            }
+        } else {
+            // get totally random association
+            // ie, nothing found, get a completely random word
+            const readFreeIdentifierByTypeAndRandomValuePromise = new Promise((resolve, reject) => {
+                DataLib.readFreeIdentifierByTypeAndRandomValue('object', 'Grammar', null, false, (randomFreeIdentifier) => {
+                    if (randomFreeIdentifier == null) {
+                        reject('Something failed');
+                    } else {
+                        resolve(randomFreeIdentifier);
+                    }
+                });
+              });
 
-    if (randomAssociation == null) {
-        return await outputFunction("Totally failed.");
+
+            try {
+                randomAssociation = await readFreeIdentifierByTypeAndRandomValuePromise;
+            } catch (error) {
+                console.error(error.message); // "Something went wrong!"
+            }            
+        }
     }
+    console.log("random association:"+JSON.stringify(randomAssociation," ",4));
 
     var random = JSON.stringify(randomAssociation.fn,null,4);
 

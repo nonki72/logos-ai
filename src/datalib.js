@@ -61,9 +61,9 @@ async function readByAssociativeValue(sourceId, cb) {
 			}
 		});
 	}
-
+	return cb(null);
   // no assv to report, select at random
-	return readFreeIdentifierByRandomValue(cb);
+	//return readFreeIdentifierByRandomValue(cb);
 	//readbyrandomvalue() // todo: also want abs & apps
 }
 
@@ -382,7 +382,7 @@ async function readByRandomValue (type, cb) {
   return cb(res);
 }
 
-async function readFreeIdentifierByTypeAndRandomValue (fntype, fnmod, fnclas, cb) {
+async function readFreeIdentifierByTypeAndRandomValue (fntype, fnmod, fnclas, isFunction, cb) {
 	var match1;
 	var match2;
 	if (fnclas == 'AST') {
@@ -403,16 +403,15 @@ async function readFreeIdentifierByTypeAndRandomValue (fntype, fnmod, fnclas, cb
 		match2 = {$match:{
 				fntype: 'string'
 			}};
-	} else {
+	} else if (isFunction || isFunction == null) {
 		match1 = {$match: {
 				'type': 'free',
 				'argn': 0 // readFreeIdentifierByTypeAndRandomValue is used to fill args, we would blow the stack if we allowed recursive args
 			}};
 		match2 = {$match:{
 				'type': 'free',
-				argn: null
+				'argn': null
 			}};
-
 		if (fntype != undefined) {
 			match1.$match.fntype = fntype;
 			match2.$match.fntype = fntype;
@@ -425,7 +424,18 @@ async function readFreeIdentifierByTypeAndRandomValue (fntype, fnmod, fnclas, cb
 			match1.$match.fnclas = fnclas;
 			match2.$match.fnclas = fnclas;
 		}
-
+	} else {
+		match1 = {$match:{argn:null}};
+		match2 = null;
+		if (fntype != undefined) {
+			match1.$match.fntype = fntype;
+		}
+		if (fnmod != undefined) {
+			match1.$match.fnmod = fnmod;
+		}
+		if (fnclas != undefined) {
+			match1.$match.fnclas = fnclas;
+		}
 	}
 
 	const sample = {$sample:{
@@ -438,7 +448,7 @@ async function readFreeIdentifierByTypeAndRandomValue (fntype, fnmod, fnclas, cb
 		let cursor = await db.collection('Diary').aggregate([match1,sample]);
 		if (await cursor.hasNext()) {
 			res = await cursor.next()
-		} else {
+		} else if (match2 != null) {
 			cursor = await db.collection('Diary').aggregate([match2,sample]);
 			if (await cursor.hasNext()) {
 				res = await cursor.next()

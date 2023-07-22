@@ -141,7 +141,7 @@ const combine = async (lastAst) => {
       var nextArgFnType = nextArgType[1];
       var nextArgFnMod = nextArgType[2];
       var nextArgFnClas = nextArgType[3];
-      DataLib.readFreeIdentifierByTypeAndRandomValue(nextArgFnType, nextArgFnMod, nextArgFnClas, async (input) => {
+      DataLib.readFreeIdentifierByTypeAndRandomValue(nextArgFnType, nextArgFnMod, nextArgFnClas, null, async (input) => {
         if (input == null || input == undefined) {
           setTimeout(combine, 1, null);
           return;
