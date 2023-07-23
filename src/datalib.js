@@ -62,7 +62,7 @@ async function readByAssociativeValue(sourceId, cb) {
 		});
 	}
 	return cb(null);
-  // no assv to report, select at random
+  //DONTDO: no assv to report, select at random
 	//return readFreeIdentifierByRandomValue(cb);
 	//readbyrandomvalue() // todo: also want abs & apps
 }

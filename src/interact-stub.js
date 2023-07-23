@@ -40,7 +40,7 @@ async function interact (inputResult,  outputFunction) {
     if (namedFreeIdentifier == null) {
         return setTimeout(interact, 0);
     }
-    console.log(namedFreeIdentifier.fn + " id: " + namedFreeIdentifier.id);
+    console.log("namedFreeIdentifier:" + JSON.stringify(namedFreeIdentifier, " ", 4));
 
     // find a random entry (using custom distribution)
     var namedFreeIdentifierId = namedFreeIdentifier.id;
@@ -50,7 +50,7 @@ async function interact (inputResult,  outputFunction) {
     }
 
 
-    var randomAssociation = {};
+    var randomAssociation = null;
     // try to find an entry by PDF (probablity distribution function)
     // what's returned will be in the same Equivalence Class as namedFreeIdentifier and same spec
     // well we are using the Equivalence Class SQL database to look up the ID 
@@ -63,16 +63,19 @@ async function interact (inputResult,  outputFunction) {
     // or until we give up after a maximum number of attempts (10)
     // TODO: make the maximum number of attempts configurable, look up the cardinality of the Equivalence Class for this astid (namedfreeIdentifierId)
     //       (the cardinality of the set of rows where the equid equals the equid of the row with the astid given here: namedfreeIdentifierId)
-    for (var i = 0; i < 10; i++) {
-        randomAssociation = getRandomFreeIdentifierByAssociativeValue(namedFreeIdentifierId,
+    // TODO: change combine.js and interpreter.js to associate grammar objects only with their equivalencies not the functions that associate them!
+    for (var i = 0; i < 100; i++) {
+        randomAssociation = await getRandomFreeIdentifierByAssociativeValue(namedFreeIdentifierId,
             namedFreeIdentifier.fntype, // could be 'object'
             namedFreeIdentifier.fnmod, // could be 'Grammar'
-            namedFreeIdentifier.fnclas, // could be null (any POS)
+            namedFreeIdentifier.fnmod == 'Grammar' ? null : namedFreeIdentifier.fnclas, // could be null (any POS)
             namedFreeIdentifier.argn != null); // isFunction, could be false [functions take a NUMBER of arguments, denoted by argn]
         if (randomAssociation!= null) {
             break;
         }
     }
+    console.log("pseudorandom association:"+JSON.stringify(randomAssociation," ",4));
+
     // we might have a random association by now
     // if not, find a totally random free identifier that matches the spec of namedFreeIdentifier
     if (randomAssociation == null) {
@@ -80,20 +83,19 @@ async function interact (inputResult,  outputFunction) {
         // Grammar objects will be searched in the database
         // Grammar objects are not functions
         // DONTDO: randomAssociation = getRandomFreeIdentifierByRNG('object', 'Grammar', null, false); // hardcoded
-        randomAssociation = getRandomFreeIdentifierByRNG(
+        randomAssociation = await getRandomFreeIdentifierByRNG(
             namedFreeIdentifier.fntype, 
             namedFreeIdentifier.fnmod, 
-            namedFreeIdentifier.fnclas, 
+            namedFreeIdentifier.fnmod == 'Grammar' ? null : namedFreeIdentifier.fnclas, // could be null (any POS)
             namedFreeIdentifier.argn != null); // isFunction
     }
-    
     console.log("random association:"+JSON.stringify(randomAssociation," ",4));
 
     var random = JSON.stringify(randomAssociation.fn,null,4);
 
     // output the random associative entry
     //console.log(JSON.stringify(randomAssociation,null,4));
-    await outputFunction(JSON.stringify(random));
+    return await outputFunction(JSON.stringify(random));
 
 
 }
