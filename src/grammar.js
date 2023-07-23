@@ -50,7 +50,7 @@ function loadTextFileList(filePath) {
 // check the diary (wordnet) for that word
 // make sure its the expected type (POS, part of speech)
 // if its not recusively call until one is found...
-// TODO: MERGE THESE DATABASES FIRST (IN SENSEI)
+// TODO: MERGE THESE DATABASES FIRST (IN SENSEI) [done]
 async function generateBasicPOS(pos) {
     const promise = new Promise(async function (resolve, reject) {
         try {
