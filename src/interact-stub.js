@@ -139,7 +139,7 @@ async function getFreeIdentifierByInput(inputResult) {
         var word = input;
         const inputSplit = input.split(" ");
         if (inputSplit.length > 1) {
-            debugger;
+            //debugger;
             // use NLP Cloud to find key words
 
 

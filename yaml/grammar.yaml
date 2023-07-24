@@ -31,9 +31,9 @@ Nom:
 VP:
 - 
   - Verb
-#-
-#  - Adv
-#  - Verb
+-
+  - Adv
+  - Verb
 -
   - Verb
   - NP
@@ -43,12 +43,12 @@ VP:
 -
   - Verb
   - CP
-#-
-#  - Adv
-#  - VP
-#-
-#  - VP
-#  - Adv
+-
+  - Adv
+  - VP
+-
+  - VP
+  - Adv
 
 #https://www.britannica.com/dictionary/eb/qa/All-About-Prepositional-Phrases
 PP:

@@ -21,9 +21,9 @@ const wordsDictionary= loadYamlFileTree(wordsFilePath);
 const wordsListDictionary = {};
 
 wordsListDictionary['Determiner'] = loadTextFileList(determinersFilePath);
-wordsListDictionary['Pronoun'] = loadTextFileList(determinersFilePath);
-wordsListDictionary['Preposition'] = loadTextFileList(determinersFilePath);
-wordsListDictionary['Complementizer'] = loadTextFileList(determinersFilePath);
+wordsListDictionary['Pronoun'] = loadTextFileList(pronounsFilePath);
+wordsListDictionary['Preposition'] = loadTextFileList(prepositionsFilePath);
+wordsListDictionary['Complementizer'] = loadTextFileList(complementizersFilePath);
 
 function loadYamlFileTree(filePath) {
     try {
@@ -112,6 +112,9 @@ async function generatePOSTypeTree(POSTypeDefinitionList) {
             // see words.yaml
             const textPOSType = wordsDictionary[POSTypeDefinitionAbbreviation];
             const textPOSList = wordsListDictionary[textPOSType];
+            if (textPOSList == null || textPOSList.length == 0) {
+                debugger;
+            }
             const randomIndex = getRandomInt(0, textPOSList.length);
             const generatedPOS = textPOSList[randomIndex];
             if (generatedPOSTree.length > 0) generatedPOSTree.push(" ");
