@@ -69,6 +69,9 @@ async function generateBasicPOS(pos) {
                         console.log("No wordnet entry found! word: '" + wordByFreqency + "', pos: '" + pos + "'");
                         word = await generateBasicPOS(pos);
 //                        return reject("No wordnet entry found! word: '" + wordByFreqency + "', pos: '" + pos + "'");
+                    } else if (randomPOS.fnclas !== pos) {
+                        console.log("Wordnet entry is not the right part of speech! word: '" + wordByFreqency + "', pos: '" + pos + "'");
+                        word = await generateBasicPOS(pos);
                     } else {
                         word = randomPOS.fn.replace(/^\"/, '').replace(/\"$/, '');
                     }
@@ -92,6 +95,7 @@ async function generatePOSTypeTree(POSTypeDefinitionList) {
             const basicPOSType = basicDictionary[POSTypeDefinitionAbbreviation];
             try {
                 const generatedPOS = await generateBasicPOS(basicPOSType);
+                console.log("generated part of speech:"+JSON.stringify(generatedPOS));
                 if (generatedPOSTree.length > 0) generatedPOSTree.push(" ");
                 generatedPOSTree.push(generatedPOS);
             } catch (error) {
