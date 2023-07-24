@@ -2,6 +2,7 @@ const DataLib = require('./datalib');
 const Sql = require('./sql');
 const FunctionParser = require('./functionparser.js');
 const F = require('./function');
+const Grammar = require('./grammar');
 const util = require('util');
 
 var storedSelectFunction;
@@ -56,7 +57,7 @@ async function interact (inputResult,  outputFunction) {
     }
 
 
-    var randomAssociation = null;
+    var pseudorandomAssociation = null;
     // try to find an entry by PDF (probablity distribution function)
     // what's returned will be in the same Equivalence Class as namedFreeIdentifier and same spec
     // well we are using the Equivalence Class SQL database to look up the ID 
@@ -71,7 +72,7 @@ async function interact (inputResult,  outputFunction) {
     //       (the cardinality of the set of rows where the equid equals the equid of the row with the astid given here: namedfreeIdentifierId)
     // TODO: change combine.js and interpreter.js to associate grammar objects only with their equivalencies not the functions that associate them!
     for (var i = 0; i < 2; i++) { //TODO: increase max once the data is made accurate (interpreter.js, combine.js)
-        randomAssociation = await getRandomFreeIdentifierByAssociativeValue(namedFreeIdentifierId,
+        pseudorandomAssociation = await getRandomFreeIdentifierByAssociativeValue(namedFreeIdentifierId,
             namedFreeIdentifier.fntype, // could be 'object'
             namedFreeIdentifier.fnmod, // could be 'Grammar'
             namedFreeIdentifier.fnmod == 'Grammar' ? null : namedFreeIdentifier.fnclas, // could be null (any POS)
@@ -80,11 +81,12 @@ async function interact (inputResult,  outputFunction) {
             break;
         }
     }
-    console.log("pseudorandom association:"+JSON.stringify(randomAssociation," ",4));
-
+    console.log("pseudorandom association:"+JSON.stringify(pseudorandomAssociation," ",4));
+    
     // we might have a random association by now
     // if not, find a totally random free identifier that matches the spec of namedFreeIdentifier
-    if (randomAssociation == null) {
+    var randomAssociation = null;
+    if (pseudorandomAssociation == null) {
         // try to find a totally random associative entry (by random number generator)
         // Grammar objects will be searched in the database
         // Grammar objects are not functions
@@ -95,18 +97,29 @@ async function interact (inputResult,  outputFunction) {
             namedFreeIdentifier.fnmod == 'Grammar' ? null : namedFreeIdentifier.fnclas, // could be null (any POS)
             namedFreeIdentifier.argn != null); // isFunction
     }
-
     console.log("random association:"+JSON.stringify(randomAssociation," ",4));
+
+
+    // get a random sentence
+    const generatedSentenceTree = await Grammar.generateSentence();
+    const generatedSentence = Grammar.treeToString(generatedSentenceTree);
+    console.log("generated sentence tree: " + generatedSentenceTree);
+
 
     var outputString;
 
-    if (randomAssociation.fnmod == 'Grammar') {
-        outputString = randomAssociation.fn.replace(/"/g, '');
-    } else if (randomAssociation.fntype == 'number') {
-        outputString = randomAssociation.fn;
+    if (pseudorandomAssociation == null) {
+        outputString = generatedSentence;
     } else {
-        outputString = JSON.stringify(randomAssociation.fn, " ", 4);
+        if (randomAssociation.fnmod == 'Grammar') {
+            outputString = randomAssociation.fn.replace(/"/g, '');
+        } else if (randomAssociation.fntype == 'number') {
+            outputString = randomAssociation.fn;
+        } else {
+            outputString = JSON.stringify(randomAssociation.fn, " ", 4);
+        }
     }
+    
 
 
     // output the random associative entry
