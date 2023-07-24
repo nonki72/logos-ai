@@ -4,10 +4,12 @@ const FunctionParser = require('./functionparser.js');
 const F = require('./function');
 const util = require('util');
 
-// get input from user prompt, output highest association
-async function interact (inputResult,  outputFunction) {
+var storedSelectFunction;
+var keyWordFinderFunction;
 
-     // get readline code from database (not hard coded i/o here, rely on sensei)
+async function setup() {
+
+     // get method code from database (not hard coded here, rely on sensei)
      async function getFreeIdentifierByName (name) {
         return new Promise((resolve, reject) => {
             DataLib.readFreeIdentifierByName(name, (freeIdentifier) => {
@@ -17,22 +19,26 @@ async function interact (inputResult,  outputFunction) {
                 return resolve(freeIdentifier);
             });
         });
-     }
-     
+     }  
 
     const selectTopicIdentifier = await getFreeIdentifierByName("SelectTopic")
-        .catch((reason) => {throw Error(reason)});
+    .catch((reason) => {throw Error(reason)});
     if (selectTopicIdentifier == null) {
-        return setTimeout(interact, 0);
+    return setTimeout(setup, 10000);
     }
-    const storedSelectFunction = FunctionParser.loadStoredFunction(selectTopicIdentifier);
+    storedSelectFunction = FunctionParser.loadStoredFunction(selectTopicIdentifier);
 
     const keyWordFinderIdentifier = await getFreeIdentifierByName("KeyWordFinder")
-        .catch((reason) => {throw Error(reason)});
+    .catch((reason) => {throw Error(reason)});
     if (keyWordFinderIdentifier == null) {
-        return setTimeout(interact, 0);
+    return setTimeout(setup, 10000);
     }
-    const keyWordFinderFunction = FunctionParser.loadStoredFunction(keyWordFinderIdentifier);
+    keyWordFinderFunction = FunctionParser.loadStoredFunction(keyWordFinderIdentifier);
+}
+setup();
+
+// get input from user prompt, output highest association
+async function interact (inputResult,  outputFunction) {
 
     // read from input prompt and lookup the matching free identifier by name
     const namedFreeIdentifier = await getFreeIdentifierByInput(inputResult)
@@ -60,11 +66,11 @@ async function interact (inputResult,  outputFunction) {
     // TODO: copy specs from Diary to the EC table (they should be considered immutable in the Diary and EC, always in sync)
     // to increase the chances of finding an associated free identifier that matches the spec,
     // the entire function (both SQL and MongoDB queries) is run multiple times until a non-null result is found
-    // or until we give up after a maximum number of attempts (10)
+    // or until we give up after a maximum number of attempts
     // TODO: make the maximum number of attempts configurable, look up the cardinality of the Equivalence Class for this astid (namedfreeIdentifierId)
     //       (the cardinality of the set of rows where the equid equals the equid of the row with the astid given here: namedfreeIdentifierId)
     // TODO: change combine.js and interpreter.js to associate grammar objects only with their equivalencies not the functions that associate them!
-    for (var i = 0; i < 100; i++) {
+    for (var i = 0; i < 2; i++) { //TODO: increase max once the data is made accurate (interpreter.js, combine.js)
         randomAssociation = await getRandomFreeIdentifierByAssociativeValue(namedFreeIdentifierId,
             namedFreeIdentifier.fntype, // could be 'object'
             namedFreeIdentifier.fnmod, // could be 'Grammar'
@@ -89,13 +95,23 @@ async function interact (inputResult,  outputFunction) {
             namedFreeIdentifier.fnmod == 'Grammar' ? null : namedFreeIdentifier.fnclas, // could be null (any POS)
             namedFreeIdentifier.argn != null); // isFunction
     }
+
     console.log("random association:"+JSON.stringify(randomAssociation," ",4));
 
-    var random = JSON.stringify(randomAssociation.fn,null,4);
+    var outputString;
+
+    if (randomAssociation.fnmod == 'Grammar') {
+        outputString = randomAssociation.fn.replace(/"/g, '');
+    } else if (randomAssociation.fntype == 'number') {
+        outputString = randomAssociation.fn;
+    } else {
+        outputString = JSON.stringify(randomAssociation.fn, " ", 4);
+    }
+
 
     // output the random associative entry
-    //console.log(JSON.stringify(randomAssociation,null,4));
-    return await outputFunction(JSON.stringify(random));
+    console.log("output:"+outputString);
+    return await outputFunction(outputString);
 
 
 }
@@ -105,10 +121,10 @@ async function interact (inputResult,  outputFunction) {
 async function getFreeIdentifierByInput(inputResult) {
     return new Promise(async (resolve, reject) => {
         // check if a sentence, need to select topic!
-
-        console.log("Got input: " + inputResult);
-        const inputSplit = inputResult.split(" ");
-        var word = inputResult;
+        const input = decodeURIComponent(inputResult);
+        console.log("Got input: " + input);
+        var word = input;
+        const inputSplit = input.split(" ");
         if (inputSplit.length > 1) {
             debugger;
             // use NLP Cloud to find key words

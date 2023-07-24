@@ -21,7 +21,7 @@ router.get('/', function get (req, res, next) {
         if (output == null) {
             return res.status(404).json({"message":"No output for input: " + req.query.input});
         } else {
-            return res.status(200).json({"output": output});
+            return res.status(200).json({output: output});
         }
     });
 });

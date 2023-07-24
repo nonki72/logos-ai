@@ -1,8 +1,6 @@
 'use strict';
 
-var express = require('express');
 var mysqlx = require('@mysql/xdevapi');
-const async = require('async');
 
 
 async function getMyDb() {
