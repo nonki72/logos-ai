@@ -41,23 +41,35 @@ async function generateTweet() {
     const generatedSentence = Grammar.treeToString(generatedSentenceTree);
     console.log("generated tweet tree: " + generatedSentenceTree);
 
+    
+
     const configuration = new Configuration({
-    apiKey: process.env.OPENAI_API_KEY,
-    });
-    const openai = new OpenAIApi(configuration);
+        apiKey: process.env.OPENAI_API_KEY,
+      });
+      const openai = new OpenAIApi(configuration);
+      
+      const response = await openai.createChatCompletion({
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            "role": "system",
+            "content": "You will be provided with statements, and your task is to convert them to standard English."
+          },
+          {
+            "role": "user",
+            "content": generatedSentence
+          }
+        ],
+        temperature: 0,
+        max_tokens: 256,
+      });
+  
+    
+      console.log(JSON.stringify(response.data.choices));
+  
+      var tweet = response.data.choices[0].message.content;
+      console.log("generated tweet: " + tweet);
 
-    const response = await openai.createCompletion({
-        model: "text-davinci-003",
-        prompt: generatedSentence,
-        temperature: 1,
-        max_tokens: 60,
-        top_p: 1.0,
-        frequency_penalty: 0.0,         
-        presence_penalty: 1,
-    });
-
-    var tweet = response.data.choices[0].text;
-    console.log("generated tweet: " + tweet);
 
     const ok = await yesno({
         question: 'Would you like to tweet this?'
