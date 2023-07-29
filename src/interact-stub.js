@@ -8,6 +8,21 @@ const { Configuration, OpenAIApi } = require("openai");
 
 var storedSelectFunction;
 var keyWordFinderFunction;
+var grammarCorrectorFunction;
+
+
+async function executeFunctionAsync (fn, args) {
+    return new Promise((resolve, reject) => {
+        try {
+            FunctionParser.executeFunction(fn, args, (result) => {
+                return resolve(result);
+            });
+        } catch (e) {
+            return reject(e);
+        }
+    });
+}
+
 
 async function setup() {
 
@@ -24,18 +39,25 @@ async function setup() {
      }  
 
     const selectTopicIdentifier = await getFreeIdentifierByName("SelectTopic")
-    .catch((reason) => {throw Error(reason)});
+    .catch((reason) => {console.error(reason); return null;});
     if (selectTopicIdentifier == null) {
     return setTimeout(setup, 10000);
     }
     storedSelectFunction = FunctionParser.loadStoredFunction(selectTopicIdentifier);
 
-    const keyWordFinderIdentifier = await getFreeIdentifierByName("KeyWordFinder")
-    .catch((reason) => {throw Error(reason)});
+    const keyWordFinderIdentifier = await getFreeIdentifierByName("KeywordFinder")
+    .catch((reason) => {console.error(reason); return null;});
     if (keyWordFinderIdentifier == null) {
     return setTimeout(setup, 10000);
     }
     keyWordFinderFunction = FunctionParser.loadStoredFunction(keyWordFinderIdentifier);
+
+    const GrammarCorrectorIdentifier = await getFreeIdentifierByName("GrammarCorrector")
+    .catch((reason) => {console.error(reason); return null;});
+    if (GrammarCorrectorIdentifier == null) {
+    return setTimeout(setup, 10000);
+    }
+    grammarCorrectorFunction = FunctionParser.loadStoredFunction(GrammarCorrectorIdentifier);
 }
 setup();
 
@@ -64,40 +86,12 @@ async function interact (inputResult,  outputFunction) {
     const generatedSentence = Grammar.treeToString(generatedSentenceTree);
     console.log("generated sentence tree: " + generatedSentenceTree);
 
+    // make the generated sentence eloquent!!
+    var sentence = await executeFunctionAsync(grammarCorrectorFunction, [generatedSentence]);
     
-
-    const configuration = new Configuration({
-        apiKey: process.env.OPENAI_API_KEY,
-      });
-      const openai = new OpenAIApi(configuration);
-      
-      const response = await openai.createChatCompletion({
-        model: "gpt-3.5-turbo",
-        messages: [
-          {
-            "role": "system",
-            "content": "You will be provided with statements, and your task is to convert them to standard English."
-          },
-          {
-            "role": "user",
-            "content": generatedSentence
-          }
-        ],
-        temperature: 0,
-        max_tokens: 256,
-      });
-  
-    
-      console.log(JSON.stringify(response.data.choices));
-  
-      var sentence = response.data.choices[0].message.content;
-      console.log("generated sentence: " + sentence);
-
-
-
+    console.log("generated sentence: " + sentence);
 
     var outputString = sentence;
-
 
     // output the random associative entry
     console.log("output:"+outputString);
@@ -120,19 +114,6 @@ async function getFreeIdentifierByInput(inputResult) {
             // use NLP Cloud to find key words
 
 
-
-
-            async function executeFunctionAsync (fn, args) {
-                return new Promise((resolve, reject) => {
-                    try {
-                        FunctionParser.executeFunction(fn, args, (result) => {
-                            return resolve(result);
-                        });
-                    } catch (e) {
-                        return reject(e);
-                    }
-                });
-            }
 
 
             var keyWordsArray = await executeFunctionAsync(keyWordFinderFunction, [inputResult]);

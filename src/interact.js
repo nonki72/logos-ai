@@ -159,7 +159,7 @@ debugger;
     if (randomAssociation == null || randomAssociation.fnmod != 'Grammar') {
         var i = 0;
         while (i < 50 && (randomAssociation == null || randomAssociation.fnmod != 'Grammar')) {
-            // nothing found, get a completely random word
+            // nothing found, try again
             randomAssociation = await getRandom(namedFreeIdentifierId)
               .catch((reason) => {console.error(reason); return null});
             i++;
