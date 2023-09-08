@@ -50,22 +50,32 @@ router.post('/:functionName', function createStoredFunction (req, res, next) {
       }
     }
   }
-  functionParser.parseFunction(storedFunction, req.body.testargs, (err) => {
-    if (err) {
-      var error = {};
-      error.message = err + " ... " + JSON.stringify(req.body);
-      return next(error);
-    }
-    DataLib.readOrCreateFreeIdentifierFunction(req.params.functionName, 
-      null, req.body.fn, req.body.fntype, req.body.fnmod, req.body.fnclass, req.body.argnum, req.body.argtypes, req.body.modules, req.body.memoize, req.body.promise, (freeIdentifier) => {
-      if (freeIdentifier == null) {
-        return next({message: 'Could not create free identifier function \'' + req.params.functionName});
+  if (req.body.argnum == null) {
+    // store value
+    writeFunction(req, res);
+  } else {
+    // store function
+    functionParser.parseFunction(storedFunction, req.body.testargs, (err) => {
+      if (err) {
+        var error = {};
+        error.message = err + " ... " + JSON.stringify(req.body);
+        return next(error);
       }
-      return res.status(200).json({"storedfunction":freeIdentifier});
+      writeFunction(req, res);
     });
-  });
+  }
 });
 
+
+function writeFunction(req, res) {
+  DataLib.readOrCreateFreeIdentifierFunction(req.params.functionName, 
+    null, req.body.fn, req.body.fntype, req.body.fnmod, req.body.fnclass, req.body.argnum, req.body.argtypes, req.body.modules, req.body.memoize, req.body.promise, (freeIdentifier) => {
+    if (freeIdentifier == null) {
+      return next({message: 'Could not create free identifier function \'' + req.params.functionName});
+    }
+    return res.status(200).json({"storedfunction":freeIdentifier});
+  });
+}
 
 /**
  * Errors on "/api/function/*" routes.

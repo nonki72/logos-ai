@@ -14,12 +14,9 @@ app.use(cors({
 })); 
 
 // Automatically parse request body as JSON
-app.use(bodyParser.urlencoded({
-  extended: true
-}));
-app.use(bodyParser.json({
-  strict:false
-}));
+app.use(bodyParser.json({limit: '50mb', strict:false}));
+app.use(bodyParser.urlencoded({limit: '50mb', extended: true}));
+
 
 app.disable('etag');
 app.set('trust proxy', true);
