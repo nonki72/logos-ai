@@ -28,6 +28,33 @@ async function getDb() {
 }
 
 getDb();
+
+
+// promise maker
+// get free identifier from database by name
+async function promiseGetFreeIdentifierByName (name) {
+	return new Promise((resolve, reject) => {
+		readFreeIdentifierByName(name, (freeIdentifier) => {
+			if (freeIdentifier == null) {
+				return reject("promiseGetFreeIdentifierByName: couldn't retrieve "+name+" from database");
+			}
+			return resolve(freeIdentifier);
+		});
+	});
+}
+
+// get free identifier from database by name
+async function promiseReadWordFrequencyAtLeast (value) {
+	return new Promise((resolve, reject) => {
+		readWordFrequencyAtLeast(value, (freeIdentifier) => {
+			if (freeIdentifier == null) {
+				return reject("promiseReadWordFrequencyAtLeast: couldn't retrieve one from database");
+			}
+			return resolve(freeIdentifier);
+		});
+	});
+}
+
 //                          ########### READ FUNCTIONS ############
 
 
@@ -272,6 +299,19 @@ async function readFreeIdentifierFnThatTakesArgsByRandomValue (cb) {
 
 
 async function readFreeIdentifierFnThatTakesFirstArgOfTypeByRandomValue (argtype, argmod, argclas, cb) {
+	// if argtype is string, use this function with a certain probability
+	// this will bypass the normal mongo random lookup logic later in this function
+	if (argtype == 'string' && Math.random() > 0.75) {
+		try {
+			const res = await promiseGetFreeIdentifierByName('HatsuneMikuNextWord');
+			console.log("Using Hatsuene Miku NN for next word");
+			return res;
+		} catch {
+			console.log("Using random lookup for next word");
+		}
+	}
+
+	// normal routine
 	const match = (argclas == null) ?
 	{$match:{
 //		'type': 'free',
@@ -919,7 +959,8 @@ async function update (data, cb) {
 
   return cb(res);
 }
-
+exports.promiseGetFreeIdentifierByName = promiseGetFreeIdentifierByName;
+exports.promiseReadWordFrequencyAtLeast = promiseReadWordFrequencyAtLeast;
 exports.readByEquivalenceClass = readByEquivalenceClass;
 exports.readByRandomValueAndType = readByRandomValueAndType;
 exports.readApplicatorByRandomValue = readApplicatorByRandomValue;

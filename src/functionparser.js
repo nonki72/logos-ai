@@ -182,6 +182,14 @@ function parseFunction (storedFunction, args, cb) {
   });
 }
 
+async function promiseExecuteFunction (storedFunction, args) {
+	return new Promise((resolve, reject) => {
+		executeFunction(storedFunction, args, (result) => {
+			return resolve(result);
+		});
+	});
+}
+
 function executeFunction(storedFunction, args, cb) {
 	if (!(storedFunction instanceof F.StoredFunction)) {
 		console.error('executeFunction -> Must be instance of StoredFunction');
@@ -305,5 +313,6 @@ function isPromise(obj) {
 module.exports = {
 	loadStoredFunction: loadStoredFunction,
 	parseFunction: parseFunction,
-	executeFunction: executeFunction
+	executeFunction: executeFunction,
+	promiseExecuteFunction: promiseExecuteFunction
 };

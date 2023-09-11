@@ -7,7 +7,9 @@ const determinersFilePath = resolve('../logos-ai/text/determiners.txt');
 const pronounsFilePath = resolve('../logos-ai/text/pronouns.txt');
 const prepositionsFilePath = resolve('../logos-ai/text/prepositions.txt');
 const complementizersFilePath = resolve('../logos-ai/text/complementizers.txt');
+const FunctionParser = require('./functionparser.js');
 const DataLib = require('./datalib');
+const AST = require('./ast');
 
 var Promise = require("bluebird");
 const fs = require('fs');
@@ -53,36 +55,82 @@ function loadTextFileList(filePath) {
 // make sure its the expected type (POS, part of speech)
 // if its not recusively call until one is found...
 // TODO: MERGE THESE DATABASES FIRST (IN SENSEI) [done]
-async function generateBasicPOS(pos) {
+async function generateBasicPOS(pos, lastGeneratedWord) {
     const promise = new Promise(async function (resolve, reject) {
         try {
-            const randomMinimumFrequency = Math.random()/100.0;
-            DataLib.readWordFrequencyAtLeast(randomMinimumFrequency, async (wordByFreqencyObj) => {
-                if (wordByFreqencyObj == null) {
+            var wordByMikuOrFrequency = null;
+            // by miku neural network
+            if (Math.random() > 0.5) {
+                const wordByMikuFnObj = await promiseGetFreeIdentifierByName("HatsuneMikuNextWordFn");
+                const wordByMikuFnAst = AST.cast(wordByMikuFnObj);
+                const wordByMikuObj = await FunctionParser.promiseExecuteFunction(
+                        FunctionParser.loadStoredFunction(wordByMikuFnAst), [lastGeneratedWord]);
+                if (wordByMikuObj != null) {
+                    const wordByMiku = wordByMikuObj.word;
+                    wordByMikuOrFrequency = wordByMiku;    
+                }
+            }
+
+            // by random frequency
+            if (wordByMikuOrFrequency == null) {
+                const randomMinimumFrequency = Math.random()/100.0;
+                const wordByFrequencyObj = await promiseReadWordFrequencyAtLeast(randomMinimumFrequency);
+                if (wordByFrequencyObj == null) {
                     return reject("No word by frequency found! frequency >= '" + randomMinimumFrequency + "'");
                 }
-                const wordByFreqency = wordByFreqencyObj.word;
+                const wordByFrequency = wordByFrequencyObj.word;
+                wordByMikuOrFrequency = wordByFrequency;
+            }
+
 //                const randomPOS = await DataLib.readFreeIdentifierValueByRandomValue('object', 'Grammar', pos);
-                DataLib.readFreeIdentifierByFn('"'+wordByFreqency+'"', async (randomPOS) => {
-                    var word;
-                    if (randomPOS == null) {
-                        console.log("No wordnet entry found! word: '" + wordByFreqency + "', pos: '" + pos + "'");
-                        word = await generateBasicPOS(pos);
-//                        return reject("No wordnet entry found! word: '" + wordByFreqency + "', pos: '" + pos + "'");
-                    } else if (randomPOS.fnclas !== pos) {
-                        console.log("Wordnet entry is not the right part of speech! word: '" + wordByFreqency + "', pos: '" + pos + "'");
-                        word = await generateBasicPOS(pos);
-                    } else {
-                        word = randomPOS.fn.replace(/^\"/, '').replace(/\"$/, '');
-                    }
-                    return resolve(word);
-                });
+            DataLib.readFreeIdentifierByFn('"'+wordByMikuOrFrequency+'"', async (randomPOS) => {
+                var word;
+                if (randomPOS == null) {
+                    console.log("No wordnet entry found! word: '" + wordByMikuOrFrequency + "', pos: '" + pos + "'");
+                    word = await generateBasicPOS(pos, lastGeneratedWord);
+//                        return reject("No wordnet entry found! word: '" + wordByMikuOrFrequency + "', pos: '" + pos + "'");
+                } else if (randomPOS.fnclas !== pos) {
+                    console.log("Wordnet entry is not the right part of speech! word: '" + wordByMikuOrFrequency + "', pos: '" + pos + "'");
+                    word = await generateBasicPOS(pos, lastGeneratedWord);
+                } else {
+                    word = randomPOS.fn.replace(/^\"/, '').replace(/\"$/, '');
+                }
+                return resolve(word);
             });
         } catch (error) {
             return reject(error);
         }
     }).catch((error) => {console.error(error)});
     return promise;
+}
+
+function getLastGeneratedWord(generatedPOSTree) {
+    var gpostLength = generatedPOSTree.length;
+    // when ends in " ", chop it off
+    if (generatedPOSTree[gpostLength] == " ") {
+        // recur
+        const generatedPOSTreeShortened = generatedPOSTree.slice(0, gpostLength - 1);
+        return getLastGeneratedWord(generatedPOSTreeShortened);
+    }
+
+    // formatted, now get last word
+    const lastGeneratedThing = generatedPOSTree[gpostLength];
+
+    // if last position holds a sub array, recur on that sub array
+    if (Array.isArray(lastGeneratedThing)) {
+        // recur on last thing (array)
+        return getLastGeneratedWord(lastGeneratedThing)
+    }
+
+    // if string, return it
+    if (lastGeneratedThing instanceof String) {
+        // return last thing (word)
+        return lastGeneratedThing;
+    }
+
+    // else we got some other type (not allowed)
+    return null;
+    
 }
 
 async function generatePOSTypeTree(POSTypeDefinitionList) {
@@ -94,7 +142,11 @@ async function generatePOSTypeTree(POSTypeDefinitionList) {
             // see basic.yaml
             const basicPOSType = basicDictionary[POSTypeDefinitionAbbreviation];
             try {
-                const generatedPOS = await generateBasicPOS(basicPOSType);
+                const lastGeneratedWord = getLastGeneratedWord(generatedPOSTree);
+                if (lastGeneratedWord == null) {
+                    throw new Error("last generated word is wierd type!\n" + JSON.stringify(lastGeneratedWord));
+                }
+                const generatedPOS = await generateBasicPOS(basicPOSType, lastGeneratedWord);
                 console.log("generated part of speech:"+JSON.stringify(generatedPOS));
                 if (generatedPOSTree.length > 0) generatedPOSTree.push(" ");
                 generatedPOSTree.push(generatedPOS);
