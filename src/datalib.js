@@ -4,6 +4,7 @@ const mongoConfig = require('../keys/mongo.json');
 var MongoClient = mongo.MongoClient;
 var ObjectID = mongo.ObjectID;
 const Sql = require('./sql');
+const util = require('util');
 
 const connectOption = {
     useNewUrlParser: true,
@@ -30,30 +31,7 @@ async function getDb() {
 getDb();
 
 
-// promise maker
-// get free identifier from database by name
-async function promiseGetFreeIdentifierByName (name) {
-	return new Promise((resolve, reject) => {
-		readFreeIdentifierByName(name, (freeIdentifier) => {
-			if (freeIdentifier == null) {
-				return reject("promiseGetFreeIdentifierByName: couldn't retrieve "+name+" from database");
-			}
-			return resolve(freeIdentifier);
-		});
-	});
-}
 
-// get free identifier from database by name
-async function promiseReadWordFrequencyAtLeast (value) {
-	return new Promise((resolve, reject) => {
-		readWordFrequencyAtLeast(value, (freeIdentifier) => {
-			if (freeIdentifier == null) {
-				return reject("promiseReadWordFrequencyAtLeast: couldn't retrieve one from database");
-			}
-			return resolve(freeIdentifier);
-		});
-	});
-}
 
 //                          ########### READ FUNCTIONS ############
 
@@ -299,19 +277,6 @@ async function readFreeIdentifierFnThatTakesArgsByRandomValue (cb) {
 
 
 async function readFreeIdentifierFnThatTakesFirstArgOfTypeByRandomValue (argtype, argmod, argclas, cb) {
-	// if argtype is string, use this function with a certain probability
-	// this will bypass the normal mongo random lookup logic later in this function
-	if (argtype == 'string' && Math.random() > 0.75) {
-		try {
-			const res = await promiseGetFreeIdentifierByName('HatsuneMikuNextWord');
-			console.log("Using Hatsuene Miku NN for next word");
-			return res;
-		} catch {
-			console.log("Using random lookup for next word");
-		}
-	}
-
-	// normal routine
 	const match = (argclas == null) ?
 	{$match:{
 //		'type': 'free',
@@ -638,6 +603,23 @@ async function readOrCreateWordFrequency ( word, freq, cb ) {
 	return cb(data);
 }
 
+async function updateOrCreateWordFrequency ( word, freq, cb ) {
+	var client = await getDb();
+	var res = null;
+	var query = {'word': word};
+
+	try {
+		var data = {'word': word, 'frequency': freq};
+		const db = client.db("logos");
+		res = await db.collection('WordFreq').updateOne(query, { $set: data }, { upsert: true });
+	} catch (err) {
+		console.error(err);
+	}
+
+	return cb(data);
+}
+
+
 async function readOrCreateAbstraction (name, definition2, cb) {
 	const query = {
 		'type': 'abs',
@@ -674,6 +656,34 @@ async function readOrCreateAbstraction (name, definition2, cb) {
 
   return cb(data);
 }
+
+async function updateOrCreateAbstraction ( name, definition2, cb ) {
+	const query = {
+		'type': 'abs',
+//		'name': name,
+		'def2': definition2
+	};
+	var client = await getDb();
+
+	var data = {
+		id: new ObjectID(),
+		type: 'abs',
+		name: name,
+		def2: definition2,
+		invalid: false
+	};
+
+
+	try {
+		const db = client.db("logos");
+		await db.collection('Diary').updateOne(query, { $set: data }, { upsert: true });
+	} catch (err) {
+		console.error(err);
+	}
+
+	return cb(data);
+}
+
 
 async function readOrCreateApplication (definition1, definition2, cb) {
 	const query = {
@@ -712,6 +722,33 @@ async function readOrCreateApplication (definition1, definition2, cb) {
   return cb(data);
 }
 
+async function updateOrCreateApplication ( definition1, definition2, cb ) {
+	const query = {
+		'type': 'app',
+		'def1': definition1,
+		'def2': definition2
+	};
+		
+	var data = {
+		id: new ObjectID(),
+		type: 'app',
+		def1: definition1,
+		def2: definition2,
+		invalid: false
+	};
+
+	try {
+		var client = await getDb();
+		const db = client.db("logos");
+		await db.collection('Diary').updateOne(query, { $set: data }, { upsert: true });
+	} catch (err) {
+		console.error(err);
+	}
+
+	return cb(data);
+}
+
+
 async function readOrCreateFreeIdentifier ( name, cb ) {
 	const query = {
 		'type': 'id',
@@ -748,6 +785,33 @@ async function readOrCreateFreeIdentifier ( name, cb ) {
   return cb(data);
 }
 
+
+async function updateOrCreateFreeIdentifier ( name, cb ) {
+	const query = {
+		'type': 'id',
+		'name': name
+	};
+
+	var data = {
+		id: new ObjectID(),
+		type: 'id',
+		name: name,
+		argn: 0,
+		promise:false
+	};
+	
+    try {
+		var client = await getDb();
+		const db = client.db("logos");
+		await db.collection('Diary').updateOne(query, { $set: data }, { upsert: true });
+	} catch (err) {
+		console.error(err);
+	}
+
+	return cb(data);
+}
+
+
 async function readOrCreateFreeIdentifierFunction (name, astid, fn, fntype, fnmod, fnclass, argnum, argtypes, modules, memoize, promise, cb) {
 	const query = {
 		'type': 'free',
@@ -783,13 +847,49 @@ async function readOrCreateFreeIdentifierFunction (name, astid, fn, fntype, fnmo
   };
   try {
 		const db = client.db("logos");
-  	res = await db.collection('Diary').insertOne(data);
+  	await db.collection('Diary').insertOne(data);
   } catch (err) {
   	console.error(err);
   }
 
   return cb(data);
 }
+
+
+async function updateOrCreateFreeIdentifierFunction (name, astid, fn, fntype, fnmod, fnclass, argnum, argtypes, modules, memoize, promise, cb) {
+	const query = {
+		'type': 'free',
+		'name': name
+	};
+
+	var data = {
+		id: new ObjectID(),
+		type: 'free',
+		name: name,
+		astid: astid, // location (id)
+		fn: fn,
+		fntype: fntype,
+		fnmod: fnmod,
+		fnclas: fnclass,
+		argn: argnum,
+		argt: argtypes,
+		mods: modules,
+		memo: memoize,
+		promise: promise
+	};
+		
+    try {
+		var client = await getDb();
+		const db = client.db("logos");
+		await db.collection('Diary').updateOne(query, { $set: data }, { upsert: true });
+	} catch (err) {
+		console.error(err);
+	}
+
+	return cb(data);
+}
+
+
 
 // lots of stuff going on here
 // might want to make this a transaction in the future
@@ -880,6 +980,7 @@ async function readOrCreateSubstitution (subType, location1, location2, cb) {
   return cb(data2);
 }
 
+
 async function readOrCreateClass (name, module, cb) {
 	const query = {
 		'name': name
@@ -911,6 +1012,30 @@ async function readOrCreateClass (name, module, cb) {
 
   return cb(data);
 }
+
+async function updateOrCreateClass (name, module, cb) {
+	const query = {
+		'name': name
+	};
+
+	var data = {
+		id: new ObjectID(),
+		name: name,
+		module: module
+	};
+
+	try {
+		var client = await getDb();
+		const db = client.db("logos");
+		await db.collection('Diary').updateOne(query, { $set: data }, { upsert: true });
+	} catch (err) {
+		console.error(err);
+	}
+
+	return cb(data);
+}
+
+
 
 async function readOrCreateModule (name, path, cb) {
 	const query = {
@@ -944,6 +1069,30 @@ async function readOrCreateModule (name, path, cb) {
   return cb(data);
 }
 
+
+async function updateOrCreateModule (name, path, cb) {
+	const query = {
+		'name': name
+	};
+	
+	var data = {
+		id: new ObjectID(),
+		name: name,
+		path: path
+	};
+
+	try {
+		var client = await getDb();
+		const db = client.db("logos");
+		await db.collection('Diary').updateOne(query, { $set: data }, { upsert: true });
+	} catch (err) {
+		console.error(err);
+	}
+
+	return cb(data);
+}
+
+
 async function update (data, cb) {
 	const query = {
 		'id': data.id
@@ -952,15 +1101,14 @@ async function update (data, cb) {
   var res = null;
   try {
 		const db = client.db("logos");
-  	res = await db.updateOne(query, data);
+  	res = await db.updateOne(query, { $set: data });
   } catch (err) {
   	console.error(err);
   }
 
   return cb(res);
 }
-exports.promiseGetFreeIdentifierByName = promiseGetFreeIdentifierByName;
-exports.promiseReadWordFrequencyAtLeast = promiseReadWordFrequencyAtLeast;
+
 exports.readByEquivalenceClass = readByEquivalenceClass;
 exports.readByRandomValueAndType = readByRandomValueAndType;
 exports.readApplicatorByRandomValue = readApplicatorByRandomValue;
@@ -989,4 +1137,11 @@ exports.readOrCreateFreeIdentifierFunction = readOrCreateFreeIdentifierFunction;
 exports.readOrCreateSubstitution = readOrCreateSubstitution;
 exports.readOrCreateClass = readOrCreateClass;
 exports.readOrCreateModule = readOrCreateModule;
+exports.updateOrCreateWordFrequency = updateOrCreateWordFrequency;
+exports.updateOrCreateAbstraction = updateOrCreateAbstraction;
+exports.updateOrCreateApplication = updateOrCreateApplication;
+exports.updateOrCreateFreeIdentifier = updateOrCreateFreeIdentifier;
+exports.updateOrCreateFreeIdentifierFunction = updateOrCreateFreeIdentifierFunction;
+exports.updateOrCreateClass = updateOrCreateClass;
+exports.updateOrCreateModule = updateOrCreateModule;
 exports.update = update;

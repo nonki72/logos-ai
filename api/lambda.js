@@ -44,7 +44,7 @@ router.post('/evaluate', function evaluateLambdaExpression (req, res, next) {
         parser2.parse(function (ast2) {
 
           if (ast.id) {
-            DataLib.readOrCreateSubstitution("beta", ast.id, ast2.id, (substitution) => {
+            DataLib.updateOrCreateSubstitution("beta", ast.id, ast2.id, (substitution) => {
 
               return res.status(200).json({"result": stdout.slice(0,-1),"createdsub":"true"});
             });
@@ -70,7 +70,7 @@ request parameters:
   definition2
  */
 router.post('/application', (req, res, next) => {console.log(req.body);
-  DataLib.readOrCreateApplication(req.body.definition1, req.body.definition2, (application) => {
+  DataLib.updateOrCreateApplication(req.body.definition1, req.body.definition2, (application) => {
     if (application == null) {
       return next('Could not create application');
     }
@@ -85,7 +85,7 @@ request parameters:
   definition2
  */
 router.post('/abstraction', (req, res, next) => {
-  DataLib.readOrCreateAbstraction(req.body.name, req.body.definition2, (abstraction) => {
+  DataLib.updateOrCreateAbstraction(req.body.name, req.body.definition2, (abstraction) => {
     if (abstraction == null) {
       return next('Could not create abstraction');
     }
@@ -98,7 +98,7 @@ request parameters:
   index
  */
 router.post('/identifier', (req, res, next) => {
-  DataLib.readOrCreateIdentifier(req.body.index, (identifier) => {
+  DataLib.updateOrCreateIdentifier(req.body.index, (identifier) => {
     if (identifier == null) {
       return next('Could not create identifier');
     }
@@ -111,7 +111,7 @@ request parameters:
   name
  */
 router.post('/freeidentifier', (req, res, next) => {
-  DataLib.readOrCreateFreeIdentifier(req.body.name, (freeidentifier) => {
+  DataLib.updateOrCreateFreeIdentifier(req.body.name, (freeidentifier) => {
     if (freeidentifier == null) {
       return next('Could not create free identifier');
     }
@@ -126,7 +126,7 @@ request parameters:
   definition2
  */
 router.post('/substitution', (req, res, next) => {
-  DataLib.readOrCreateSubstitution(req.body.type, req.body.definition1, req.body.definition2, (substitution) => {
+  DataLib.updateOrCreateSubstitution(req.body.type, req.body.definition1, req.body.definition2, (substitution) => {
     if (substitution == null) {
       return next('Could not create substitution');
     }

@@ -25,7 +25,7 @@ request parameters:
   path
  */
 router.post('/:moduleName', function createModule (req, res, next) {
-  DataLib.readOrCreateModule(req.params.moduleName, req.body.path, (module) => {
+  DataLib.updateOrCreateModule(req.params.moduleName, req.body.path, (module) => {
     if (module == null) {
       return next('Could not create module \'' + req.params.moduleName);
     }

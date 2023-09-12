@@ -10,7 +10,7 @@ const complementizersFilePath = resolve('../logos-ai/text/complementizers.txt');
 const FunctionParser = require('./functionparser.js');
 const DataLib = require('./datalib');
 const AST = require('./ast');
-
+const util = require('util');
 var Promise = require("bluebird");
 const fs = require('fs');
 const yaml = require('js-yaml');
@@ -60,8 +60,8 @@ async function generateBasicPOS(pos, lastGeneratedWord) {
         try {
             var wordByMikuOrFrequency = null;
             // by miku neural network
-            if (Math.random() > 0.5) {
-                const wordByMikuFnObj = await promiseGetFreeIdentifierByName("HatsuneMikuNextWordFn");
+            if (Math.random() > 0.5 && lastGeneratedWord != null) {
+                const wordByMikuFnObj = await util.promisify(DataLib.getFreeIdentifierByName)("HatsuneMikuNextWordFn");
                 const wordByMikuFnAst = AST.cast(wordByMikuFnObj);
                 const wordByMikuObj = await FunctionParser.promiseExecuteFunction(
                         FunctionParser.loadStoredFunction(wordByMikuFnAst), [lastGeneratedWord]);
@@ -74,7 +74,7 @@ async function generateBasicPOS(pos, lastGeneratedWord) {
             // by random frequency
             if (wordByMikuOrFrequency == null) {
                 const randomMinimumFrequency = Math.random()/100.0;
-                const wordByFrequencyObj = await promiseReadWordFrequencyAtLeast(randomMinimumFrequency);
+                const wordByFrequencyObj = await util.promisify(DataLib.readWordFrequencyAtLeast)(randomMinimumFrequency);
                 if (wordByFrequencyObj == null) {
                     return reject("No word by frequency found! frequency >= '" + randomMinimumFrequency + "'");
                 }
@@ -109,12 +109,12 @@ function getLastGeneratedWord(generatedPOSTree) {
     // when ends in " ", chop it off
     if (generatedPOSTree[gpostLength] == " ") {
         // recur
-        const generatedPOSTreeShortened = generatedPOSTree.slice(0, gpostLength - 1);
+        const generatedPOSTreeShortened = generatedPOSTree.slice(0, gpostLength - 2);
         return getLastGeneratedWord(generatedPOSTreeShortened);
     }
 
     // formatted, now get last word
-    const lastGeneratedThing = generatedPOSTree[gpostLength];
+    const lastGeneratedThing = generatedPOSTree[gpostLength - 1];
 
     // if last position holds a sub array, recur on that sub array
     if (Array.isArray(lastGeneratedThing)) {
@@ -143,9 +143,6 @@ async function generatePOSTypeTree(POSTypeDefinitionList) {
             const basicPOSType = basicDictionary[POSTypeDefinitionAbbreviation];
             try {
                 const lastGeneratedWord = getLastGeneratedWord(generatedPOSTree);
-                if (lastGeneratedWord == null) {
-                    throw new Error("last generated word is wierd type!\n" + JSON.stringify(lastGeneratedWord));
-                }
                 const generatedPOS = await generateBasicPOS(basicPOSType, lastGeneratedWord);
                 console.log("generated part of speech:"+JSON.stringify(generatedPOS));
                 if (generatedPOSTree.length > 0) generatedPOSTree.push(" ");

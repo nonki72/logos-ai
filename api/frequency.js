@@ -57,7 +57,7 @@ request parameters:
   freq
  */
 router.post('/:wordName', function createWordFrequency (req, res, next) {
-    DataLib.readOrCreateWordFrequency(req.params.wordName, req.body.freq, (word) => {
+    DataLib.updateOrCreateWordFrequency(req.params.wordName, req.body.freq, (word) => {
             if (word == null) {
                 return next({message: 'Could not create word frequency \'' + req.params.wordName});
             }

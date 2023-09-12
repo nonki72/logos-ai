@@ -26,9 +26,9 @@ request parameters:
   module
  */
 router.post('/:className', function createClass (req, res, next) {
-  DataLib.readOrCreateClass(req.params.className, req.body.module, (klass) => {
+  DataLib.updateOrCreateClass(req.params.className, req.body.module, (klass) => {
     if (klass == null) {
-      return next('Could not create class \'' + req.params.className + '\' already exists');
+      return next('Could not create class \'' + req.params.className);
     }
     return res.status(200).json({"class":klass});
   });

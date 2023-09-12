@@ -68,7 +68,7 @@ router.post('/:functionName', function createStoredFunction (req, res, next) {
 
 
 function writeFunction(req, res) {
-  DataLib.readOrCreateFreeIdentifierFunction(req.params.functionName, 
+  DataLib.updateOrCreateFreeIdentifierFunction(req.params.functionName, 
     null, req.body.fn, req.body.fntype, req.body.fnmod, req.body.fnclass, req.body.argnum, req.body.argtypes, req.body.modules, req.body.memoize, req.body.promise, (freeIdentifier) => {
     if (freeIdentifier == null) {
       return next({message: 'Could not create free identifier function \'' + req.params.functionName});
