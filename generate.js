@@ -1,9 +1,9 @@
 const Generate = require('./src/generate');
+const tools = require('./src/tools');
 
 async function generate()
 {
-    await Generate.generateTweet();
-    //await new Promise(r => setTimeout(r, 2000));
+    await tools.promisify(Generate.generateTweet)();
     process.exit();
 }
 

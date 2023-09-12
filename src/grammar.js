@@ -10,7 +10,7 @@ const complementizersFilePath = resolve('../logos-ai/text/complementizers.txt');
 const FunctionParser = require('./functionparser.js');
 const DataLib = require('./datalib');
 const AST = require('./ast');
-const util = require('util');
+const tools = require('./tools');
 var Promise = require("bluebird");
 const fs = require('fs');
 const yaml = require('js-yaml');
@@ -61,7 +61,7 @@ async function generateBasicPOS(pos, lastGeneratedWord) {
             var wordByMikuOrFrequency = null;
             // by miku neural network
             if (Math.random() > 0.5 && lastGeneratedWord != null) {
-                const wordByMikuFnObj = await util.promisify(DataLib.getFreeIdentifierByName)("HatsuneMikuNextWordFn");
+                const wordByMikuFnObj = await tools.promisify(DataLib.getFreeIdentifierByName)("HatsuneMikuNextWordFn");
                 const wordByMikuFnAst = AST.cast(wordByMikuFnObj);
                 const wordByMikuObj = await FunctionParser.promiseExecuteFunction(
                         FunctionParser.loadStoredFunction(wordByMikuFnAst), [lastGeneratedWord]);
@@ -74,7 +74,7 @@ async function generateBasicPOS(pos, lastGeneratedWord) {
             // by random frequency
             if (wordByMikuOrFrequency == null) {
                 const randomMinimumFrequency = Math.random()/100.0;
-                const wordByFrequencyObj = await util.promisify(DataLib.readWordFrequencyAtLeast)(randomMinimumFrequency);
+                const wordByFrequencyObj = await tools.promisify(DataLib.readWordFrequencyAtLeast)(randomMinimumFrequency);
                 if (wordByFrequencyObj == null) {
                     return reject("No word by frequency found! frequency >= '" + randomMinimumFrequency + "'");
                 }

@@ -6,18 +6,11 @@ const Grammar = require('./grammar');
 const  {TwitterApi} =  require('twitter-api-v2');
 const twitterConfig = require('../keys/twitter.json');
 const client = new TwitterApi(twitterConfig);
-const rwClient = client.readWrite
+const rwClient = client.readWrite;
 const yesno = require('yesno'); 
-const { Configuration, OpenAIApi } = require("openai");
-const openaiConfig = require("../keys/openai.json");
 
-function sleep(ms) {
-    return new Promise((resolve) => {
-        setTimeout(resolve, ms);
-    });
-}
 
-async function generateTweet() {
+async function generateTweet(cb) {
 
     // get tweet code from database (not hard coded i/o here, rely on sensei)
     async function getFreeIdentifierByName (name) {
@@ -33,9 +26,9 @@ async function generateTweet() {
 
     // use above code to read from database and convert to DAO objects
     const tweetFreeIdentifier = await getFreeIdentifierByName("twitterTweet")
-            .catch((reason) => {console.error(reason); return null;});
+            .catch((reason) => {console.error(reason); cb(null);});
     if (tweetFreeIdentifier == null) {
-        return setTimeout(interact, 0);
+        return setTimeout(generateTweet.bind(null, cb), 0);
     }
     // make the DAO object into a function to run
     const storedTweetFunction = FunctionParser.loadStoredFunction(tweetFreeIdentifier);
@@ -47,9 +40,9 @@ async function generateTweet() {
 
     // load GC function, as above
     const grammarCorrectorFreeIdentifier = await getFreeIdentifierByName("GrammarCorrector")
-    .catch((reason) => {console.error(reason); return null;});
+    .catch((reason) => {console.error(reason); cb(null);});
     if (grammarCorrectorFreeIdentifier == null) {
-        return setTimeout(interact, 0);
+        return setTimeout(generateTweet.bind(null, cb), 0);
     }
     const storedGrammarCorrectorFunction = FunctionParser.loadStoredFunction(grammarCorrectorFreeIdentifier)
 
@@ -62,13 +55,15 @@ async function generateTweet() {
         });
 
         if (ok) {
-        FunctionParser.executeFunction(storedTweetFunction, [tweet], async (tweetResult) => {
-                console.log("tweeted. result: \n" + tweetResult);
+            FunctionParser.executeFunction(storedTweetFunction, [tweetSentence], (tweetResult) => {
+                console.log("tweeted. result: \n" + JSON.stringify(tweetResult));
+                cb(tweetResult);
             });
+        } else {
+            cb(null);
         }
     });
     
-    await sleep(5000);
 }
 
 exports.generateTweet = generateTweet;

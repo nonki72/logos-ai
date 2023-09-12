@@ -4,7 +4,6 @@ const mongoConfig = require('../keys/mongo.json');
 var MongoClient = mongo.MongoClient;
 var ObjectID = mongo.ObjectID;
 const Sql = require('./sql');
-const util = require('util');
 
 const connectOption = {
     useNewUrlParser: true,

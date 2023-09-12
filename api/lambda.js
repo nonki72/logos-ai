@@ -44,7 +44,7 @@ router.post('/evaluate', function evaluateLambdaExpression (req, res, next) {
         parser2.parse(function (ast2) {
 
           if (ast.id) {
-            DataLib.updateOrCreateSubstitution("beta", ast.id, ast2.id, (substitution) => {
+            DataLib.readOrCreateSubstitution("beta", ast.id, ast2.id, (substitution) => {
 
               return res.status(200).json({"result": stdout.slice(0,-1),"createdsub":"true"});
             });
@@ -126,7 +126,7 @@ request parameters:
   definition2
  */
 router.post('/substitution', (req, res, next) => {
-  DataLib.updateOrCreateSubstitution(req.body.type, req.body.definition1, req.body.definition2, (substitution) => {
+  DataLib.readOrCreateSubstitution(req.body.type, req.body.definition1, req.body.definition2, (substitution) => {
     if (substitution == null) {
       return next('Could not create substitution');
     }
