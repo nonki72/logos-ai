@@ -29,6 +29,7 @@ router.post('/:moduleName', function createModule (req, res, next) {
     if (module == null) {
       return next('Could not create module \'' + req.params.moduleName);
     }
+    console.log('created module: ' + module.name);
     return res.status(200).json({"module":module});
   });
 });

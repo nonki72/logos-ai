@@ -30,6 +30,7 @@ router.post('/:className', function createClass (req, res, next) {
     if (klass == null) {
       return next('Could not create class \'' + req.params.className);
     }
+    console.log('created class: ' + req.params.className);
     return res.status(200).json({"class":klass});
   });
 });

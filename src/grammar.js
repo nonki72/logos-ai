@@ -11,6 +11,7 @@ const FunctionParser = require('./functionparser.js');
 const DataLib = require('./datalib');
 const AST = require('./ast');
 const tools = require('./tools');
+const sleep = require('sleep-promise');
 var Promise = require("bluebird");
 const fs = require('fs');
 const yaml = require('js-yaml');
@@ -55,20 +56,39 @@ function loadTextFileList(filePath) {
 // make sure its the expected type (POS, part of speech)
 // if its not recusively call until one is found...
 // TODO: MERGE THESE DATABASES FIRST (IN SENSEI) [done]
-async function generateBasicPOS(pos, lastGeneratedWord) {
+async function generateBasicPOS(pos, tree, n) {
     const promise = new Promise(async function (resolve, reject) {
         try {
             var wordByMikuOrFrequency = null;
+
             // by miku neural network
-            if (Math.random() > 0.5 && lastGeneratedWord != null) {
-                const wordByMikuFnObj = await tools.promisify(DataLib.getFreeIdentifierByName)("HatsuneMikuNextWordFn");
-                const wordByMikuFnAst = AST.cast(wordByMikuFnObj);
-                const wordByMikuObj = await FunctionParser.promiseExecuteFunction(
-                        FunctionParser.loadStoredFunction(wordByMikuFnAst), [lastGeneratedWord]);
-                if (wordByMikuObj != null) {
-                    const wordByMiku = wordByMikuObj.word;
-                    wordByMikuOrFrequency = wordByMiku;    
+            if (Math.random() > 0.0 && tree != null) {
+                console.log("running miku neural network. n: " + n);
+                var lastGeneratedWord = null;
+                // the tree might not be fully generated yet, so keep checking for n-1th word
+                while (lastGeneratedWord == null) {
+                    // need fresh leaves array each time we check
+                    const leaves = getLeavesInOrderUpToN(tree, n);
+                    console.log("miku neural network current leaves for n=" + n + ": " + leaves.toString());
+                    lastGeneratedWord = leaves[n - 1];
+                    console.log("miku neural network for n=" + n + " last word is currently: " + lastGeneratedWord);
+                    if (lastGeneratedWord == null) {
+                        await sleep(1000);
+                    }
                 }
+                // load the miku neural network function from Diary
+                const wordByMikuFnObj = await tools.promisify(DataLib.readFreeIdentifierByName)("HatsuneMikuNextWordFn");
+                if (wordByMikuFnObj == null) {
+                    return reject("No free identifier function 'HatsuneMikuNextWordFn' found in Diary");
+                }
+                const wordByMikuObj = await FunctionParser.promiseExecuteFunction(
+                        FunctionParser.loadStoredFunction(wordByMikuFnObj), [lastGeneratedWord]);
+                if (wordByMikuObj == null) {
+                    return reject("No word by miku neural net found! last generated word: '" + lastGeneratedWord + "'");
+                }
+                const wordByMiku = wordByMikuObj.word;
+                wordByMikuOrFrequency = wordByMiku;
+                console.log("word by miku neural net: " + wordByMiku);
             }
 
             // by random frequency
@@ -80,17 +100,18 @@ async function generateBasicPOS(pos, lastGeneratedWord) {
                 }
                 const wordByFrequency = wordByFrequencyObj.word;
                 wordByMikuOrFrequency = wordByFrequency;
+                console.log("word by random word frequency: " + wordByFrequency);
             }
 
 //                const randomPOS = await DataLib.readFreeIdentifierValueByRandomValue('object', 'Grammar', pos);
             DataLib.readFreeIdentifierByFn('"'+wordByMikuOrFrequency+'"', async (randomPOS) => {
                 var word;
                 if (randomPOS == null) {
-                    console.log("No wordnet entry found! word: '" + wordByMikuOrFrequency + "', pos: '" + pos + "'");
+                    console.log("No wordnet entry found! word: '" + wordByMikuOrFrequency + "', part of speech: '" + pos + "'");
                     word = await generateBasicPOS(pos, lastGeneratedWord);
 //                        return reject("No wordnet entry found! word: '" + wordByMikuOrFrequency + "', pos: '" + pos + "'");
                 } else if (randomPOS.fnclas !== pos) {
-                    console.log("Wordnet entry is not the right part of speech! word: '" + wordByMikuOrFrequency + "', pos: '" + pos + "'");
+                    console.log("Wordnet entry is not the right part of speech! word: '" + wordByMikuOrFrequency + "', part of speech: '" + pos + "'");
                     word = await generateBasicPOS(pos, lastGeneratedWord);
                 } else {
                     word = randomPOS.fn.replace(/^\"/, '').replace(/\"$/, '');
@@ -104,34 +125,66 @@ async function generateBasicPOS(pos, lastGeneratedWord) {
     return promise;
 }
 
-function getLastGeneratedWord(generatedPOSTree) {
-    var gpostLength = generatedPOSTree.length;
-    // when ends in " ", chop it off
-    if (generatedPOSTree[gpostLength] == " ") {
-        // recur
-        const generatedPOSTreeShortened = generatedPOSTree.slice(0, gpostLength - 2);
-        return getLastGeneratedWord(generatedPOSTreeShortened);
+function getLeavesInOrderUpToN(tree, n) {
+    if (!tree) {
+      return [];
     }
+  
+    const leaves = [];
+  
+    const traverse = (node) => {
+      if (leaves.length >= n) {
+        return;
+      }
+      if (node == null) {
+        leaves.push(null);
 
-    // formatted, now get last word
-    const lastGeneratedThing = generatedPOSTree[gpostLength - 1];
+      } else if (Array.isArray(node)) {
+        node.forEach(child => {
+            traverse(child);
+        });
+      } else if (node instanceof String) {
+        leaves.push(node);
+      } else {
+        throw new Error("getLeavesInOrder() ... Unexpected node type: " + node.constructor.name);
+      }
+    };
+  
+    traverse(tree);
+  
+    return leaves;
+  }
+  
+  
 
-    // if last position holds a sub array, recur on that sub array
-    if (Array.isArray(lastGeneratedThing)) {
-        // recur on last thing (array)
-        return getLastGeneratedWord(lastGeneratedThing)
-    }
+// function getLastGeneratedWord(generatedPOSTree) {
+//     var gpostLength = generatedPOSTree.length;
+//     // when ends in " ", chop it off
+//     if (generatedPOSTree[gpostLength] == " ") {
+//         // recur
+//         const generatedPOSTreeShortened = generatedPOSTree.slice(0, gpostLength - 2);
+//         return getLastGeneratedWord(generatedPOSTreeShortened);
+//     }
 
-    // if string, return it
-    if (lastGeneratedThing instanceof String) {
-        // return last thing (word)
-        return lastGeneratedThing;
-    }
+//     // formatted, now get last word
+//     const lastGeneratedThing = generatedPOSTree[gpostLength - 1];
 
-    // else we got some other type (not allowed)
-    return null;
+//     // if last position holds a sub array, recur on that sub array
+//     if (Array.isArray(lastGeneratedThing)) {
+//         // recur on last thing (array)
+//         return getLastGeneratedWord(lastGeneratedThing)
+//     }
+
+//     // if string, return it
+//     if (lastGeneratedThing instanceof String) {
+//         // return last thing (word)
+//         return lastGeneratedThing;
+//     }
+
+//     // else we got some other type (not allowed)
+//     return null;
     
-}
+// }
 
 async function generatePOSTypeTree(POSTypeDefinitionList) {
     const generatedPOSTree = [];
@@ -142,8 +195,8 @@ async function generatePOSTypeTree(POSTypeDefinitionList) {
             // see basic.yaml
             const basicPOSType = basicDictionary[POSTypeDefinitionAbbreviation];
             try {
-                const lastGeneratedWord = getLastGeneratedWord(generatedPOSTree);
-                const generatedPOS = await generateBasicPOS(basicPOSType, lastGeneratedWord);
+//                const lastGeneratedWord = getLastGeneratedWord(generatedPOSTree); // cant do this way because we dont have completed tree
+                const generatedPOS = await generateBasicPOS(basicPOSType, generatedPOSTree, POSTypeDefinitionAbbreviationIndex);
                 console.log("generated part of speech:"+JSON.stringify(generatedPOS));
                 if (generatedPOSTree.length > 0) generatedPOSTree.push(" ");
                 generatedPOSTree.push(generatedPOS);
