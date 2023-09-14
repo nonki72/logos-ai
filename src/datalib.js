@@ -1026,7 +1026,7 @@ async function updateOrCreateClass (name, module, cb) {
 	try {
 		var client = await getDb();
 		const db = client.db("logos");
-		await db.collection('Diary').updateOne(query, { $set: data }, { upsert: true });
+		await db.collection('Class').updateOne(query, { $set: data }, { upsert: true });
 	} catch (err) {
 		console.error(err);
 	}
@@ -1083,7 +1083,7 @@ async function updateOrCreateModule (name, path, cb) {
 	try {
 		var client = await getDb();
 		const db = client.db("logos");
-		await db.collection('Diary').updateOne(query, { $set: data }, { upsert: true });
+		await db.collection('Module').updateOne(query, { $set: data }, { upsert: true });
 	} catch (err) {
 		console.error(err);
 	}
