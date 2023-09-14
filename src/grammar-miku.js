@@ -1,5 +1,5 @@
 
-const { Worker, parentPort } = require('worker_threads');
+const { workerData, parentPort } = require('worker_threads');
 const FunctionParser = require('./functionparser.js');
 const DataLib = require('./datalib');
 const tools = require('./tools');
@@ -115,9 +115,9 @@ function getLeavesInOrderUpToN(tree, n) {
 
 try {
     console.log(`Miku thread starting`);
-    const treeObj = process.argv[2];
-    const n = process.argv[3];
-    generateBasicPOS(treeObj.tree, n).then((word) => {
+    const tree = workerData.tree;
+    const n = workerData.n;
+    generateBasicPOS(tree, n).then((word) => {
         parentPort.postMessage(word);
     });
 } catch (error) {

@@ -1,5 +1,5 @@
 
-const { Worker, parentPort } = require('worker_threads');
+const { workerData, parentPort } = require('worker_threads');
 const DataLib = require('./datalib');
 const tools = require('./tools');
 
@@ -40,9 +40,10 @@ async function generateBasicPOS(pos) {
     return promise;
 }
 
+
 try {
     console.log(`Freq thread starting`);
-    const pos = process.argv[2];
+    const pos = workerData.pos;
     generateBasicPOS(pos).then((word) => {
         parentPort.postMessage(word);
     });

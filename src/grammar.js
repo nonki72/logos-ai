@@ -56,7 +56,7 @@ async function generateBasicPOS(pos, tree, n) {
     const promise = new Promise(async function (resolve, reject) {
 
         if (n > 1) {
-            const workerMiku = new Worker('./src/grammar-miku', {argv: [{"tree":tree}, n]});  
+            const workerMiku = new Worker('./src/grammar-miku', { workerData: {"tree":tree, "n":n} });  
             workerMiku.on('error', (err) => { console.error(err); throw err; });
             workerMiku.on('exit', () => {
               console.log(`Miku thread exiting`);
@@ -67,7 +67,7 @@ async function generateBasicPOS(pos, tree, n) {
                 return resolve(word);
             });
         } else {
-            const workerFreq = new Worker('./src/grammar-freq', {argv: [pos]});
+            const workerFreq = new Worker('./src/grammar-freq', { workerData: {"pos": pos} });
             workerFreq.on('error', (err) => { console.error(err); throw err; });
             workerFreq.on('exit', () => {
               console.log(`Freq thread exiting`);
