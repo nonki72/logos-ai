@@ -48,6 +48,7 @@
     "q": "^1.5.0",
     "request": "^2.88.2",
     "sleep-promise": "^9.1.0",
+    "spacy-js": "^0.0.5",
     "twitter-api-client": "^1.6.0",
     "twitter-api-v2": "^1.12.3",
     "yesno": "^0.4.0"
