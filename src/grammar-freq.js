@@ -2,6 +2,7 @@
 const { workerData, parentPort } = require('worker_threads');
 const DataLib = require('./datalib');
 const tools = require('./tools');
+const Grammar = require('./grammar');
 
 // by random frequency
 async function generateBasicPOS(pos) {
@@ -16,22 +17,15 @@ async function generateBasicPOS(pos) {
             
             console.log("word by random word frequency: " + wordByFrequency);
         
-            // check wordnet for that word
-//                const randomPOS = await DataLib.readFreeIdentifierValueByRandomValue('object', 'Grammar', pos);
-            DataLib.readFreeIdentifierByFn('"'+wordByFrequency+'"', async (randomPOS) => {
-                var word;
-                if (randomPOS == null) {
-                    console.log("No wordnet entry found! word: '" + wordByFrequency + "', part of speech: '" + pos + "'");
-                    word = await generateBasicPOS(pos);
-//                        return reject("No wordnet entry found! word: '" + wordByFrequency + "', pos: '" + pos + "'");
-                } else if (randomPOS.fnclas !== pos) {
-//                    console.log("Wordnet entry is not the right part of speech! word: '" + wordByFrequency + "', part of speech: '" + pos + "'");
-                    word = await generateBasicPOS(pos);
-                } else {
-                    word = randomPOS.fn.replace(/^\"/, '').replace(/\"$/, '');
-                }
-                return resolve(word);
-            });
+
+            // check wordnet for wordByFrequency
+            const existsInDiary = await Grammar.checkWordnetFor(wordByFrequency, pos);
+            if (existsInDiary) {
+                return resolve(wordByFrequency);
+            }
+
+            // try again
+            return resolve(await generateBasicPOS(pos));
         } catch (error) {
             console.error(error);
             return reject(error);

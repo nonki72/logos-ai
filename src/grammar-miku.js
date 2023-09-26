@@ -3,12 +3,12 @@ const { workerData, parentPort } = require('worker_threads');
 const FunctionParser = require('./functionparser.js');
 const DataLib = require('./datalib');
 const tools = require('./tools');
+const Grammar = require('./grammar');
 
 // by miku neural network
 async function generateBasicPOS(tree, n) {
     const promise = new Promise(async function (resolve, reject) {
         try {
-            if (n > 0 && Math.random() < 0.5) {
                 console.log("running miku neural network. n: " + n);
                 var lastGeneratedWord = null;
                 // the tree might not be fully generated yet, so keep checking for n-1th word
@@ -35,11 +35,19 @@ async function generateBasicPOS(tree, n) {
                         }
                         console.log("word by miku neural net: " + wordByMiku);
 
-                        return resolve(wordByMiku);
+                        // check wordnet for wordByMiku
+                        const existsInDiary = await Grammar.checkWordnetFor(wordByMiku, "[miku mode]");
+                        if (existsInDiary) {
+                            return resolve(wordByMiku);
+                        }
+
+                        // neural net only gives same answer
+                        // give up
+                        // TODO: check spaCy for wordByMiku related words
+                        return resolve(null);
                     }
                 }, 1000);                          
                 
-            }
 
         } catch (error) {
             console.error(error);

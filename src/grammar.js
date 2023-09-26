@@ -1,3 +1,4 @@
+const DataLib = require('./datalib');
 const {resolve} = require('path');
 const basicFilePath = resolve('../logos-ai/yaml/basic.yaml');
 const phrasesFilePath = resolve('../logos-ai/yaml/phrases.yaml');
@@ -47,38 +48,52 @@ function loadTextFileList(filePath) {
 
 // GENERATE FUCTIONS
 
-// look up in the frequency database first
-// check the diary (wordnet) for that word
-// make sure its the expected type (POS, part of speech)
-// if its not recusively call until one is found...
-// TODO: MERGE THESE DATABASES FIRST (IN SENSEI) [done]
-async function generateBasicPOS(pos, tree, n) {
+async function generateBasicPosMiku(tree, n) {
     const promise = new Promise(async function (resolve, reject) {
-
-        if (n > 1) {
-            const workerMiku = new Worker('./src/grammar-miku', { workerData: {"tree":tree, "n":n} });  
-            workerMiku.on('error', (err) => { console.error(err); throw err; });
-            workerMiku.on('exit', () => {
-              console.log(`Miku thread exiting`);
-            })
-            workerMiku.on('message', (word) => {
-                console.log("got miku message, word: " + word);
-                // workerMiku.terminate();
-                return resolve(word);
-            });
-        } else {
-            const workerFreq = new Worker('./src/grammar-freq', { workerData: {"pos": pos} });
-            workerFreq.on('error', (err) => { console.error(err); throw err; });
-            workerFreq.on('exit', () => {
-              console.log(`Freq thread exiting`);
-            })
-            workerFreq.on('message', (word) => {
-                console.log("got freq message, word: " + word);
-                // workerFreq.terminate();
-                return resolve(word);
-            });          
-        }
-
+        if (n <= 1) return resolve(null);
+        const workerMiku = new Worker('./src/grammar-miku', { workerData: {"tree":tree, "n":n} });  
+        workerMiku.on('error', (err) => { console.error(err); return resolve(null); });
+        workerMiku.on('exit', () => {
+        console.log(`Miku thread exiting`);
+        })
+        workerMiku.on('message', (word) => {
+            console.log("got miku message, word: " + word);
+            workerMiku.terminate();
+            return resolve(word);
+        });
+    }).catch((error) => {console.error(error)});
+    return promise;
+}
+async function generateBasicPosFreq(pos) {
+    const promise = new Promise(async function (resolve, reject) {
+        const workerFreq = new Worker('./src/grammar-freq', { workerData: {"pos": pos} });
+        workerFreq.on('error', (err) => { console.error(err); return resolve(null); });
+        workerFreq.on('exit', () => {
+        console.log(`Freq thread exiting`);
+        })
+        workerFreq.on('message', (word) => {
+            console.log("got freq message, word: " + word);
+            workerFreq.terminate();
+            return resolve(word);
+        });
+    }).catch((error) => {console.error(error)});
+    return promise;
+}
+// check wordnet for a word
+async function checkWordnetFor(word, pos) {
+    const promise = new Promise(async function (resolve, reject) {
+        DataLib.readFreeIdentifierByFn('"'+word+'"', async (entity) => {
+            if (entity == null) {
+                console.error("No wordnet entry found! word: '" + word + "', part of speech: '" + pos + "'");
+                return resolve(false);
+            } else if (entity.fnclas !== pos) {
+                console.error("Wordnet entry is not the right part of speech! word: '" + word + "', part of speech: '" + pos + "'");
+                return resolve(false);
+            } else {
+                // found it
+                return resolve(true);
+            }
+        });
     }).catch((error) => {console.error(error)});
     return promise;
 }
@@ -95,8 +110,10 @@ async function generatePOSTypeTree(POSTypeDefinitionList) {
             // see basic.yaml
             const basicPOSType = basicDictionary[POSTypeDefinitionAbbreviation];
             try {
-//                const lastGeneratedWord = getLastGeneratedWord(generatedPOSTree); // cant do this way because we dont have completed tree
-                const generatedPOS = await generateBasicPOS(basicPOSType, generatedPOSTree, i);
+                var generatedPOS = await generateBasicPosMiku(generatedPOSTree, i);
+                if (generatedPOS == null) {
+                    generatedPOS = await generateBasicPosFreq(basicPOSType);
+                }
                 console.log("generated part of speech:"+JSON.stringify(generatedPOS));
                 if (generatedPOSTree.length > 0) generatedPOSTree.push(" ");
                 generatedPOSTree.push(generatedPOS);
@@ -178,11 +195,13 @@ const treeToString = (tree) => {
 module.exports = {
     loadYamlFileTree: loadYamlFileTree,
     loadTextFileList: loadTextFileList,
-    generateBasicPOS: generateBasicPOS,
+    generateBasicPosMiku: generateBasicPosMiku,
+    generateBasicPosFreq: generateBasicPosFreq,
     generatePOSTypeTree: generatePOSTypeTree,
     generatePOSTree: generatePOSTree,
     generatePOS: generatePOS,
     generateSentence: generateSentence,
     getRandomInt: getRandomInt,
-    treeToString: treeToString
+    treeToString: treeToString,
+    checkWordnetFor: checkWordnetFor
 }
