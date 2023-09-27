@@ -3,6 +3,7 @@ const AST = require('./ast');
 const DataLib = require('./datalib');
 const Sql = require('./sql');
 const FunctionParser = require('./functionparser.js');
+const util = require('util');
 
 var headless = false;
 
@@ -96,6 +97,21 @@ const loadAndExecuteFunction = (ast, fallback, cb) => {
     setTimeout(fallback, 1, null);
     return;
   }
+  if (headless && ast.value == "KeyWordFinder") {
+    console.error("Skipping KeyWordFinder...");
+    setTimeout(fallback, 1, null);
+    return;
+  }
+  if (headless && ast.value == "KeywordFinder") {
+    console.error("Skipping KeyWordFinder...");
+    setTimeout(fallback, 1, null);
+    return;
+  }
+  if (headless && ast.value == "GrammarCorrector") {
+    console.error("Skipping KeyWordFinder...");
+    setTimeout(fallback, 1, null);
+    return;
+  }
 
   FunctionParser.executeFunction(FunctionParser.loadStoredFunction(ast), ast.args, (output) => {
     // substitute the named function with its output
@@ -124,7 +140,7 @@ const loadAndExecuteFunction = (ast, fallback, cb) => {
 // (substitution for a lambda combinator)
 const combine = async (lastAst) => {
   console.log("*** C ***");
-  console.log("lastAst: " + JSON.stringify(lastAst,null,4));
+  console.log("lastAst: " + util.inspect(lastAst));
   if (lastAst != null) console.log("*** C LASTAST *** " + lastAst.astid);
 
   // see if lastAst is usable as an abstraction (function) to apply to the input
@@ -149,7 +165,7 @@ const combine = async (lastAst) => {
 
         var inputAst = AST.cast(input);
         if (inputAst == null || inputAst.fn == null) {
-          console.error("Unknown AST: " + JSON.stringify(input,null,4));
+          console.error("Unknown AST: " + util.inspect(input));
           setTimeout(combine, 1, lastAst);
           return;
         }
@@ -221,7 +237,7 @@ const combine = async (lastAst) => {
 
       var fragmentAst = AST.cast(fragment);
       if (fragmentAst == null) {
-        console.error("Unknown AST type: " + JSON.stringify(fragment,null,4));
+        console.error("Unknown AST type: " + util.inspect(fragment));
         setTimeout(combine, 1, lastAst);
         return;
       }
@@ -231,8 +247,8 @@ const combine = async (lastAst) => {
         return;
       }
       console.log("*** C2 WITH FRAGMENT *** " + fragmentAst.type + ","+fragmentAst.astid);
-      console.log(JSON.stringify(fragmentAst,null,4));
-      console.log(JSON.stringify(lastAst,null,4));
+      console.log(util.inspect(fragmentAst));
+      console.log(util.inspect(lastAst));
 
       if (fragmentAst.argTypes[0][1] == 'AST') fragmentAst.args.push(lastAst);
       else fragmentAst.args.push(lastAst.fn);

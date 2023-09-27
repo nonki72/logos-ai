@@ -1,6 +1,6 @@
 {
   "name": "logos-ai",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Associative Interactive Recursive Structures",
   "main": "index.js",
   "scripts": {
@@ -34,6 +34,7 @@
     "corenlp": "^1.5.2",
     "cors": "^2.8.5",
     "express": "^4.18.1",
+    "gl": "^6.0.2",
     "got": "^12.3.0",
     "js-yaml": "^4.1.0",
     "mongodb": "^3.7.3",
@@ -60,5 +61,12 @@
   },
   "directories": {
     "test": "test"
+  },
+  "overrides": {
+    "gpu.js": {
+      "gl": {
+        "node-gyp": ">7.0.0"
+      }
+    }
   }
 }

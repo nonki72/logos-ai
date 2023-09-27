@@ -42,12 +42,12 @@ async function interact () {
     }
     const storedSelectFunction = FunctionParser.loadStoredFunction(selectTopicIdentifier);
 
-    const keyWordFinderIdentifier = await getFreeIdentifierByName("KeyWordFinder")
+    const keywordFinderIdentifier = await getFreeIdentifierByName("KeywordFinder")
         .catch((reason) => {throw Error(reason)});
-    if (keyWordFinderIdentifier == null) {
+    if (keywordFinderIdentifier == null) {
         return setTimeout(interact, 0);
     }
-    const keyWordFinderFunction = FunctionParser.loadStoredFunction(keyWordFinderIdentifier);
+    const keyWordFinderFunction = FunctionParser.loadStoredFunction(keywordFinderIdentifier);
 
     
     // vv not required below
