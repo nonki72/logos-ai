@@ -12,6 +12,20 @@ const Interpreter = require('../src/interpreter');
 var router = express.Router();
 
 
+/**
+ * GET /api/lambda/identifier/:function
+ *
+ * Retrieve a entity.
+ */
+router.get('/identifier/:function', function get (req, res, next) {
+  DataLib.readFreeIdentifierByFn(req.params.function, (storedFunction) => {
+    if (storedFunction == null) {
+      return res.status(404).json({"message":"Stored Function could not be found: " + req.params.function});
+    }
+    return res.status(200).json({"freeIdentifier": storedFunction});
+  });
+});
+
 /*
 request parameters:
   expression

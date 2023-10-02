@@ -321,6 +321,44 @@ async function readFreeIdentifierByName (name, cb) {
   return cb(res);
 }
 
+
+async function readFreeIdentifiersByRegex(regex, cursor, pageSize) {
+    // Create a new cursor object
+	const query = {
+		'type': 'free',
+		'name': {$regex: regex}
+	};
+	var client = await getDb();
+	var res = null;
+	try {
+		const db = client.db("logos");
+		var newCursor = null;
+		if (cursor!= null) {
+			newCursor = await db.collection('Diary').find(query, { sort: { id: 1 }, startAfter: cursor });
+		} else {
+			newCursor = await db.collection('Diary').find(query, { sort: { id: 1 } });
+		}
+		// Get the documents from the cursor
+		const documents = [];
+		var i = 0;
+		for await (const document of newCursor) {
+			documents.push(document);
+			if (++i >= pageSize) {
+				break;
+			}
+		}
+
+		// Get the next cursor value
+		const nextCursor = newCursor.hasNext() ? newCursor.next().id : null;
+
+		// Return the paginated results
+		res = { documents, nextCursor };
+	} catch(err) {
+		console.error(err);
+	}
+	return cb(res);  
+  }
+
 async function readFreeIdentifierByFn (fn, cb) {
 	const query = {
 		'type': 'free',
@@ -1118,6 +1156,7 @@ exports.readFreeIdentifierValueByRandomValue = readFreeIdentifierValueByRandomVa
 exports.readFreeIdentifierFnThatTakesArgsByRandomValue = readFreeIdentifierFnThatTakesArgsByRandomValue;
 exports.readFreeIdentifierFnThatTakesFirstArgOfTypeByRandomValue = readFreeIdentifierFnThatTakesFirstArgOfTypeByRandomValue;
 exports.readFreeIdentifierByName = readFreeIdentifierByName;
+exports.readFreeIdentifiersByRegex = readFreeIdentifiersByRegex;
 exports.readFreeIdentifierByFn = readFreeIdentifierByFn;
 exports.readByRandomValue = readByRandomValue;
 exports.readByAssociativeValue = readByAssociativeValue;

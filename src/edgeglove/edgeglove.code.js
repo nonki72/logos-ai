@@ -8,6 +8,12 @@ The above copyright notice and this permission notice shall be included in all c
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
  
+
+const egw = require('./edgeglove.word.js');
+const edgeglove_word = egw.edgeglove_word;
+const egd = require('./edgeglove.data_100.js');
+const edgeglove_data = egd.edgeglove_data;
+
 /**
  * Expand numeric tokens to words.
  * @param {!Array<number>} edgeglove_data_tokens Number array representing similiar words of a given word.

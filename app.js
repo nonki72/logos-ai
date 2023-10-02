@@ -26,6 +26,7 @@ app.get('/health', function get (req, res, next) {
 });
 
 app.use('/api/function', require('./api/function'));
+app.use('/api/function-bulk', require('./api/function-bulk'));
 app.use('/api/class', require('./api/class'));
 app.use('/api/module', require('./api/module'));
 app.use('/api/lambda', require('./api/lambda'));
