@@ -37,11 +37,11 @@ function edgegloveExpandTokens(edgeglove_data_tokens, vocab_depth)
  * Return words with highest occurence.
  * @return {!Array<string>} Words with highest occurence.
  */
-Array.prototype.byCount= function() 
+function byCount (array) 
 {
-    var itm, a= [], L= this.length, o= {};
+    var itm, a= [], L= array.length, o= {};
     for (var i= 0; i<L; i++){
-        itm= this[i];
+        itm= array[i];
         if(!itm) continue;
         if(o[itm]== undefined) o[itm]= 1;
         else ++o[itm];
@@ -81,7 +81,7 @@ function edgegloveFreqWords(classifier_list, vocab_depth, vocab_max)
 			words_total = words_total.concat( classifier_list[ww] );
 		}
 	}
-	return words_total.byCount().slice(0, vocab_max);
+	return byCount(words_total).slice(0, vocab_max);
 }
 
 function edgegloveFreqWord(classifier, vocab_depth, vocab_max) {
@@ -101,7 +101,7 @@ function edgegloveFreqWord(classifier, vocab_depth, vocab_max) {
 	{
 		words_total.push(classifierPrepared);
 	}
-	return words_total.byCount().slice(0, vocab_max);
+	return byCount(words_total).slice(0, vocab_max);
 }
 
 exports.edgegloveFreqWords = edgegloveFreqWords;
