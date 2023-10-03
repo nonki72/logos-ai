@@ -29,15 +29,16 @@ router.get('/regex/:regex', async function get (req, res, next) {
   const pageSize = parseInt(req.query.pageSize) || 10;
 
   // Paginate the results using the DAO
-  const { documents, nextCursor } = await DataLib.readFreeIdentifiersByRegex(regex, cursor, pageSize);
-
-  if (storedFunctions == null) {
-    return res.status(404).json({"message":"Stored Functions could not be found"});
-  }
-  return res.status(200).json({
-    "freeIdentifiers": documents,
-    "nextCursor":nextCursor,
+  DataLib.readFreeIdentifiersByRegex(regex, cursor, pageSize, (documents, nextCursor) => {
+    if (documents == null || documents.length == 0) {
+      return res.status(404).json({"message":"Stored Functions could not be found"});
+    }
+    return res.status(200).json({
+      "freeIdentifiers": documents,
+      "nextCursor":nextCursor,
+    });      
   });
+
 });
 
 

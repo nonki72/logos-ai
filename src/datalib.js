@@ -322,7 +322,7 @@ async function readFreeIdentifierByName (name, cb) {
 }
 
 
-async function readFreeIdentifiersByRegex(regex, cursor, pageSize) {
+async function readFreeIdentifiersByRegex(regex, cursor, pageSize, cb) {
     // Create a new cursor object
 	const query = {
 		'type': 'free',
