@@ -29,7 +29,9 @@ router.get('/regex/:regex', async function get (req, res, next) {
   const pageSize = parseInt(req.query.pageSize) || 10;
 
   // Paginate the results using the DAO
-  DataLib.readFreeIdentifiersByRegex(regex, cursor, pageSize, (documents, nextCursor) => {
+  DataLib.readFreeIdentifiersByRegex(regex, cursor, pageSize, (documentsAndNextCursor) => {
+    const documents = documentsAndNextCursor.documents;
+    const nextCursor = documentsAndNextCursor.nextCursor;
     if (documents == null || documents.length == 0) {
       return res.status(404).json({"message":"Stored Functions could not be found"});
     }

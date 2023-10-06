@@ -349,10 +349,10 @@ async function readFreeIdentifiersByRegex(regex, cursor, pageSize, cb) {
 		}
 
 		// Get the next cursor value
-		const nextCursor = newCursor.hasNext() ? newCursor.next().id : null;
+		const nextCursor = (await newCursor.hasNext()) ? (await newCursor.next()).id : null;
 
 		// Return the paginated results
-		res = { documents, nextCursor };
+		res = { documents: documents, nextCursor: nextCursor };
 	} catch(err) {
 		console.error(err);
 	}
