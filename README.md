@@ -22,10 +22,21 @@ https://github.com/tadeuzagallo/lc-js
 
 `git clone https://github.com/nonki72/logos-sensei.git`
 
-### install node version manager
+### install node version manager && node
 
 [https://github.com/nvm-sh/nvm](https://github.com/nvm-sh/nvm)
 
 `nvm install 20`
 
 `nvm use 20`
+
+### install mongodb 7.0 community edition
+
+[https://www.mongodb.com/docs/manual/administration/install-on-linux/](https://www.mongodb.com/docs/manual/administration/install-on-linux/)
+
+### install mysql 8.0
+
+[https://dev.mysql.com/doc/refman/8.0/en/linux-installation.html](https://dev.mysql.com/doc/refman/8.0/en/linux-installation.html)
+
+### install logos-ai
+
