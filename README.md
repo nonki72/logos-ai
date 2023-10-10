@@ -281,6 +281,14 @@ now run all the remaining sensei's
 - WordFreqCorpSensei60k -OR- WordFreqCorpSensei219k
 - WordnetSensei
 
+note that WordFreqCorpSensei60k *REQUIRES* the (corpus/lemmas_60k_m2355.txt) file which is NOT INCLUDED in the source.
+
+note that WordFreqCorpSensei219k *REQUIRES* the (corpus/words_219k_m2355.txt) file which is NOT INCLUDED in the source.
+
+find samples and links to purchase these corpii at [https://www.wordfrequency.info/samples.asp](https://www.wordfrequency.info/samples.asp)
+
+also,
+
 some of these have args so check the output first lines for instructions
 
 such one is hatsune miku (no official affiliation with crypton media inc)
@@ -297,7 +305,9 @@ the third arg is override the default location of the outputted training data (w
 
 the point of this is to add personality to the AI, it was originally envisioned to be hatsune miku herself, however, you can use any lines of text if you edit (src/sensei/hatsunemiku.js) or even (corpus/hatsune_miku_lyrics_4k.txt)
 
-ALSO, WordnetSensei takes a long time so if it fails at some point, simply take the number of the last learned word (strikethrough or not) and use that as the arg like so `node loader.js WordnetSensei 7777` and it will resume from there (by skipping)
+ALSO,
+
+WordnetSensei takes a long time so if it fails at some point, simply take the number of the last learned word (strikethrough or not) and use that as the arg like so `node loader.js WordnetSensei 7777` and it will resume from there (by skipping)
 
 ## interact with Logos AI
 
