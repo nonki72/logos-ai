@@ -261,3 +261,36 @@ lambda terms are stored in the Diary collection
 
 the reason it is written in javascript rather than, say, python or haskell is that python and haskell have not as many libraries as JS, and they are not as good for prototyping complex logic, and JS has just about every feature you could want in a language (TypeScript rewrite, anyone???)
 
+you should have already taught the following
+
+- IoSensei (type something in logos-ai terminal and press enter after starting it, so that it will complete)
+- AssociationSensei
+
+now run all the remaining sensei's
+
+-NativeSensei
+-GrammarSensei
+-DataTypeSensei
+-TwitterSensei (optional)
+-OpenAiSensei
+-EdgeGloveFuncSensei
+-EdgeGloveCorpSensei
+-SpacySensei
+-HatsuneMikuSensei 
+-WordFreqFuncSensei 
+-WordFreqCorpSensei60k -OR- WordFreqCorpSensei219k
+-WordnetSensei
+
+some of these have args so check the output first lines for instructions
+
+such one is hatsune miku (no official affiliation with crypton media inc)
+
+run it like this
+
+`HatsuneMikuSensei 100 1500`
+
+the first arg is how many lines to train the Neural Network with (these are hatsune miku lyrics and they come with the source)
+
+the second arg is how many iterations and it takes quite a few to predict next word sensibly
+
+the point of this is merely to add personality to the AI, it was originally envisioned to be hatsune miku herself, however, you can use any lines of text if you edit (src/sensei/hatsunemiku.js) or even (corpus/hatsune_miku_lyrics_4k.txt)
