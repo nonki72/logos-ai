@@ -14,13 +14,11 @@ https://github.com/tadeuzagallo/lc-js
 
 ## How to use
 
-### get the program
+open a terminal (in linux) and go to your desired installation directory
+
+### git the program
 
 `git clone https://github.com/nonki72/logos-ai.git`
-
-### get the teacher program
-
-`git clone https://github.com/nonki72/logos-sensei.git`
 
 ### install node version manager && node
 
@@ -125,4 +123,95 @@ Collection Substitution created!
 Collection WordFreq created!
 ```
 
-if the program hangs, use ctrl-c to close it out (do this for all the node scripts)
+if the program hangs after execution, use ctrl-c to close it out (do this for all the node scripts)
+
+now start logos-ai
+
+$ `node app.js`
+
+you will see
+
+```
+FP
+App listening on port 9001
+```
+
+FP is for 'functional programming' which is just a version of the program's main logic rewrite (src/interpreter.js)
+you dont need to run anything in (src/) there are runnable scripts for all the functionality in the root directory
+
+### install logos-sensei
+
+open another terminal and go to your git clone root directory
+
+$ `git clone https://github.com/nonki72/logos-sensei.git`
+
+$ `cd logos-sensei`
+
+$ `npm i`
+
+### run the teaching program logos-sensei, so that the student program logos-ai will learn data and functions!
+
+with app.js running in (logos-ai/)
+
+run the following in (logos-sensei/)
+
+$ `node loader.js IoSensei`
+
+this is the first 'sensei' to run
+
+you can actually run them in any order, but some have dependencies on other sensei's
+
+you will see output on the logos-sensei terminal
+
+```
+========= Starting Sensei Service 'IoSensei'... =========
+Establishing dependencies...
+Creating Input/Output functions...
+```
+
+and it will wait for input on the other terminal. this must only be done once. all the other sensei's are interactive. this is just to test functionality and may be fully automated in the future
+
+you will see output on the logos-ai terminal
+
+```
+!!!!!!!!!!!!!!RUNNING!!!!!!!!!!!!!
+Waiting for input...!!!!!!!!!!!!!!OUTPUT!!!!!!!!!!!
+[object Promise]
+
+```
+
+type any text and press 'enter'
+
+you will see output on the logos-ai terminal
+
+```
+!!!!!!!!!!!!!!CODE EXECUTION!!!!!!!!!!!
+
+console.log(CTX.args.line)
+!!!!!!!!!!!CTX!!!!!!!!!!!!!!!
+{
+    "args": {
+        "line": "konnichiwa sekai"
+    }
+}
+!!!!!!!!!!!!!!RUNNING!!!!!!!!!!!!!
+konnichiwa sekai
+!!!!!!!!!!!!!!OUTPUT!!!!!!!!!!!
+undefined
+```
+
+you can see where the Logos AI is running some code from the Logos Sensei. it won't run any code from input but it will learn from a sensei
+
+CTX is a variable for holding context
+
+the code is simple here it is writing one line to STDOUT - 'hello world' in japanese romaji
+
+ofter the code has run the AI will then say what the result of the function (code) was, which is undefined as it is the result of `console.log(...)`
+
+you will see output on the logos-sensei terminal
+
+```
+========= Sensei Service 'IoSensei' finished. =========
+```
+
+you may press ctrl-c on logos-sensei terminal
