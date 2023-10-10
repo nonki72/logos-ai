@@ -38,5 +38,38 @@ https://github.com/tadeuzagallo/lc-js
 
 [https://dev.mysql.com/doc/refman/8.0/en/linux-installation.html](https://dev.mysql.com/doc/refman/8.0/en/linux-installation.html)
 
+log into mysql as root
+
+`mysql -u root`
+
+create a new database for logos
+
+mysql> `CREATE DATABASE logos;`
+
+and create a dedicated user called 'logos', with full permissions to the 'logos' database
+
+[https://www.digitalocean.com/community/tutorials/how-to-create-a-new-user-and-grant-permissions-in-mysql](https://www.digitalocean.com/community/tutorials/how-to-create-a-new-user-and-grant-permissions-in-mysql)
+
 ### install logos-ai
 
+build dependencies with node package manager
+
+`cd logos-ai`
+
+`npm i`
+
+save mysql user credentials
+
+`nano keys/sql.json`
+
+paste the following and fill out the password you set up eariler
+
+```
+{
+    "user":"logos",
+    "pass":"{le password}",
+    "db":"logos",
+    "host":"127.0.0.1",
+    "port":"33060"
+}
+```
