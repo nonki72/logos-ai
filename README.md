@@ -268,18 +268,18 @@ you should have already taught the following
 
 now run all the remaining sensei's
 
--NativeSensei
--GrammarSensei
--DataTypeSensei
--TwitterSensei (optional)
--OpenAiSensei
--EdgeGloveFuncSensei
--EdgeGloveCorpSensei
--SpacySensei
--HatsuneMikuSensei 
--WordFreqFuncSensei 
--WordFreqCorpSensei60k -OR- WordFreqCorpSensei219k
--WordnetSensei
+- NativeSensei
+- GrammarSensei
+- DataTypeSensei
+- TwitterSensei (optional)
+- OpenAiSensei
+- EdgeGloveFuncSensei
+- EdgeGloveCorpSensei
+- SpacySensei
+- HatsuneMikuSensei 
+- WordFreqFuncSensei 
+- WordFreqCorpSensei60k -OR- WordFreqCorpSensei219k
+- WordnetSensei
 
 some of these have args so check the output first lines for instructions
 
@@ -287,10 +287,36 @@ such one is hatsune miku (no official affiliation with crypton media inc)
 
 run it like this
 
-`HatsuneMikuSensei 100 1500`
+`node loader.js HatsuneMikuSensei 100 1500`
 
 the first arg is how many lines to train the Neural Network with (these are hatsune miku lyrics and they come with the source)
 
 the second arg is how many iterations and it takes quite a few to predict next word sensibly
 
-the point of this is merely to add personality to the AI, it was originally envisioned to be hatsune miku herself, however, you can use any lines of text if you edit (src/sensei/hatsunemiku.js) or even (corpus/hatsune_miku_lyrics_4k.txt)
+the third arg is override the default location of the outputted training data (which is fed directly to logos-ai by the trainer. you do not need this file after running the sensei, besides if you want to load one that's already computed! use (`logos-ai/hatsune-read.js` NOT `loader.js HatsuneMikuSensei`)
+
+the point of this is to add personality to the AI, it was originally envisioned to be hatsune miku herself, however, you can use any lines of text if you edit (src/sensei/hatsunemiku.js) or even (corpus/hatsune_miku_lyrics_4k.txt)
+
+ALSO, WordnetSensei takes a long time so if it fails at some point, simply take the number of the last learned word (strikethrough or not) and use that as the arg like so `node loader.js WordnetSensei 7777` and it will resume from there (by skipping)
+
+## interact with Logos AI
+
+there are several scripts you can use to make use of your newly minted "conscious" AI. it is self aware by definition because of things like NativeSensei, it has the ability to peer into its own mind, and make changes. This will become more and more apparent as more logical functionality is implemented
+
+`node combine.js`
+
+and it will wake
+
+by this it means thinking, and as part of that, any functions it knows may be called. so it could make lots of API calls. these are disabled by default so that it can think to itself. but to enable that, go to (src/interpreter.js) which is its 'main brain' and search for 'readlineInputLine' you'll see the blacklisted functions around line 90. simply comment out those if statements as desired functionality goes
+
+again, if you do this it will start spontaneously tweeting etc. how often, depends on the associative value of TwitterTweet, which begins at 1 and increases every time it is used.
+
+another thing you can do is generate a tweet. for this you need both twitter.json and openai.json filled out properly
+
+`node generate.js`
+
+wait for a few seconds and then it will eihter error (because you didnt pay for openai -- local version coming soon!!) or you're not online.
+
+then press 'y' to tweet it or 'n' to discard. simple as that.
+
+how are these generated? its a hand-held process that uses all the things that logos-ai knows pretty much, and its history. basically it uses a never-before-seen Context Free Grammar of the English language (yaml/) directory and uses wordnet part of speech library (already in mongo) as well as a text file list of the remainder under (text/) directory. i did not create these from scratch but they are curated from the web. nowe, with the CFG being randomly determined from 'S' or sentence, its a skeleton of a sentence. then, the Parts of Speech are appropriately filled in probabilistically based on Word Frequency. Right now WordFreq is its own database, someday to be subsumed into the Diary as WordNet words (although they are synced - there are no words in the WordFreq collection that are not in the Diary). also, lemmas are not known and Logos AI does not know how to handle them right now. it is on the todo-list
