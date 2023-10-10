@@ -215,3 +215,49 @@ you will see output on the logos-sensei terminal
 ```
 
 you may press ctrl-c on logos-sensei terminal
+
+now run the rest of the sensei's! try AssociationSensei next!! everything that is related logically has an associative value in mysql and is used to implement a relatively compact probablity distribution with real time updates!
+
+if you run the same sensei twice, no worries. they are meant to be idempotent. if you see duplicate data in mongodb, or it gets mucked up for whatever reason, then worst case start over by deleting the tables and start over
+
+$ `node loader.js AssociationSensei`
+
+you will see output in the logos-ai terminal
+
+```
+{
+  definition1: '6525908c7f724a276a0ef6c8',
+  definition2: '6525908c7f724a276a0ef6c7'
+}
+{
+  id: 6525908c7f724a276a0ef6c9,
+  type: 'app',
+  def1: '6525908c7f724a276a0ef6c8',
+  def2: '6525908c7f724a276a0ef6c7',
+  invalid: false
+}
+EC record stored in SQL for equid/astid: 119452/6525908c7f724a276a0ef6c9
+Created EC 119452 for 6525908c7f724a276a0ef6c9
+EC record stored in SQL for equid/astid: 119452/6525908c7f724a276a0ef6c7
+Created EC 119452 for 6525908c7f724a276a0ef6c7
+EC record incremented in SQL for equid/astid: 119452/6525908c7f724a276a0ef6c7
+```
+
+an association goes from one lambda term (designated by definition id) to another. a term can be an application, an abstraction, or a (free) identifier! that's lambda calculus for ya.
+
+- application: a conjunction of two lambda terms
+- abstraction: a function with unfulfilled argument
+- identifier: a value (which may be a function)
+
+yes, that means Logos AI is turing complete in its thinking capacity.
+
+associations are stored in the mysql db, where they have an equid, astid, and an assv
+
+- equid: equivalence class identifier (this, together with the astid is UNIQUE)
+- astid: abstract syntax tree identifier (the definition/term entry in the mongodb Diary collection 'id' field in mongodb - we are NOT using '_id')
+- assv: associative value. how many 'hits' there are on this association (like, have seen or decided this association so many times)
+
+lambda terms are stored in the Diary collection 
+
+the reason it is written in javascript rather than, say, python or haskell is that python and haskell have not as many libraries as JS, and they are not as good for prototyping complex logic, and JS has just about every feature you could want in a language (TypeScript rewrite, anyone???)
+
