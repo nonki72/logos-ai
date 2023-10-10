@@ -11,3 +11,21 @@ Associative "AI" that is not artificial where everything learned is essentially 
 
 Uses lambda calculus interpreter:
 https://github.com/tadeuzagallo/lc-js
+
+## How to use
+
+### get the program
+
+`git clone https://github.com/nonki72/logos-ai.git`
+
+### get the teacher program
+
+`git clone https://github.com/nonki72/logos-sensei.git`
+
+### install node version manager
+
+[https://github.com/nvm-sh/nvm](https://github.com/nvm-sh/nvm)
+
+`nvm install 20`
+
+`nvm use 20`
