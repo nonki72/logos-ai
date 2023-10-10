@@ -101,3 +101,28 @@ and for keys/twitter.json (if you would like twitter functionality)
     "accessSecret": "{le access secret}"
 }
 ```
+
+now set up the databases!
+
+for mysql
+
+$ `node createTables.js`
+
+if it returns `[]` that's good
+
+and for mongodb
+
+$ `node create_mongo_db.js`
+
+you should see:
+
+```
+Database logos created!
+Collection Diary created!
+Collection Class created!
+Collection Module created!
+Collection Substitution created!
+Collection WordFreq created!
+```
+
+if the program hangs, use ctrl-c to close it out (do this for all the node scripts)
