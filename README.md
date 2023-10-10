@@ -64,6 +64,7 @@ save mysql user credentials
 
 paste the following and fill out the password you set up eariler
 
+
 ```
 {
     "user":"logos",
@@ -71,5 +72,32 @@ paste the following and fill out the password you set up eariler
     "db":"logos",
     "host":"127.0.0.1",
     "port":"33060"
+}
+```
+
+also do this for keys/mongo.json
+
+```
+{
+    "url": "mongodb://127.0.0.1:27017/"
+}
+```
+
+and for keys/openai.json
+
+```
+{
+    "apiKey": "{le api key}"
+}
+```
+
+and for keys/twitter.json (if you would like twitter functionality)
+
+```
+{
+    "appKey": "{le app key}",
+    "appSecret": "{le app secret}",
+    "accessToken": "{le access token}",
+    "accessSecret": "{le access secret}"
 }
 ```
