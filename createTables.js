@@ -19,19 +19,19 @@
 var mysqlx = require('@mysql/xdevapi');
 var prompt = require('prompt');
 const async = require('async');
-
+const sqlConfig = require('./keys/sql.json');
 
 async function getMyDb() {
   var mySession = await mysqlx.getSession( {
-  host: process.env.MYSQL_HOST, port: process.env.MYSQL_PORT,
-  user: process.env.MYSQL_USER, password: process.env.MYSQL_PASSWORD} );
+  host: sqlConfig.host, port: sqlConfig.port,
+  user: sqlConfig.user, password: sqlConfig.pass} );
 
-  const mySchema = mySession.getSchema(process.env.MYSQL_DATABASE);
+  const mySchema = mySession.getSchema(sqlConfig.db);
   if (!(await mySchema.existsInDatabase())) {
-    await mySession.createSchema(process.env.MYSQL_DATABASE);
+    await mySession.createSchema(sqlConfig.db);
   }
 
-  await mySession.sql(`USE `+process.env.MYSQL_DATABASE).execute();
+  await mySession.sql(`USE `+sqlConfig.db).execute();
   return mySession;
 }
 
