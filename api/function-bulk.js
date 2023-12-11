@@ -23,13 +23,13 @@ router.get('/regex/:regex', async function get (req, res, next) {
   const regex = req.params.regex;
   
   // Get the cursor value from the request query parameter
-  const cursor = req.query.cursor;
+  const startAt = parseInt(req.query.startAt) || 0;
 
   // Get the page size from the request query parameter
   const pageSize = parseInt(req.query.pageSize) || 10;
 
   // Paginate the results using the DAO
-  DataLib.readFreeIdentifiersByRegex(regex, cursor, pageSize, (documentsAndNextCursor) => {
+  DataLib.readFreeIdentifiersByRegex(regex, startAt, pageSize, (documentsAndNextCursor) => {
     const documents = documentsAndNextCursor.documents;
     const nextCursor = documentsAndNextCursor.nextCursor;
     if (documents == null || documents.length == 0) {

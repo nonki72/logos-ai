@@ -1,5 +1,6 @@
 const DataLib = require('./datalib');
 const Sql = require('./sql');
+const InteractStub = require('./interact-stub.js');
 const FunctionParser = require('./functionparser.js');
 const F = require('./function');
 
@@ -164,6 +165,11 @@ debugger;
               .catch((reason) => {console.error(reason); return null});
             i++;
         }
+    }
+
+    // quit and get something totally random
+    if (randomAssociation == null || randomAssociation.fnmod!= 'Grammar') {
+        randomAssociation = await InteractStub.getRandomFreeIdentifierByRNG("object", 'Grammar', namedFreeIdentifier.fnclas, false);
     }
 
     console.log("randomassociation:"+JSON.stringify(randomAssociation," ",4));

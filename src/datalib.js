@@ -322,7 +322,7 @@ async function readFreeIdentifierByName (name, cb) {
 }
 
 
-async function readFreeIdentifiersByRegex(regex, cursor, pageSize, cb) {
+async function readFreeIdentifiersByRegex(regex, startAt, pageSize, cb) {
     // Create a new cursor object
 	const query = {
 		'type': 'free',
@@ -333,11 +333,7 @@ async function readFreeIdentifiersByRegex(regex, cursor, pageSize, cb) {
 	try {
 		const db = client.db("logos");
 		var newCursor = null;
-		if (cursor!= null) {
-			newCursor = await db.collection('Diary').find(query, { sort: { id: 1 }, startAfter: cursor });
-		} else {
-			newCursor = await db.collection('Diary').find(query, { sort: { id: 1 } });
-		}
+		newCursor = await db.collection('Diary').find(query, { sort: { id: 1 } }).skip(startAt).limit(pageSize);
 		// Get the documents from the cursor
 		const documents = [];
 		var i = 0;
