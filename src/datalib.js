@@ -498,6 +498,22 @@ async function readFreeIdentifierByTypeAndRandomValue (fntype, fnmod, fnclas, is
   return cb(res);
 }
 
+async function readSubstitutionByDef1 (def1, cb) {
+	let objId = (def1 instanceof ObjectID) ? def1 : new ObjectID(def1);
+	const query = {
+		'def1': objId.toString()
+	};
+	var client = await getDb();
+	var res = null;
+	try {
+		const db = client.db("logos");
+		res = await db.collection('Substitution').findOne(query);
+  } catch(err) {
+  	console.error(err);
+  }
+  return cb(res);
+}
+
 async function readWordFrequency (word, cb) {
 	const query = {
 		'word': word
@@ -896,7 +912,6 @@ async function updateOrCreateFreeIdentifierFunction (name, astid, fn, fntype, fn
 	};
 
 	var data = {
-		id: new ObjectID(),
 		type: 'free',
 		name: name,
 		astid: astid, // location (id)
@@ -910,11 +925,22 @@ async function updateOrCreateFreeIdentifierFunction (name, astid, fn, fntype, fn
 		memo: memoize,
 		promise: promise
 	};
-		
-    try {
+	try {
+		var resLookup = null;
 		var client = await getDb();
 		const db = client.db("logos");
-		await db.collection('Diary').updateOne(query, { $set: data }, { upsert: true });
+		resLookup = await db.collection('Diary').findOne(query);
+		var res = null;
+		if (resLookup != null) {
+			// already exists
+			res = await db.collection('Diary').updateOne(query, { $set: data }, { upsert: true });
+			data.id = resLookup.id;
+		} else {
+			// is a new identifier, needs an id field
+			var newId = new ObjectID();
+			data.id = newId;
+			res = await db.collection('Diary').insertOne(data);
+		} 
 	} catch (err) {
 		console.error(err);
 	}
@@ -1157,6 +1183,7 @@ exports.readFreeIdentifierByFn = readFreeIdentifierByFn;
 exports.readByRandomValue = readByRandomValue;
 exports.readByAssociativeValue = readByAssociativeValue;
 exports.readFreeIdentifierByTypeAndRandomValue = readFreeIdentifierByTypeAndRandomValue;
+exports.readSubstitutionByDef1 = readSubstitutionByDef1;
 exports.readWordFrequency = readWordFrequency;
 exports.readWordFrequencyAtLeast = readWordFrequencyAtLeast;
 exports.readById = readById;

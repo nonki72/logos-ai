@@ -3,6 +3,7 @@ const Sql = require('./sql');
 const InteractStub = require('./interact-stub.js');
 const FunctionParser = require('./functionparser.js');
 const F = require('./function');
+var ObjectID = require("mongodb").ObjectID;
 
 // get input from user prompt, output highest association
 async function interact () {
@@ -18,7 +19,7 @@ async function interact () {
             });
         });
      }
-     
+    
      // use above code to read from database and convert to DAO objects
     const inputFreeIdentifier = await getFreeIdentifierByName("readlineInputLine")
         .catch((reason) => {throw Error(reason)});
@@ -78,15 +79,14 @@ async function interact () {
     // get the input from prompt
     async function getFreeIdentifierByInput() {
         return new Promise(async (resolve, reject) => {
-            FunctionParser.executeFunction(storedInputFunction, null, async (inputResult) => {
-
-                // check if a sentence, need to select topic!
+//            FunctionParser.executeFunction(storedInputFunction, null, async (inputResult) => {
+var inputResult = "whirlpool";
+            // check if a sentence, need to select topic!
 
                 inputSplit = inputResult.split(" ");
                 var word = inputResult;
                 if (inputSplit.length > 1) {
-                    debugger;
-                    // use NLP Cloud to find key words
+                    // use NLP to find key words
 
 
 
@@ -126,7 +126,7 @@ async function interact () {
                     }
                 });
             });
-        });
+        //});
     }
 
     // read from input prompt and lookup the matching free identifier by name
@@ -136,7 +136,7 @@ async function interact () {
         return setTimeout(interact, 0);
     }
     console.log(namedFreeIdentifier.fn + " id: " + namedFreeIdentifier.id);
-debugger;
+
     // find a random entry (using custom distribution)
     async function getRandom(sourceId) {
         return new Promise(async (resolve, reject) => {
@@ -148,50 +148,91 @@ debugger;
             });
         });
     }
-debugger;
-    var namedFreeIdentifierId = namedFreeIdentifier.id;
-    if (namedFreeIdentifierId.length != 32) {
-        // is a mongo ObjectId
-        namedFreeIdentifierId = namedFreeIdentifierId.toString();
-    }
 
-    var randomAssociation = await getRandom(namedFreeIdentifierId)
-        .catch((reason) => {console.error(reason); return null});
-    if (randomAssociation == null || randomAssociation.fnmod != 'Grammar') {
-        var i = 0;
-        while (i < 50 && (randomAssociation == null || randomAssociation.fnmod != 'Grammar')) {
-            // nothing found, try again
-            randomAssociation = await getRandom(namedFreeIdentifierId)
-              .catch((reason) => {console.error(reason); return null});
-            i++;
+    // select a random entry from the database (try using distribution, then RNG)
+    var randomAssociation = null;
+
+    if (ObjectID.isValid(namedFreeIdentifier.id)) {
+        // use custom distribution
+        randomAssociation = await getRandom(namedFreeIdentifier.id)
+            .catch((reason) => {console.error(reason); return null});
+        if (randomAssociation == null) {
+            randomAssociation = await getRandom(namedFreeIdentifier.id)
+                .catch((reason) => {console.error(reason); return null});
         }
     }
 
-    // quit and get something totally random
-    if (randomAssociation == null || randomAssociation.fnmod!= 'Grammar') {
-        randomAssociation = await InteractStub.getRandomFreeIdentifierByRNG("object", 'Grammar', namedFreeIdentifier.fnclas, false);
+    // get what the association is referring to
+    async function getSubstitutionByDef1 (id) {
+        return new Promise((resolve, reject) => {
+            DataLib.readSubstitutionByDef1(id, (identifier) => {
+                if (identifier == null) {
+                    return reject("couldn't retrieve substitution for def1 "+id+" from database");
+                }
+                return resolve(identifier);
+            });
+        });
+    }
+    async function getIdentifierById (id) {
+        return new Promise((resolve, reject) => {
+            DataLib.readById(id, (identifier) => {
+                if (identifier == null) {
+                    return reject("couldn't retrieve "+id+" from database");
+                }
+                return resolve(identifier);
+            });
+        });
     }
 
-    console.log("randomassociation:"+JSON.stringify(randomAssociation," ",4));
+    console.log("random association:"+JSON.stringify(randomAssociation," ",4));
+    // might have a random association
+    // resolve the substitution to obtain a free identifier (entry)
+    var randomEntry = null;
+    if (randomAssociation != null) {
+        try {
 
 
-    if (randomAssociation == null  || randomAssociation.fnmod != 'Grammar') {
+            randomSubstitution = await getSubstitutionByDef1(randomAssociation.id);
+            if (randomSubstitution != null) {
+                console.log("random substitution:"+JSON.stringify(randomSubstitution," ",4));
+                const randomSynonym = await getIdentifierById(randomSubstitution.def2);
+
+
+                randomEntry2 = await getIdentifierById(randomSubstitution.def2)
+                console.log("random entry:"+JSON.stringify(randomEntry2," ",4));
+            
+            }
+        } catch(err) {
+            console.error(err);
+            // continue
+        }
+    }
+
+    // if not found, get something more random with RNG
+    if (randomEntry == null || randomEntry.fnmod!= 'Grammar') {
+        randomEntry = await InteractStub.getRandomFreeIdentifierByRNG("object", 'Grammar', namedFreeIdentifier.fnclas, false);
+    }
+
+    console.log("random entry:"+JSON.stringify(randomEntry," ",4));
+
+
+    if (randomEntry == null  || randomEntry.fnmod != 'Grammar') {
         console.error("Couldn't find any word!");
         return setTimeout(interact, 0);
     }
 
-    var random = JSON.stringify(randomAssociation.fn,null,4);
+    var random = JSON.stringify(randomEntry.fn,null,4);
 
     // output the random associative entry
     console.log("*************ASSOCIA***************");
-    //console.log(JSON.stringify(randomAssociation,null,4));
+    //console.log(JSON.stringify(randomEntry,null,4));
     console.log(JSON.stringify(random));
     // await FunctionParser.executeFunction(storedOutputFunction, ["OUTPUT:"+random], () => {
     //     return;
     // });
 
 
-    return setTimeout(interact, 0);
+    //return setTimeout(interact, 0);
 }
 
 exports.interact = interact;

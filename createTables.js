@@ -23,7 +23,7 @@ const sqlConfig = require('./keys/sql.json');
 
 async function getMyDb() {
   var mySession = await mysqlx.getSession( {
-  host: sqlConfig.host, port: sqlConfig.port,
+  host: sqlConfig.host, port: 33060,
   user: sqlConfig.user, password: sqlConfig.pass} );
 
   const mySchema = mySession.getSchema(sqlConfig.db);
@@ -41,7 +41,7 @@ async function getMyDb() {
 
 var SQL_STRING_EC = 'CREATE TABLE EC (\n' +
 '    equid BIGINT NOT NULL AUTO_INCREMENT,\n' +
-'    astid BINARY(12) NOT NULL,\n' +
+'    astid VARCHAR(24) NOT NULL,\n' +
 '    assv BIGINT UNSIGNED NOT NULL,\n' +
 '    INDEX (equid),\n' +
 '    INDEX (astid), \n' +
