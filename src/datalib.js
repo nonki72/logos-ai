@@ -58,12 +58,16 @@ async function readByEquivalenceClass (id) {
 async function readByAssociativeValue(sourceId, cb) {
 	var associationId = await Sql.getRandomECAstId(sourceId);
 	if (associationId) {
-		readById(associationId, (entity) => {
-			if (entity) {
-				entity.association = associationId; // ************************* needed?
-				return cb(entity);
-			}
-		});
+		try {
+			readById(associationId, (entity) => {
+				if (entity) {
+					entity.association = associationId; // ************************* needed?
+					return cb(entity);
+				}
+			});
+		} catch (err) {
+			console.error(err);
+        }
 	}
 	return cb(null);
   //DONTDO: no assv to report, select at random
@@ -568,9 +572,9 @@ async function readById (id, cb) {
 	try {
 		const db = client.db("logos");
 		res = await db.collection('Diary').findOne(query);
-  } catch(err) {
-  	console.error(err);
-  }
+	} catch(err) {
+		console.error(err);
+	}
   return cb(res);
 }
 

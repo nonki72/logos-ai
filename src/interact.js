@@ -142,9 +142,6 @@ var inputResult = "word";
         return new Promise(async (resolve, reject) => {
             try {
                 await DataLib.readByAssociativeValue(sourceId, (random) => {
-                    if (random == null) {
-                        return reject("no random found");
-                    }
                     return resolve(random);
                 });
             } catch (e) {
@@ -161,8 +158,8 @@ var inputResult = "word";
         randomAssociation = await getRandom(namedFreeIdentifier.id)
             .catch((reason) => {console.error(reason); return null});
         if (randomAssociation == null) {
-            randomAssociation = await getRandom(namedFreeIdentifier.id)
-                .catch((reason) => {console.error(reason); return null});
+            // randomAssociation = await getRandom(namedFreeIdentifier.id)
+            //     .catch((reason) => {console.error(reason); return null});
         }
     }
 
