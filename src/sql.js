@@ -93,7 +93,7 @@ async function getRandomECAstId (astid) {
     if (rows == null || rows.length == 0) {
       return null;
     }
-    console.log(rows.length+' ASTIDS FOR EQUID')
+    console.log(rows.length+' ASTIDS FOR EQUID ' + equid);
     var cumulativeRows = [];
     var cum = 0;
     for (var i=0; i < rows.length; i++) {
@@ -330,7 +330,7 @@ async function ensureBothRecordsExist(equid, astid1, astid2) {
   }
   // equid is pass by value, dont need to worry about changing it here
   try {
-    await insertECRecord(astid1, equid);
+    equid = await insertECRecord(astid1, equid);
     console.log("Created EC "+equid+" for "+astid1);
 
     await insertECRecord(astid2, equid);

@@ -79,8 +79,8 @@ async function interact () {
     // get the input from prompt
     async function getFreeIdentifierByInput() {
         return new Promise(async (resolve, reject) => {
-//            FunctionParser.executeFunction(storedInputFunction, null, async (inputResult) => {
-var inputResult = "word";
+           FunctionParser.executeFunction(storedInputFunction, null, async (inputResult) => {
+
             // check if a sentence, need to select topic!
 
                 inputSplit = inputResult.split(" ");
@@ -126,7 +126,7 @@ var inputResult = "word";
                     }
                 });
             });
-        //});
+        });
     }
 
     // read from input prompt and lookup the matching free identifier by name
@@ -139,9 +139,9 @@ var inputResult = "word";
 
     // find a random entry (using custom distribution)
     async function getRandom(sourceId) {
-        return new Promise(async (resolve, reject) => {
+        return new Promise((resolve, reject) => {
             try {
-                await DataLib.readByAssociativeValue(sourceId, (random) => {
+                DataLib.readByAssociativeValue(sourceId, (random) => {
                     return resolve(random);
                 });
             } catch (e) {
@@ -196,11 +196,9 @@ var inputResult = "word";
             randomSubstitution = await getSubstitutionByDef1(randomAssociation.id);
             if (randomSubstitution != null) {
                 console.log("random substitution:"+JSON.stringify(randomSubstitution," ",4));
-                const randomSynonym = await getIdentifierById(randomSubstitution.def2);
 
-
-                randomEntry2 = await getIdentifierById(randomSubstitution.def2)
-                console.log("random entry:"+JSON.stringify(randomEntry2," ",4));
+                randomEntry = await getIdentifierById(randomSubstitution.def2)
+                // console.log("random entry:"+JSON.stringify(randomEntry," ",4));
             
             }
         } catch(err) {
@@ -233,7 +231,7 @@ var inputResult = "word";
     // });
 
 
-    //return setTimeout(interact, 0);
+    return setTimeout(interact, 0);
 }
 
 exports.interact = interact;

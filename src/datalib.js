@@ -63,13 +63,15 @@ async function readByAssociativeValue(sourceId, cb) {
 				if (entity) {
 					entity.association = associationId; // ************************* needed?
 					return cb(entity);
+				} else {
+					return cb(null);
 				}
 			});
 		} catch (err) {
 			console.error(err);
+			return cb(null);
         }
 	}
-	return cb(null);
   //DONTDO: no assv to report, select at random
 	//return readFreeIdentifierByRandomValue(cb);
 	//readbyrandomvalue() // todo: also want abs & apps
