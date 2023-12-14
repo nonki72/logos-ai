@@ -80,7 +80,7 @@ async function interact () {
     async function getFreeIdentifierByInput() {
         return new Promise(async (resolve, reject) => {
 //            FunctionParser.executeFunction(storedInputFunction, null, async (inputResult) => {
-var inputResult = "whirlpool";
+var inputResult = "word";
             // check if a sentence, need to select topic!
 
                 inputSplit = inputResult.split(" ");
@@ -140,12 +140,16 @@ var inputResult = "whirlpool";
     // find a random entry (using custom distribution)
     async function getRandom(sourceId) {
         return new Promise(async (resolve, reject) => {
-            await DataLib.readByAssociativeValue(sourceId, (random) => {
-                if (random == null) {
-                    return reject(" no random found");
-                }
-                return resolve(random);
-            });
+            try {
+                await DataLib.readByAssociativeValue(sourceId, (random) => {
+                    if (random == null) {
+                        return reject("no random found");
+                    }
+                    return resolve(random);
+                });
+            } catch (e) {
+                return reject(e);
+            }
         });
     }
 

@@ -74,12 +74,12 @@ async function getRandomECAstId (astid) {
       'limit 1';
       
     var res = await myDb.query(query);
-    var recRaw = res;
+    var recRaw = res[0][0];
     if (recRaw == null) {
       console.log('NO EQUIDS FOUND FOR ASTID '+astid)
       return null;
     }
-    var equid = recRaw[0][0].equid;
+    var equid = recRaw.equid;
     // get the associative values (counts) for all the linked astid's for this astid
     var result = await myDb.query(
       'select astid, assv ' +
@@ -89,7 +89,7 @@ async function getRandomECAstId (astid) {
     );
 
     // calculate cumulative probabilities
-    var rows = result.results;
+    var rows = result[0];
     if (rows == null || rows.length == 0) {
       return null;
     }
@@ -98,8 +98,8 @@ async function getRandomECAstId (astid) {
     var cum = 0;
     for (var i=0; i < rows.length; i++) {
       var row = rows[i];
-      cum += row[1]; // add assv to cum
-      cumulativeRows.push([ row[0], cum ]);
+      cum += row.assv; // add assv to cum
+      cumulativeRows.push([ row.astid, cum ]);
     }
 
     // get a random one by probability
@@ -120,10 +120,7 @@ async function getRandomECAstId (astid) {
     }
   } catch (err) {
     console.error(err);
-    return null;
-  } finally {
-    
-  }
+  } 
   return null;
 }
 

@@ -58,7 +58,7 @@ async function readByEquivalenceClass (id) {
 async function readByAssociativeValue(sourceId, cb) {
 	var associationId = await Sql.getRandomECAstId(sourceId);
 	if (associationId) {
-		return readById(associationId, (entity) => {
+		readById(associationId, (entity) => {
 			if (entity) {
 				entity.association = associationId; // ************************* needed?
 				return cb(entity);
