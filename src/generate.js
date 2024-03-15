@@ -33,7 +33,7 @@ async function generateTweet(cb) {
     // make the DAO object into a function to run
     const storedTweetFunction = FunctionParser.loadStoredFunction(tweetFreeIdentifier);
 
-    // generate a sentence skeleton!
+    // generate a sentence
     const generatedSentenceTree = await Grammar.generateSentence();
     const generatedSentence = Grammar.treeToString(generatedSentenceTree);
     console.log("generated sentence tree: " + generatedSentenceTree);
@@ -46,7 +46,7 @@ async function generateTweet(cb) {
     }
     const storedGrammarCorrectorFunction = FunctionParser.loadStoredFunction(grammarCorrectorFreeIdentifier)
 
-    // run GC on the generated spooky sentence skelly
+    // run GC on the generated sentence
     FunctionParser.executeFunction(storedGrammarCorrectorFunction, [generatedSentence], async (tweetSentence) => {
         // tweet the result (or not)
         console.log("generated sentence: " + tweetSentence);

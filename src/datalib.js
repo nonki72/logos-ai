@@ -549,6 +549,21 @@ async function readWordFrequencyAll (cb) {
 	return cb(res);
 }
 
+async function readMaxFrequency (cb) {
+	const query = {
+    };
+    var client = await getDb();
+    var res = null;
+    try {
+        const db = client.db("logos");
+        const cursor = await db.collection('WordFreq').find(query).sort({frequency:-1}).limit(1);
+		res = await cursor.next();
+    } catch(err) {
+        console.error(err);
+    }
+    return cb(res);
+}
+
 async function readWordFrequencyAtLeast (float, cb) {
 	const query = {
 		'frequency': {$gte: float}
@@ -1191,6 +1206,7 @@ exports.readByAssociativeValue = readByAssociativeValue;
 exports.readFreeIdentifierByTypeAndRandomValue = readFreeIdentifierByTypeAndRandomValue;
 exports.readSubstitutionByDef1 = readSubstitutionByDef1;
 exports.readWordFrequency = readWordFrequency;
+exports.readMaxFrequency = readMaxFrequency;
 exports.readWordFrequencyAtLeast = readWordFrequencyAtLeast;
 exports.readById = readById;
 exports.readClassByNameAndModule = readClassByNameAndModule;

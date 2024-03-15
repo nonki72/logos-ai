@@ -8,7 +8,12 @@ const Grammar = require('./grammar');
 async function generateBasicPOS(pos) {
     const promise = new Promise(async function (resolve, reject) {
         try {
-            const randomMinimumFrequency = Math.random()/100.0;
+            const maxFrequencyObj = await tools.promisify(DataLib.readMaxFrequency)();
+            const maxFreq = maxFrequencyObj.frequency;
+            var randomMinimumFrequency = Math.random()/100.0;
+            if (maxFreq < randomMinimumFrequency) {
+                randomMinimumFrequency = maxFreq; // make sure it's not too high so as to not get a result
+            }
             const wordByFrequencyObj = await tools.promisify(DataLib.readWordFrequencyAtLeast)(randomMinimumFrequency);
             if (wordByFrequencyObj == null) {
                 return reject("No word by frequency found! frequency >= '" + randomMinimumFrequency + "'");

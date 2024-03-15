@@ -86,7 +86,7 @@ async function checkWordnetFor(word, pos) {
             if (entity == null) {
                 console.error("No wordnet entry found! word: '" + word + "', part of speech: '" + pos + "'");
                 return resolve(false);
-            } else if (entity.fnclas !== pos) {
+            } else if (pos !== "Word" && pos !== entity.fnclas) {
                 console.error("Wordnet entry is not the right part of speech! word: '" + word + "', part of speech: '" + pos + "'");
                 return resolve(false);
             } else {
@@ -110,7 +110,8 @@ async function generatePOSTypeTree(POSTypeDefinitionList) {
             // see basic.yaml
             const basicPOSType = basicDictionary[POSTypeDefinitionAbbreviation];
             try {
-                var generatedPOS = await generateBasicPosMiku(generatedPOSTree, i);
+                var generatedPOS = null;
+//                var generatedPOS = await generateBasicPosMiku(generatedPOSTree, i);
                 if (generatedPOS == null) {
                     generatedPOS = await generateBasicPosFreq(basicPOSType);
                 }
