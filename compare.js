@@ -15,26 +15,23 @@ async function getFreeIdentifierByName (name) {
     });
 }
 
-async function compareToResponse(input) {
-    const getNearestNeighborsFreeIdentifier = await getFreeIdentifierByName("getNearestNeighbors")
-      .catch((reason) => {
-        console.error(reason);
-        process.exit(1);
-      });
-
-        // make the DAO object into a function to run
-        const getNearestNeighborsFunction = FunctionParser.loadStoredFunction(getNearestNeighborsFreeIdentifier);
-        
-        FunctionParser.executeFunction(getNearestNeighborsFunction, ['Word'], (tweetResult) => {
-            console.log("tweeted. result: \n" + JSON.stringify(tweetResult));
-            cb(tweetResult);
+async function compareToResponse() {
+    const getSimilarityFreeIdentifier = await getFreeIdentifierByName("getSimilarity")
+        .catch((reason) => {
+            console.error(reason);
+            process.exit(1);
         });
 
-        const generatedWord1 = await Grammar.generateBasicPosFreq("Word");
-        const generatedWord2 = await Grammar.generateBasicPosFreq("Word");
-        
+    const generatedWord1 = await Grammar.generateBasicPosFreq("Word");
+    const generatedWord2 = await Grammar.generateBasicPosFreq("Word");
 
+    // make the DAO object into a function to run
+    const getSimilarityFunction = FunctionParser.loadStoredFunction(getSimilarityFreeIdentifier);
 
-
-
+    FunctionParser.executeFunction(getSimilarityFunction, [generatedWord1, generatedWord2], (similarityResult) => {
+        console.log("similarity result: \n" + JSON.stringify(similarityResult));
+        cb(similarityResult);
+    });
 }
+
+compareToResponse();
